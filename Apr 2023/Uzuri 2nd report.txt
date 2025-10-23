@@ -1,0 +1,100 @@
+	ALTER VIEW [dbo].[nCore_CustomerServed]
+	AS
+	SELECT
+	  COUNT(b.iMasterId) [Total no of Customers],
+	  a.iMasterId [CTDID],
+	  b.iMasterId [AccountId],
+	  c.iMasterId [UserId],
+	  e.iMasterId [WeekDayId],
+	  a.sName [CTDName],
+	  b.sName [Customer],
+	  c.sName [SalesPerson],
+	  e.sName [WeekDay],
+	  MAX(spc.cnt) iAccountCount
+	FROM vCore_CustomerTargetByDaysMaster a
+	LEFT JOIN vCore_Account b
+	  ON a.Customer = b.iMasterId
+	LEFT JOIN vCrm_Users c
+	  ON b.SalesPerson = c.iMasterId
+	LEFT JOIN vCore_DaysofWeek e
+	  ON a.DaysofWeek = e.iMasterId
+	LEFT JOIN (SELECT
+	  COUNT(a.iMasterId) [cnt],
+	  b.iMasterId [Salesperson]
+	FROM vCore_Account a
+	LEFT JOIN vCrm_Users b
+	  ON a.SalesPerson = b.iMasterId
+	WHERE a.iAccountType = 5
+	AND b.iMasterId <> 1
+	AND b.sName <> ''
+	AND a.iMasterId > 0
+	GROUP BY b.iMasterId) spc
+	  ON spc.Salesperson = c.iMasterId
+	WHERE b.iAccountType = 5
+	AND c.iMasterId <> 1
+	AND c.sName <> ''
+	AND a.iMasterId > 0
+	GROUP BY a.iMasterId,
+			 b.iMasterId,
+			 c.iMasterId,
+			 e.iMasterId,
+			 a.sName,
+			 b.sName,
+			 c.sName,
+			 e.sName
+============================================================================
+DECLARE @STARTDATE INT = dbo.fCore_DateToInt('2023-02-01')
+DECLARE @ENDDATE INT = dbo.fCore_DateToInt('2023-02-02')
+
+
+  SELECT 
+		a.*, 
+		1 AS [Target],Served,0 [Customer Served With No Target] 
+    FROM nCore_CustomerServed a WITH (NOLOCK)
+	left JOIN (
+		SELECT 
+				CASE WHEN COUNT(Customer) > 1 THEN 1 ELSE COUNT(Customer) END AS [Served],
+				DATENAME(DW, dbo.fCore_IntToDate(Date)) AS _WeekDay, 
+				Customer AS cus 
+        FROM vCore_SalesInvoice 
+			WHERE Date BETWEEN @STARTDATE AND @ENDDATE
+			GROUP BY Date, Customer
+    ) b ON b.cus = a.AccountId AND _WeekDay = a.[WeekDay]
+	inner JOIN dbo.udf_GetWeekDaysByDates(@STARTDATE, @ENDDATE) c ON c.sWeekDay = a.[WeekDay]
+
+union all
+
+	select 0,0,0,0,0,'',acc.sName,'',fn._WeekDay,spc2.iAccCnt,0,0,Served
+	from 
+	 (SELECT 
+			CASE WHEN COUNT(Customer) > 1 THEN 1 ELSE COUNT(Customer) END AS [Served],
+			DATENAME(DW, dbo.fCore_IntToDate(Date)) AS _WeekDay, 
+			Customer AS cus 
+    FROM vCore_SalesInvoice a
+		WHERE Date BETWEEN @STARTDATE AND @ENDDATE
+		GROUP BY Date, Customer
+				except
+		SELECT 
+			CASE WHEN COUNT(Customer) > 1 THEN 1 ELSE COUNT(Customer) END AS [Served],
+			DATENAME(DW, dbo.fCore_IntToDate(Date)) AS _WeekDay, 
+			Customer AS cus 
+    FROM vCore_SalesInvoice a
+	inner join (select AccountId,[WeekDay] from nCore_CustomerServed a 
+	inner JOIN dbo.udf_GetWeekDaysByDates(@STARTDATE, @ENDDATE) c ON c.sWeekDay = a.[WeekDay]) BBB 
+	on BBB.AccountId=a.Customer and DATENAME(DW, dbo.fCore_IntToDate(Date))=BBB.WeekDay
+		WHERE Date BETWEEN @STARTDATE AND @ENDDATE
+		GROUP BY Date, Customer) fn
+	inner join vCore_Account acc with(nolock) on fn.cus = acc.iMasterId
+	left join 	(select acc.iMasterId,COUNT(b.iMasterId) iAccCnt from vCrm_Users  acc
+	inner join vCore_Account b on acc.iMasterId=b.SalesPerson
+	where acc.iMasterId>0 and iAccountType=5 and acc.sName<>''
+	group by acc.iMasterId) spc2 on spc2.iMasterId=acc.SalesPerson
+
+
+
+
+
+
+	
+
+

@@ -1,0 +1,126 @@
+create VIEW VW_SUMMARYREPORT
+as
+select '1.AccountModuleTotalCustomerCount'[Acc],
+        A.iCreatedDate,
+        COUNT(A.CUSTOMERCATEGORY)[CustomerCount]
+        from vCore_Account A
+		group by A.iCreatedDate
+
+	union all
+
+select '1.AccountModuleCustomerCount'[Acc],
+         A.iCreatedDate,
+        Case when CC.iMasterId in (1)  then COUNT(CC.sName) else 0 end [CUSTOMER]
+         from vCore_Account A
+		 left join
+		 vCrm_CUSTOMERCATEGORY CC on A.CUSTOMERCATEGORY=CC.iMasterId
+		 group by CC.iMasterId,A.iCreatedDate
+
+		 union all
+
+select   '2.AccountModuleNon-CustomerCount'[Acc],
+          A.iCreatedDate,
+         Case when CC.iMasterId in (2) then COUNT(CC.sName) else 0 end [NON-CUSTOMER]
+          from vCore_Account A
+		 left join
+		 vCrm_CUSTOMERCATEGORY CC on A.CUSTOMERCATEGORY=CC.iMasterId
+		 group by CC.iMasterId,A.iCreatedDate
+
+		  union all
+
+select   '3.AccountModuleINFL-CustomerCount'[Acc],
+          A.iCreatedDate,
+		 Case when CC.iMasterId in (3) then COUNT(CC.sName) else 0 end [NON-CUSTOMER]
+          from vCore_Account A
+		 left join
+		 vCrm_CUSTOMERCATEGORY CC on A.CUSTOMERCATEGORY=CC.iMasterId
+		 group by CC.iMasterId,A.iCreatedDate
+
+		 union all
+
+select   '4.AccountModuleNonINFL-CustomerCount'[Acc],
+          A.iCreatedDate,
+		  Case when CC.iMasterId in (4) then COUNT(CC.sName) else 0 end [NON-CUSTOMER]
+          from vCore_Account A
+		 left join
+		 vCrm_CUSTOMERCATEGORY CC on A.CUSTOMERCATEGORY=CC.iMasterId
+		 group by CC.iMasterId,A.iCreatedDate
+
+		 union all
+
+		 select   
+		 '5.AccountModuleInactive-CustomerCount'[Acc],
+		  A.iCreatedDate,
+		 Case when CC.iMasterId in (0) then COUNT(CC.sName) else 0 end [NON-CUSTOMER]
+          from vCore_Account A
+		 left join
+		 vCrm_CUSTOMERCATEGORY CC on A.CUSTOMERCATEGORY=CC.iMasterId
+		 group by CC.iMasterId,A.iCreatedDate
+
+		 union all
+
+		 select   '6.planMaster'[Plan],
+		 DV.iCreatedDate,
+		 Case when PM.iMasterId in (1) and DV.Status1 in (1) then COUNT(PM.iMasterId) else 0 end [PLANNED]
+       from vCrm_DailyVisit DV
+	   left join vCrm_Planner P 
+	   on DV.PlanStatus=P.iMasterId
+       left join vCrm_PlanMaster PM
+	   on P.PlanStatus=PM.iMasterId
+       group by PM.iMasterId,DV.Status1,DV.iCreatedDate
+
+      union all
+
+select   '7.planMaster'[UnPlanned],
+          DV.iCreatedDate,
+		 Case when PM.iMasterId in (5)  and DV.Status1 in (1) then COUNT(PM.iMasterId) else 0 end [PLANNED]
+       from vCrm_DailyVisit DV
+	   left join vCrm_Planner P
+	   on DV.PlanStatus=P.iMasterId
+		left join vCrm_PlanMaster PM 
+		on P.PlanStatus=PM.iMasterId
+		group by PM.iMasterId,DV.Status1,DV.iCreatedDate
+
+		union all 
+
+select   '8.SalesEnquiry'[WonCount],
+           Opp.iCreatedDate,
+         Case when Opp.iStage in (11) then COUNT(Opp.iStage) else 0 end [WonCount]
+         from vCrm_Opportunities Opp
+		 left join vCrm_SalesStages SS on Opp.iStage=SS.iMasterId
+		 group by Opp.iStage,Opp.Participated,Opp.iCreatedDate
+
+
+		 union all 
+
+select   '9.SalesEnquiry'[Won and Lost Count], 
+		  Opp.iCreatedDate,
+		  case when Opp.iStage in (11) or Opp.iStage in (12) then COUNT(Opp.iStage) else 0 end [Won And Lost Count]
+         from vCrm_Opportunities Opp
+		 left join vCrm_SalesStages SS on Opp.iStage=SS.iMasterId
+		 group by Opp.iStage,Opp.Participated,Opp.iCreatedDate
+
+		 union all
+
+
+select   '10.SalesEnquiry'[Participated], 
+		  Opp.iCreatedDate,
+		  case when Opp.Participated in (0) then COUNT(Participated) else 0 end[Participated]
+         from vCrm_Opportunities Opp
+		 left join vCrm_SalesStages SS on Opp.iStage=SS.iMasterId
+		 group by Opp.iStage,Opp.Participated,Opp.iCreatedDate
+
+		 union all
+select 'percenatage' aaa, 
+        0 [createddate],
+        (select   
+		COUNT(1) [Won And Lost Count]
+         from vCrm_Opportunities Opp
+		 left join vCrm_SalesStages SS on Opp.iStage=SS.iMasterId where iStage in (12)) * 100
+		 /
+		 (select   COUNT(1)  [WonCount]
+         from vCrm_Opportunities Opp
+		 left join vCrm_SalesStages SS on Opp.iStage=SS.iMasterId where iStage in (11,12)  )  [Percentage]
+		 
+		 
+		

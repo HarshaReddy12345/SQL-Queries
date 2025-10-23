@@ -1,0 +1,16 @@
+SELECT 
+    b.sUserName AS [UserName],
+    MIN(a.iLoginTime) [$Time$iLoginTime],
+    MAX(a.iLogoutTime)  [$Time$iLogoutTime],
+    a.iLoginDate AS [$Date$iLoginDate],
+	CASE WHEN (MIN(a.iLoginTime) is null or MAX(a.iLogoutTime) is null) then 0 else  DATEDIFF(SS,MIN(dbo.fCore_IntToTime(a.iLoginTime)),MAX(dbo.fCore_IntToTime(a.iLogoutTime))) end [Diff in Sec]
+FROM
+    vCrm_Users b
+    LEFT JOIN (SELECT * FROM tSec_UserLog) a ON b.iMasterId = a.iUserId
+WHERE a.iLoginDate between dbo.fCrm_DateFromBigInt(@STARTDATETIME) and dbo.fCrm_DateFromBigInt(@ENDDATETIME)
+	and (( 0 in (@User) and isnull(b.iMasterId,0)  = isnull(b.iMasterId,0) ) or (0 not in (@User) and isnull(b.iMasterId,0)   in ( @User )))     
+   and b.iMasterId > 0
+    AND b.bAccountDisabled <> 1
+	group by
+    b.sUserName,
+    a.iLoginDate

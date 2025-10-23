@@ -1,0 +1,22 @@
+CREATE OR ALTER FUNCTION dbo.fCore_Var25(@s XML)
+RETURNS NVARCHAR(10)
+AS
+BEGIN
+    DECLARE 
+        @totaltime DECIMAL(18,2),
+        @result NVARCHAR(10)
+
+    -- Extract total time from XML
+    SELECT @totaltime = SUM(X.value('(TotalTime)[1]', 'DECIMAL(18,2)'))  
+    FROM @s.nodes('//AllRows//BodyRow') AS T(X)  
+
+    -- Convert to decimal format HH.mm (e.g., 5.05 for 5 hours 5 minutes)
+    SELECT @result =FORMAT(
+   CAST(@totaltime / 60 AS INT) + 
+   CAST(@totaltime % 60 AS FLOAT) / 100.0, 
+   'N2'
+)
+
+
+    RETURN @result
+END

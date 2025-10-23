@@ -1,0 +1,119 @@
+CRM
+----------------------------
+CREATE OR ALTER view nCore_TargetAchievement as 
+
+SELECT * 
+FROM (
+
+SELECT 
+b.sName COLLATE SQL_Latin1_General_CP1_CI_AS AS [Sales Man],
+c.sName COLLATE SQL_Latin1_General_CP1_CI_AS AS [Branch],
+d.sName COLLATE SQL_Latin1_General_CP1_CI_AS AS [Region],
+e.sName COLLATE SQL_Latin1_General_CP1_CI_AS AS [Financial Year],
+dbo.fCrm_GetNumberListValue(
+    '1,January,2,February,3,March,4,April,5,May,6,June,7,July,8,August,9,September,10,October,11,November,12,December',
+    a.Months1
+) AS [Month],
+a.MonthTarget,
+0.00 AS [Achieved],
+0.00 AS [Collecting Amount],
+a.Months1,
+b.iMasterId AS [iSalesMan],
+c.iMasterId AS [iBranch],
+d.iMasterId AS [iRegion],
+e.iMasterId AS [iFinancialYear]
+FROM vuCore_Target_FinancialYearMonths_Details a WITH (NOLOCK)
+LEFT JOIN vCore_SalesMan b WITH (NOLOCK) 
+    ON a.SalesMan = b.iMasterId
+LEFT JOIN vCore_Warehouse c WITH (NOLOCK) 
+    ON a.Branch = c.iMasterId
+LEFT JOIN vCore_RegionMaster d WITH (NOLOCK) 
+    ON a.Region1 = d.iMasterId
+LEFT JOIN vCore_LoadTargetMonths e WITH (NOLOCK) 
+    ON a.FinancialYear = e.iMasterId
+WHERE a.iMasterId > 0 
+
+    UNION ALL
+
+SELECT 
+[Sales Person] COLLATE SQL_Latin1_General_CP1_CI_AS AS [Sales Man],
+a.[Branch] COLLATE SQL_Latin1_General_CP1_CI_AS AS [Branch],
+[Place Of Supply] COLLATE SQL_Latin1_General_CP1_CI_AS AS [Region],
+CASE 
+WHEN MONTH(dbo.fCore_IntToDate(iDate)) >= 1 
+THEN CONCAT(YEAR(dbo.fCore_IntToDate(iDate)), '-', YEAR(dbo.fCore_IntToDate(iDate)) + 1)
+ELSE CONCAT(YEAR(dbo.fCore_IntToDate(iDate)) - 1, '-', YEAR(dbo.fCore_IntToDate(iDate)))
+END COLLATE SQL_Latin1_General_CP1_CI_AS AS [Financial Year],
+dbo.fCrm_GetNumberListValue(
+'1,January,2,February,3,March,4,April,5,May,6,June,7,July,8,August,9,September,10,October,11,November,12,December',
+DATEPART(MM, dbo.fCore_IntToDate(iDate))
+) AS [Month],
+0.00 AS [MonthTarget],
+CASE WHEN iVoucherType = 3328 THEN CAST(SUM(Amount) as decimal(18,2)) ELSE 0.00 END AS [Achieved],
+CASE WHEN (iVoucherType =4609 or iVoucherType= 4610) THEN CAST(SUM(Amount) as decimal(18,2)) ELSE 0.00 END AS [Collecting Amount],
+DATEPART(MM, dbo.fCore_IntToDate(iDate)) AS [MonthId],
+b.iMasterId AS [iSalesMan],
+c.iMasterId AS [iBranch],
+d.iMasterId AS [iRegion],
+e.iMasterId AS [iFinancialYear]
+FROM nCore_SalesTargetErp a WITH(NOLOCK)
+LEFT JOIN vCore_SalesMan b WITH(NOLOCK)  
+ON b.sCode COLLATE SQL_Latin1_General_CP1_CI_AS = a.SalCode COLLATE SQL_Latin1_General_CP1_CI_AS
+LEFT JOIN vCore_Warehouse c WITH(NOLOCK)  
+ON c.sCode COLLATE SQL_Latin1_General_CP1_CI_AS = a.WarCode COLLATE SQL_Latin1_General_CP1_CI_AS
+LEFT JOIN vCore_RegionMaster d WITH(NOLOCK)  
+ON d.sName COLLATE SQL_Latin1_General_CP1_CI_AS = a.[Place Of Supply] COLLATE SQL_Latin1_General_CP1_CI_AS
+LEFT JOIN vCore_LoadTargetMonths e WITH (NOLOCK)  
+ON a.[Fiscal Year] COLLATE SQL_Latin1_General_CP1_CI_AS = e.sCode COLLATE SQL_Latin1_General_CP1_CI_AS
+--where [Sales Person]='ABHIJITH LAL' and DATEPART(MM, dbo.IntToDate(iDate))=04 and [Fiscal Year]='2025-2026'
+GROUP BY 
+[Sales Person], a.[Branch], [Place Of Supply], iDate,
+b.iMasterId, c.iMasterId, d.iMasterId, e.iMasterId,iVoucherType
+) a
+
+================================================
+ERP
+----------------------
+CREATE OR ALTER VIEW [dbo].[Sales_Target] AS        
+  
+  select distinct tCore_Header_0.iHeaderId ,  
+(case when  tCore_Header_0.iVoucherType=3328 then 'Invoice' when  tCore_Header_0.iVoucherType=4609 then 'Bank Receipt' when  tCore_Header_0.iVoucherType=4610 then 'Cash Receipt' else 'Other' end) Type ,  
+tCore_Header_0.iVoucherType,   
+vrCore_SalesMan.sName AS [Sales Person],  
+dbo.IntToDate(tCore_Header_0.iDate) [Voucher Date],  
+CASE   
+        WHEN MONTH(dbo.IntToDate(tCore_Header_0.iDate)) >= 4   
+        THEN CONCAT(YEAR(dbo.IntToDate(tCore_Header_0.iDate)), '-', RIGHT(YEAR(DATEADD(YEAR, 1, dbo.IntToDate(tCore_Header_0.iDate))), 4))  
+        ELSE CONCAT(YEAR(DATEADD(YEAR, -1, dbo.IntToDate(tCore_Header_0.iDate))), '-', RIGHT(YEAR(dbo.IntToDate(tCore_Header_0.iDate)), 4))  
+    END AS [Fiscal Year],  
+(case when  tCore_Header_0.iVoucherType=3328 then ABS(tCore_Header_0.fNet) else ABS(tCore_Data_0.mOriginalAmount) end) [Amount],  
+vrCore_Warehouse.sName AS Branch,  
+(case when RegBook.SName='' then RegCode.sName else RegBook.sName end) [Place Of Supply],  
+sVoucherNo,RegCode.sCode[RegCode],vrCore_Warehouse.sCode[WarCode],vrCore_SalesMan.sCode [SalCode],tCore_Header_0.iDate  
+FROM tCore_Header_0  
+  
+                        JOIN tCore_Data_0 ON tCore_Header_0.iHeaderId = tCore_Data_0.iHeaderId  
+  
+JOIN tCore_Data_Tags_0 ON tCore_Data_Tags_0.iBodyId = tCore_Data_0.iBodyId  
+  
+                        JOIN cCore_Vouchers_0 WITH (READUNCOMMITTED) ON cCore_Vouchers_0.iVoucherType=tCore_Header_0.iVoucherType  
+  
+                        JOIN vrCore_Account BookNo ON BookNo.iMasterId = tCore_Data_0.iBookNo AND BookNo.iTreeId = 0  
+  
+                        JOIN vrCore_Account Code ON Code.iMasterId = tCore_Data_0.iCode AND Code.iTreeId = 0  
+  
+      Join vmCore_Region RegBook ON RegBook.sCode=BookNo.RegionsCode   
+  
+      Join vmCore_Region RegCode ON RegCode.sCode=Code.RegionsCode  
+  
+      LEFT JOIN vrCore_Warehouse ON vrCore_Warehouse.iMasterId = tCore_Data_0.iFaTag AND vrCore_Warehouse.iTreeId = 0  
+        
+      LEFT JOIN vrCore_SalesMan ON vrCore_SalesMan.iMasterId = tCore_Data_Tags_0.iTag3002 AND vrCore_SalesMan.iTreeId = 0  
+  
+where tCore_Header_0.iVoucherType in('4609','3328','4610') AND tCore_Data_0.bUpdateFA = 1   
+  AND tCore_Data_0.bSuspendUpdateFA <> 1   
+  AND tCore_Header_0.bSuspended = 0   
+  AND tCore_Data_0.iAuthStatus < 2
+  
+Group by tCore_Header_0.iVoucherType,tCore_Header_0.iDate,tCore_Header_0.fNet,BookNo.BranchLocation   
+,BookNo.Region,Code.BranchLocation,Code.Region,tCore_Data_0.mOriginalAmount,RegBook.sName,RegCode.sName,sVoucherNo,tCore_Header_0.iHeaderId,vrCore_SalesMan.sName,vrCore_Warehouse.sName,RegCode.sCode,vrCore_Warehouse.sCode,vrCore_SalesMan.sCode ;

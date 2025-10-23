@@ -1,0 +1,17 @@
+select a.iTransId,a.sName [QuoteName],FORMAT(dbo.fCore_IntToDate(a.[Date]),'dd/MM/yyyy') [Quote Date] ,b.sName [Account],b.sBillingAddress [Address],c.sName [Contact],a.MobileNo,a.Email,a.ProductNameH,CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=018X0&docid=',iDocId) sImageUrl
+
+from vCrm_Quote a with(nolock)
+LEFT JOIN vCore_Account b with(nolock) on a.AccountName=b.iMasterId
+LEFT JOIN vCrm_Contacts c with(nolock) on a.ContactName=c.iMasterId
+LEFT JOIN vCore_Product d with(nolock) on a.Product=d.iMasterId
+LEFT JOIN (SELECT
+  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocId,
+  iRelatedTo,
+  iIndex
+FROM vCrm_Documents WITH (NOLOCK)
+WHERE iModuleTypeId = 2306
+AND iFieldId = 300466) Docs
+  ON Docs.iRelatedTo = d.iMasterId
+
+where a.iTransId=84
+

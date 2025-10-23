@@ -1,0 +1,30 @@
+CREATE VIEW nCore_partsRequestedreplaced
+as
+select 'Parts Requested' [Module],a.iTransId,a.PartsRequestNo,b.sName [Account],c.sName [RSM],d.sName [Parts Request Branch],e.sName [ASM],f.sName [Region],a.TotalCounter,a.SerialNoHEADER,g.sName [WareHouse],h.sName [Request Vertical],a.MachineStatus,a.ModeOfShipmen [Mode of Shipment],a.ShipTo,a.CreditHold,a.StockIndentType,a.Emailalertonpendingparts [Email Alert On Pending Parts],a.sName [Part ReqNo],a.sCode [Code],i.sName [Warehouse Executive],j.sName [Executive 1],'' [Date Purchased],'' [PO Date],k.sCode [Product],a.sProdDescription [Description],a.iQuantity [Quantity],a.IssueQty,a.PosttoERPQty,a.PendingQty,0.00 [ReplacedQty]
+from vuCrm_PartsRequested_General_Details a with(nolock)
+left join vCore_Account b with(nolock) on a.Account=b.iMasterId
+left join vCore_Executive c with(nolock) on a.RSM=c.iMasterId
+left join vCore_Location d with(nolock) on a.PartsRequestBranch=d.iMasterId
+left join vCore_Executive e with(nolock) on a.ASM=e.iMasterId
+left join vCore_Region f with(nolock) on a.Region=f.iMasterId
+left join vCore_Warehouse g with(nolock) on a.WarehouseH=g.iMasterId
+left join vCore_Vertical h with(nolock) on a.RequestVertical=h.iMasterId
+left join vCore_Executive i with(nolock) on a.WarehouseExecutive=i.iMasterId
+left join vCore_Executive j with(nolock) on a.Executive1=j.iMasterId
+left join vCore_Product k with(nolock) on a.iProductId=k.iMasterId
+where a.iTransId>0 
+--and a.sName='SP230325-00002'
+
+union all
+
+select 'Parts replaced' [Module],a.iTransId,b.sName [Parts Request Number],c.sName [Account],'','','','',0,a.SerialNoagainstcall,d.sName [WareHouse],'','','','','','','',a.sName [Cost Name],a.sCode [Cost Code],'','',
+CASE WHEN LEN(a.iPurchaseDate)=9 then FORMAT(dbo.fCore_IntToDate(a.iPurchaseDate),'dd/MM/yyyy') else '' end [Date Purchased] ,
+CASE WHEN LEN(a.sPONumber)=9 then FORMAT(dbo.fCore_IntToDate(a.sPONumber),'dd/MM/yyyy') else '' end [PO Date],e.sCode [Product],a.sProdDescription [Description],a.iQuantity [Qty],a.IssueQty,0.00,a.PendingQty,a.ReplacedQty
+
+from vuCrm_PartsReplaced_General_Details a 
+left join vuCrm_PartsRequested_General_Details b on a.Partsrequestnumber=b.iTransId
+left join vCore_Account c on a.Account=c.iMasterId
+left join vCore_Warehouse d on a.Warehouse=d.iMasterId
+left join vCore_Product e on a.iProductId=e.iMasterId
+where a.iTransId>0 
+--where a.sName='9000'

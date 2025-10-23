@@ -1,0 +1,40 @@
+Subreport query
+
+select
+	   ISNULL(f.sName,'') [Floor],
+	   ISNULL(i.sName,'') [Control],
+	   ISNULL(j.sName,'') [Type of Load],
+	   ISNULL(e.Switchingcircuit,0) [Switching Circuit],
+	   ISNULL(e.NooffixturesDALI,0) [No of Fixtures DALI],
+	   ISNULL(e.Phasecut,0) [Phasecut],
+	   ISNULL(Keypad,0) [Keypad],ISNULL(e.CCTV,0) [CCTV],ISNULL(e.HFSensor,0) [HFSensor],
+	   ISNULL(e.Fan,0) [Fan],ISNULL(Curtain,0) [Curtain],ISNULL(Wifi,0) [Wifi],ISNULL(Ekey,0) [Ekey],
+	   ISNULL(e.AC,0) [AC],ISNULL(e.TV,0) [TV],ISNULL(e.VDP,0) [VDP],ISNULL(e.RTIScreen,0) [RTIScreen]	   
+from 
+  vuCrm_Quote_ItemInformation_Details e WITH(NOLOCK)
+left join vCore_Account c WITH(NOLOCK) on e.AccountName=c.iMasterId
+left join vCore_Floor f WITH(NOLOCK) on e.Floor=f.iMasterId
+left join vCore_ServiceandClientScopeModule h WITH(NOLOCK) on h.iMasterId=e.TermsAndcondition
+left join vCore_Control i WITH(NOLOCK) on i.iMasterId=e.Control
+left join vCore_TypeofLoad j WITH(NOLOCK) on j.iMasterId=e.TypeofLoad 
+where e.iTransId>0
+and e.iTransId=61
+-----------------------------------------------------------------------------------
+Design Query
+
+select a.sName,
+       FORMAT(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy') [CreatedDate],
+       ISNULL(h.sName,'') [TermsAndcondition],
+	   ISNULL(d.sName,'') [Category],
+	   ISNULL(g.sName,'') [Scheduled By],
+	   FORMAT(dbo.fCore_IntToDate(a.ScheduledDate),'dd/MM/yyyy') [ScheduledDate],
+	   ISNULL(b.Description32,'') [Description T AND C],
+	   ISNULL(c.sName,'') [AccountName]		      
+from vCrm_Quote a WITH(NOLOCK)
+left join vuCrm_Quote_TermsConditions_Details b WITH(NOLOCK) on a.iTransId=b.iTransId
+left join vCore_Account c WITH(NOLOCK) on a.AccountName=c.iMasterId
+left join vCore_ServiceandScope d WITH(NOLOCK) on b.Category=d.iMasterId
+left join vCrm_Users g WITH(NOLOCK) on g.iMasterId=a.iAssignedTo
+left join vCore_ServiceandClientScopeModule h WITH(NOLOCK) on h.iMasterId=a.TermsAndcondition
+where a.iTransId>0
+and a.iTransId=

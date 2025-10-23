@@ -1,0 +1,27 @@
+SELECT iTransId,[Floor],[Control],[Type of Load],val,type FROM   
+(
+    select 
+e.iTransId,
+	   ISNULL(f.sName,'') [Floor],
+	   ISNULL(i.sName,'') [Control],
+	   ISNULL(j.sName,'') [Type of Load],
+	   ISNULL(e.Switchingcircuit,0) [Switching Circuit],
+	   ISNULL(e.NooffixturesDALI,0) [No of Fixtures DALI],
+	   ISNULL(e.Phasecut,0) [Phasecut],
+	   ISNULL(Keypad,0) [Keypad],ISNULL(e.CCTV,0) [CCTV],ISNULL(e.HFSensor,0) [HFSensor],
+	   ISNULL(e.Fan,0) [Fan],ISNULL(Curtain,0) [Curtain],ISNULL(Wifi,0) [Wifi],ISNULL(Ekey,0) [Ekey],
+	   ISNULL(e.AC,0) [AC],ISNULL(e.TV,0) [TV],ISNULL(e.VDP,0) [VDP],ISNULL(e.RTIScreen,0) [RTIScreen]	   
+from 
+  vuCrm_Quote_ItemInformation_Details e WITH(NOLOCK)
+left join vCore_Account c WITH(NOLOCK) on e.AccountName=c.iMasterId
+left join vCore_Floor f WITH(NOLOCK) on e.Floor=f.iMasterId
+left join vCore_ServiceandClientScopeModule h WITH(NOLOCK) on h.iMasterId=e.TermsAndcondition
+left join vCore_Control i WITH(NOLOCK) on i.iMasterId=e.Control
+left join vCore_TypeofLoad j WITH(NOLOCK) on j.iMasterId=e.TypeofLoad 
+where e.iTransId>0
+and e.iTransId={?iTransId}
+) t 
+UNPIVOT(
+
+    val for [type] in ([Switching Circuit],[No of Fixtures DALI],[Phasecut],[Keypad],[CCTV],[HFSensor],[Fan],[Curtain],[Wifi],[Ekey]
+,[AC],[TV],[VDP],[RTIScreen])) AS unpvt;

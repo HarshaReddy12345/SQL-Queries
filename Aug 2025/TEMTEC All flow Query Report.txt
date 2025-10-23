@@ -1,0 +1,100 @@
+CREATE or ALTER VIEW  nCore_CompleteWorkFlowDetails
+as
+SELECT 
+    a.iMasterId,
+    a.sName AS [Enq Name],
+    EnqDates.EnqDateFormatted,
+    b.sName AS [Customer],
+
+    dbo.fCrm_GetNumberListValue(
+        '1,Cash,2,Bank,3,Sales,4,Purchases,5,Customer,6,Vendor,7,Customer/Vendor,
+         8,Assets,9,Liabilities,10,Income,11,Expenses,12,Petty cash expenses,
+         13,Travel & Entertainment expenses,14,Selling expenses,15,Manufacturing expenses,
+         16,TDS,17,Taxes payable,18,General & Administration,19,Depreciation & Amortization,
+         20,Other expenses,21,Control,22,Cost,23,Treasury stock,24,Short term investments,
+         25,Revenues not producing working capital,26,Sinking fund payable,
+         27,Sales returns & discounts,28,Property plant & Equipment,
+         29,Project operation expense,30,Preferred dividends,31,Prospect,
+         32,Inventory,33,Fixed Assets,34,Trading Account,35,Cash/Petty Cash Account,
+         36,Employee,37,Assets/Liabilities,38,Income / Expense,39,Trust Receipt Account', 
+        b.iAccountType
+    ) AS [Type],
+
+    a.sDescription AS [Description],
+
+    LeadDates.LeadDateFormatted,
+    c.DocNo AS [Lead No],
+    d.sName AS [Lead State],
+    c.sDescription AS [Remarks],
+
+    e.sName AS [Opportunity No],
+    OppDates.OppDateFormatted,
+    f.sName AS [Stage],
+    g.sName AS [Type of Job],
+    e.sDescription AS [Scope of Work],
+
+    h.sName AS [Quote No],
+    QuoteDates.QuoteDateFormatted,
+    i.sName AS [Job No],
+    h.GrandTotal AS [Net Amount],
+
+    dbo.fCrm_GetNumberListValue(
+        '1,Awaiting Approval,2,Approved,3,Rejected,4,Onhold', 
+        CustomerApproval
+    ) AS [Customer Approval],
+
+    SalesOrderDates.SalesOrderDateFormatted,
+    j.sName AS [Sales Order No],
+    j.fGrandTotal AS [Value],
+
+    k.sName AS [Contract No],
+    ContractDates.ContractDateFormatted,
+    l.sName AS [Contract Job],
+    ContractDates.AMCStartDateFormatted,
+    ContractDates.AMCEndDateFormatted,
+    ContractTypeValue,
+
+    m.sName AS [Invoice No],
+    InvoiceDates.InvoiceDateFormatted,
+    m.fGrandTotal AS [Invoice Value],
+    a.[Date],a.Customer [CustId],a.JOBNO,b.sMobile,b.sPhone
+FROM vCore_EnquiryRegistration a
+LEFT JOIN vCore_Account b ON a.Customer = b.iMasterId
+LEFT JOIN vCrm_Leads c ON a.iMasterId = c.ENQMasterNo
+LEFT JOIN vCrm_LeadState d ON c.iLeadState = d.iTransId
+LEFT JOIN vCrm_Opportunities e ON c.iTransId = e.iLeadId
+LEFT JOIN vCrm_SalesStages f ON e.iStage = f.iMasterId
+LEFT JOIN vCore_TypeofJob g ON e.TypeofJob = g.iMasterId
+LEFT JOIN vCore_WindingQuotation h ON a.iMasterId = h.ENQMasterNo
+LEFT JOIN vCore_JobMaster i ON h.JobNo = i.iMasterId
+LEFT JOIN vCrm_SalesOrder j ON e.iTransId = j.iOpportunityId
+LEFT JOIN vCore_ServiceContract k ON e.iTransId = k.Opportunity
+LEFT JOIN vCore_JobMaster l ON k.Job = l.iMasterId
+LEFT JOIN vCore_SalesContract m ON e.iTransId = m.iOpportunityId
+
+-- CROSS APPLY blocks for clean date formatting
+CROSS APPLY (SELECT CASE WHEN ISNUMERIC(a.[Date]) = 1  THEN FORMAT(dbo.fCore_IntToDate(a.[Date]), 'dd/MM/yyyy') ELSE '' END AS EnqDateFormatted) EnqDates
+
+CROSS APPLY (SELECT CASE WHEN ISNUMERIC(c.[Date]) = 1 THEN FORMAT(dbo.fCore_IntToDate(c.[Date]), 'dd/MM/yyyy') ELSE '' END AS LeadDateFormatted) 
+             LeadDates
+
+CROSS APPLY (SELECT CASE WHEN ISNUMERIC(e.[Date]) = 1 THEN FORMAT(dbo.fCore_IntToDate(e.[Date]), 'dd/MM/yyyy') ELSE '' END AS OppDateFormatted) OppDates
+
+CROSS APPLY (SELECT CASE WHEN ISNUMERIC(h.[Date]) = 1 THEN FORMAT(dbo.fCore_IntToDate(h.[Date]), 'dd/MM/yyyy') ELSE '' END AS QuoteDateFormatted) 
+            QuoteDates
+
+CROSS APPLY (SELECT CASE WHEN ISNUMERIC(j.[Date]) = 1 THEN FORMAT(dbo.fCore_IntToDate(j.[Date]), 'dd/MM/yyyy') ELSE '' END AS SalesOrderDateFormatted)  
+            SalesOrderDates
+
+CROSS APPLY (SELECT CASE WHEN ISNUMERIC(k.[Date]) = 1 THEN FORMAT(dbo.fCore_IntToDate(k.[Date]), 'dd/MM/yyyy') ELSE '' END AS ContractDateFormatted,
+             CASE WHEN ISNUMERIC(k.AMCStartDate) = 1 THEN FORMAT(dbo.fCore_IntToDate(k.AMCStartDate), 'dd/MM/yyyy') ELSE '' END AS AMCStartDateFormatted,
+             CASE WHEN ISNUMERIC(k.AMCEndDate) = 1 THEN FORMAT(dbo.fCore_IntToDate(k.AMCEndDate), 'dd/MM/yyyy') ELSE '' END AS AMCEndDateFormatted
+             ) ContractDates
+
+CROSS APPLY (SELECT CASE WHEN ISNUMERIC(m.[Date]) = 1 THEN FORMAT(dbo.fCore_IntToDate(m.[Date]), 'dd/MM/yyyy') ELSE '' END AS InvoiceDateFormatted) 
+            InvoiceDates
+
+WHERE a.iMasterId >0
+
+
+

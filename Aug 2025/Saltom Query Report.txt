@@ -1,0 +1,232 @@
+USERWISE DATA
+======================================
+CREATE OR ALTER VIEW nCore_UserwiseData as
+
+WITH OppAgg AS (
+    SELECT DISTINCT
+        u.iMasterId AS UserId,
+        STRING_AGG(CAST(o.sName AS NVARCHAR(MAX)), ', ') AS Opportunities
+    FROM vCrm_Users u WITH (NOLOCK)
+    LEFT JOIN vCrm_Opportunities o WITH (NOLOCK) 
+           ON u.iMasterId = o.iAssignedTo
+    GROUP BY u.iMasterId
+),
+QuoteAgg AS (
+    SELECT DISTINCT
+        u.iMasterId AS UserId,
+        STRING_AGG(CAST(q.sName AS NVARCHAR(MAX)), ', ') AS Quotes
+    FROM vCrm_Users u WITH (NOLOCK)
+    LEFT JOIN vCrm_Quote q WITH (NOLOCK) 
+           ON u.iMasterId = q.iAssignedTo
+    GROUP BY u.iMasterId
+),
+SalesOrderAgg AS (
+    SELECT DISTINCT
+        u.iMasterId AS UserId,
+        STRING_AGG(CAST(so.sName AS NVARCHAR(MAX)), ', ') AS Orders
+    FROM vCrm_Users u WITH (NOLOCK)
+    LEFT JOIN vCrm_SalesOrder so WITH (NOLOCK) 
+           ON u.iMasterId = so.iAssignedTo
+    GROUP BY u.iMasterId
+),
+DSOAgg AS (
+    SELECT DISTINCT
+        u.iMasterId AS UserId,
+        STRING_AGG(CAST(dso.sName AS NVARCHAR(MAX)), ', ') AS DSOs
+    FROM vCrm_Users u WITH (NOLOCK)
+    LEFT JOIN vCore_DirectSalesOrder dso WITH (NOLOCK) 
+           ON dso.iAssignedTo = u.iMasterId
+    GROUP BY u.iMasterId
+)
+SELECT TOP 100 PERCENT
+    u.sName AS [User],
+    ISNULL(o.Opportunities, '') AS [Opportunities],
+    ISNULL(q.Quotes, '')        AS [Quotes],
+    ISNULL(so.Orders, '')       AS [Orders],
+    ISNULL(dso.DSOs, '')        AS [Direct Sales Orders]
+FROM vCrm_Users u WITH (NOLOCK)
+LEFT JOIN OppAgg o   ON u.iMasterId = o.UserId
+LEFT JOIN QuoteAgg q ON u.iMasterId = q.UserId
+LEFT JOIN SalesOrderAgg so ON u.iMasterId = so.UserId
+LEFT JOIN DSOAgg dso ON u.iMasterId = dso.UserId
+WHERE u.iMasterId > 0
+ORDER BY u.sName
+===========================================================================
+PRODUCTWISE DATA
+===========================================================================
+CREATE OR ALTER VIEW nCore_ProductwiseData as
+
+WITH SalesOrderAgg AS (
+    SELECT 
+        p.iMasterId     AS ProductId,
+        STRING_AGG(CAST(q.sName AS NVARCHAR(MAX)), ', ')       AS Quotes,
+        STRING_AGG(CAST(so.sName AS NVARCHAR(MAX)), ', ')      AS SalesOrders,
+        SUM(ISNULL(so.iQuantity,0))                            AS TotalQty,
+        SUM(ISNULL(so.NetAmount,0))                            AS SalesOrderTotal
+    FROM vCore_Product p WITH (NOLOCK)
+    JOIN vuCrm_Quote_General_Details q WITH (NOLOCK) 
+         ON p.iMasterId = q.iProductId
+    JOIN vuCrm_SalesOrder_General_Details so WITH (NOLOCK) 
+         ON p.iMasterId = so.iProductId
+    GROUP BY p.iMasterId
+),
+SalesOrderSalesmen AS (
+    SELECT DISTINCT p.iMasterId AS ProductId, sm.sName
+    FROM vCore_Product p WITH (NOLOCK)
+    JOIN vuCrm_SalesOrder_General_Details so WITH (NOLOCK) 
+         ON p.iMasterId = so.iProductId
+    LEFT JOIN vCore_Salesman sm WITH (NOLOCK) 
+         ON so.Salesman = sm.iMasterId
+    WHERE sm.sName IS NOT NULL
+),
+SalesOrderSalesmenAgg AS (
+    SELECT ProductId, STRING_AGG(CAST(sName AS NVARCHAR(MAX)), ', ') AS SalesmenSO
+    FROM SalesOrderSalesmen
+    GROUP BY ProductId
+),
+DSOAgg AS (
+    SELECT 
+        p.iMasterId     AS ProductId,
+        STRING_AGG(CAST(dso.sName AS NVARCHAR(MAX)), ', ')     AS DirectSalesOrders,
+        SUM(ISNULL(dso.iQuantity,0))                           AS TotalQty,
+        SUM(ISNULL(dso.NetAmount,0))                           AS DSOTotal
+    FROM vCore_Product p WITH (NOLOCK)
+    JOIN vuCore_DirectSalesOrder_ProductInformation_Details dso WITH (NOLOCK) 
+         ON p.iMasterId = dso.iProductId
+    GROUP BY p.iMasterId
+),
+DSOSalesmen AS (
+    SELECT DISTINCT p.iMasterId AS ProductId, sm.sName
+    FROM vCore_Product p WITH (NOLOCK)
+    JOIN vuCore_DirectSalesOrder_ProductInformation_Details dso WITH (NOLOCK) 
+         ON p.iMasterId = dso.iProductId
+    LEFT JOIN vCore_Salesman sm WITH (NOLOCK) 
+         ON dso.Salesman = sm.iMasterId
+    WHERE sm.sName IS NOT NULL
+),
+DSOSalesmenAgg AS (
+    SELECT ProductId, STRING_AGG(CAST(sName AS NVARCHAR(MAX)), ', ') AS SalesmenDSO
+    FROM DSOSalesmen
+    GROUP BY ProductId
+)
+SELECT top 100 percent
+    p.sName                          AS [Product],
+
+    -- Sales Order
+    ISNULL(so.Quotes, '')            AS [SO Quotes],
+    ISNULL(so.SalesOrders, '')       AS [Sales Orders],
+    ISNULL(so.TotalQty, 0)           AS [SO Total Qty],
+    ISNULL(so.SalesOrderTotal, 0)    AS [SO Total Amount],
+    ISNULL(soa.SalesmenSO, '')       AS [Salesman(SO)],
+
+    -- Direct Sales Order
+    ISNULL(dso.DirectSalesOrders, '')AS [Direct Sales Orders],
+    ISNULL(dso.TotalQty, 0)          AS [DSO Total Qty],
+    ISNULL(dso.DSOTotal, 0)          AS [DSO Total Amount],
+    ISNULL(dsoa.SalesmenDSO, '')     AS [Salesman(DSO)]
+
+FROM vCore_Product p WITH (NOLOCK)
+LEFT JOIN SalesOrderAgg so        ON p.iMasterId = so.ProductId
+LEFT JOIN SalesOrderSalesmenAgg soa ON p.iMasterId = soa.ProductId
+LEFT JOIN DSOAgg dso              ON p.iMasterId = dso.ProductId
+LEFT JOIN DSOSalesmenAgg dsoa     ON p.iMasterId = dsoa.ProductId
+WHERE p.iMasterId > 0
+ORDER BY p.sName;
+============================================================================
+ACCOUNTWISE DATA
+============================================================================
+CREATE OR ALTER VIEW nCore_AccountwiseData as
+
+WITH SalesOrderAgg AS (
+    SELECT 
+        q.iAccount,
+        STRING_AGG(CAST(q.sName AS NVARCHAR(MAX)), ', ')       AS Quotes,
+        STRING_AGG(CAST(so.sName AS NVARCHAR(MAX)), ', ')      AS SalesOrders,
+        SUM(ISNULL(so.TotalNetAmount,0))                       AS SalesOrderTotal
+    FROM vCrm_Quote q WITH (NOLOCK)
+    INNER JOIN vCrm_SalesOrder so WITH (NOLOCK) 
+            ON q.iOpportunityId = so.iOpportunityId 
+           AND q.iAccount = so.Account
+    GROUP BY q.iAccount
+),
+SalesOrderSalesmen AS (
+    SELECT DISTINCT q.iAccount, sm.sName
+    FROM vCrm_Quote q WITH (NOLOCK)
+    INNER JOIN vCrm_SalesOrder so WITH (NOLOCK) 
+            ON q.iOpportunityId = so.iOpportunityId 
+           AND q.iAccount = so.Account
+    LEFT JOIN vCore_Salesman sm WITH (NOLOCK) 
+           ON so.Salesman = sm.iMasterId
+    WHERE sm.sName IS NOT NULL
+),
+SalesOrderSalesmenAgg AS (
+    SELECT iAccount, STRING_AGG(CAST(sName AS NVARCHAR(MAX)), ', ') AS SalesmanSO
+    FROM SalesOrderSalesmen
+    GROUP BY iAccount
+),
+DSOAgg AS (
+    SELECT 
+        dso.Account,
+        STRING_AGG(CAST(dso.sName AS NVARCHAR(MAX)), ', ')     AS DirectSalesOrders,
+        SUM(ISNULL(dso.TotalNetAmount,0))                      AS DSOTotal
+    FROM vCore_DirectSalesOrder dso WITH (NOLOCK)
+    GROUP BY dso.Account
+),
+DSOSalesmen AS (
+    SELECT DISTINCT dso.Account, sm.sName
+    FROM vCore_DirectSalesOrder dso WITH (NOLOCK)
+    LEFT JOIN vCore_Salesman sm WITH (NOLOCK) 
+           ON dso.Salesman = sm.iMasterId
+    WHERE sm.sName IS NOT NULL
+),
+DSOSalesmenAgg AS (
+    SELECT Account, STRING_AGG(CAST(sName AS NVARCHAR(MAX)), ', ') AS SalesmanDSO
+    FROM DSOSalesmen
+    GROUP BY Account
+),
+SampleAgg AS (
+    SELECT 
+        sr.CustomerAccount,
+        STRING_AGG(CAST(sr.sName AS NVARCHAR(MAX)), ', ')      AS SampleRequests
+    FROM vCore_SampleRequest sr WITH (NOLOCK)
+    GROUP BY sr.CustomerAccount
+),
+SampleSalesmen AS (
+    SELECT DISTINCT sr.CustomerAccount, sm.sName
+    FROM vCore_SampleRequest sr WITH (NOLOCK)
+    LEFT JOIN vCore_Salesman sm WITH (NOLOCK) 
+           ON sr.SalesMan = sm.iMasterId
+    WHERE sm.sName IS NOT NULL
+),
+SampleSalesmenAgg AS (
+    SELECT CustomerAccount, STRING_AGG(CAST(sName AS NVARCHAR(MAX)), ', ') AS SalesmanSR
+    FROM SampleSalesmen
+    GROUP BY CustomerAccount
+)
+SELECT top 100 percent
+    acc.sName                          AS [Account],
+
+    -- Sales Order
+    ISNULL(so.Quotes, '')              AS [Quotes],
+    ISNULL(so.SalesOrders, '')         AS [Sales Orders],
+    ISNULL(so.SalesOrderTotal, 0)      AS [Sales Order Total],
+    ISNULL(soa.SalesmanSO, '')         AS [Salesman(SO)],
+
+    -- Direct Sales Order
+    ISNULL(dso.DirectSalesOrders, '')  AS [Direct Sales Orders],
+    ISNULL(dso.DSOTotal, 0)            AS [DSO Total],
+    ISNULL(dsoa.SalesmanDSO, '')       AS [Salesman(DSO)],
+
+    -- Sample Request
+    ISNULL(sr.SampleRequests, '')      AS [Sample Requests],
+    ISNULL(sra.SalesmanSR, '')         AS [Salesman(SR)]
+
+FROM vCore_Account acc WITH (NOLOCK)
+LEFT JOIN SalesOrderAgg so      ON acc.iMasterId = so.iAccount
+LEFT JOIN SalesOrderSalesmenAgg soa ON acc.iMasterId = soa.iAccount
+LEFT JOIN DSOAgg dso            ON acc.iMasterId = dso.Account
+LEFT JOIN DSOSalesmenAgg dsoa   ON acc.iMasterId = dsoa.Account
+LEFT JOIN SampleAgg sr          ON acc.iMasterId = sr.CustomerAccount
+LEFT JOIN SampleSalesmenAgg sra ON acc.iMasterId = sra.CustomerAccount
+WHERE acc.iMasterId > 0
+ORDER BY acc.sName;

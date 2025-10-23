@@ -1,0 +1,70 @@
+USE [FOCUS801250]
+GO
+/***** Object:  StoredProcedure [dbo].[udp_SOABodyInsertion]    Script Date: 02-12-2024 19:02:53 *****/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROC [dbo].[udp_SOABodyInsertion](@iTransId bigint, @iUserId int = 0)
+AS
+BEGIN
+    -- Convert transaction ID using a helper function
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+
+    DECLARE @BOQ int, @CLientReq int, @payiRowIndex int, @gstiRowIndex int; 
+    DECLARE @iRowIndex int, @TIDate INT, @TINo varchar(50), @MonthBill varchar(50),
+            @ClientEbillno varchar(50), @Taxable decimal(18, 2), @GST decimal(18, 2),
+            @ReceivedPayment decimal(18, 2), @PendingBAL decimal(18, 2), @Net decimal(18, 2),
+            @SOABillFollowup varchar(255), @GSTRCDPayment decimal(18, 2), @SOAGSTFollowUp1 varchar(255);
+
+    -- Deleting existing records related to the given transaction ID
+    --DELETE FROM muCore_BillsReadingVehiclesMaster_PaymentActivity_Details WHERE iMasterId = @iTransId;
+    --DELETE FROM muCore_BillsReadingVehiclesMaster_GSTActivity_Details WHERE iMasterId = @iTransId;
+
+    -- Declare a cursor to process each record in the muCore_BillsReadingVehiclesMaster_SOA_Details table
+    DECLARE SOA_Cursor CURSOR FOR
+    SELECT iRowIndex, TIDate, TINo, MonthBill, ClientEbillno, Taxable, GST, ReceivedPayment, 
+           PendingBAL, Net, SOABillFollowup, GSTRCDPayment, SOAGSTFollowUp1
+    FROM muCore_BillsReadingVehiclesMaster_SOA_Details
+    WHERE iMasterId = @iTransId;
+
+    OPEN SOA_Cursor;
+    FETCH NEXT FROM SOA_Cursor INTO @iRowIndex, @TIDate, @TINo, @MonthBill, @ClientEbillno, 
+                                 @Taxable, @GST, @ReceivedPayment, @PendingBAL, @Net, 
+                                 @SOABillFollowup, @GSTRCDPayment, @SOAGSTFollowUp1;
+
+    -- Loop through each record in the cursor
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Insert into muCore_BillsReadingVehiclesMaster_PaymentActivity_Details table
+        INSERT INTO muCore_BillsReadingVehiclesMaster_PaymentActivity_Details
+        (iMasterId, iRowIndex, InvDate, INVNO, MonthofBill, Mob, Basic, AmountRs, RCDAmt, PendingAMT, Gross, BillFollowupnew)
+        VALUES
+        (@iTransId, @iRowIndex, @TIDate, @TINo, @MonthBill, @ClientEbillno, @Taxable, @GST, @ReceivedPayment, 
+         @PendingBAL, @Net, @SOABillFollowup);
+
+        -- Insert into muCore_BillsReadingVehiclesMaster_GSTActivity_Details table
+        INSERT INTO muCore_BillsReadingVehiclesMaster_GSTActivity_Details
+        (iMasterId, iRowIndex, BillDate, InvoiceNo, BilledMonth, EbillNo, GSTAmt, PaymentAmt, PendingBalGSTACT, GSTFollowupNew)
+        VALUES
+        (@iTransId, @iRowIndex, @TIDate, @TINo, @MonthBill, @ClientEbillno, @GST, @GSTRCDPayment, @PendingBAL, @SOAGSTFollowUp1);
+
+        -- Fetch the next record
+        FETCH NEXT FROM SOA_Cursor INTO @iRowIndex, @TIDate, @TINo, @MonthBill, @ClientEbillno, 
+                                     @Taxable, @GST, @ReceivedPayment, @PendingBAL, @Net, 
+                                     @SOABillFollowup, @GSTRCDPayment, @SOAGSTFollowUp1;
+    END
+
+    -- Cleanup: Close and deallocate the cursor
+    CLOSE SOA_Cursor;
+    DEALLOCATE SOA_Cursor;
+	Update SOAMAS set  SOAMAS.GSTRCDPayment=a.PaymentAmt,SOAMAS.SOAGSTFollowUp=a.GSTFollowUp  from vuCore_BillsReadingVehiclesMaster_SOA_Details SOAMAS
+join vuCore_BillsReadingVehiclesMaster_GSTActivity_Details a on SOAMAS.iMasterId=a.iMasterId and a.InvoiceNo=SOAMAS.TINo
+where SOAMAS.iMasterId=@iTransId 
+
+
+Update SOAMAS1 set  SOAMAS1.ReceivedPayment=a1.RCDAmt,SOAMAS1.FollowUp=a1.BillFollowUp  from vuCore_BillsReadingVehiclesMaster_SOA_Details SOAMAS1
+join vuCore_BillsReadingVehiclesMaster_PaymentActivity_Details a1 on SOAMAS1.iMasterId=a1.iMasterId and a1.INVNO=SOAMAS1.TINo
+where SOAMAS1.iMasterId=@iTransId
+
+END

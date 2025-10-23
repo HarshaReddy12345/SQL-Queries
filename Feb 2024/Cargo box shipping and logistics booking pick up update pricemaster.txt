@@ -1,0 +1,22 @@
+CREATE PROC udp_UpdatePriceMaster(@iTransId bigInt,@iUserId int)
+as
+begin 
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+Declare @ServiceType int,@PriceMaster int
+select @ServiceType=GType from vCore_BookingPickUpRequest with(nolock) where iMasterId=@iTransId
+select @PriceMaster=PriceMaster from vCore_BookingPickUpRequest with(nolock) where iMasterId=@iTransId
+if (@ServiceType=1)
+begin
+update a set a.PriceMaster=b.PriceMaster 
+from vCore_BookingPickUpRequest a with(nolock)
+join vCore_Customers b with(nolock) on a.Consignor=b.iMasterId 
+where a.iMasterId=@iTransId
+end 
+else
+begin 
+update a set a.PriceMaster=b.PriceMaster 
+from vCore_BookingPickUpRequest a with(nolock)
+join vCore_Customers b with(nolock) on a.Consignee=b.iMasterId 
+where a.iMasterId=@iTransId
+end
+end 

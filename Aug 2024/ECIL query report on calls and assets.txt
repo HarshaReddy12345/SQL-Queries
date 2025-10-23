@@ -1,0 +1,19 @@
+select a.sName [Calls],b.sName Asset,c.sName Account,d.sName Branch,e.sName Product,
+case when a.TypeOfCall<>0 then Count(a.iTransId) else 0 end [No of PM Visits],
+case when f.iStartDate=dbo.fCrm_DateFromBigInt(Compleation) then Count(a.iTransId) else 0 end [Same Day],
+case when f.iStartDate<>dbo.fCrm_DateFromBigInt(Compleation)  
+and (f.iStartDate is not null or f.iStartDate <>0 or f.Compleation is not null or f.Compleation <>0)
+then Count(a.iTransId) else 0 end [Not Same Day], f.iStartDate,f.Compleation,
+case when a.iStatusId in(59) then count(a.iTransId) else 0 end [Pending Requests],
+dbo.fCrm_DATEDIFF(1,f.iStartDate,dbo.fCrm_DateFromBigInt(f.Compleation)) [No of Days],
+DATEDIFF(MI,dbo.fCore_IntToTime(f.iStartTime),dbo.fCore_IntToTime(f.iEndTime)) [Delay in HRS],a.iStatusId
+from vCrm_Calls a
+left join vuCrm_CustAssets_SpareParts_Details b on a.iCustAssetId=b.iTransId 
+left join vCore_Account c  on b.iAccountId=c.iMasterId
+left join vCore_MainBranch d on b.MainBranch=d.iMasterId 
+left join vCore_Product e on b.iProductId=e.iMasterId 
+left join vCrm_CallWorkLog f on a.iTransId=f.iCallId
+where a.iTransId>0 and a.iCreatedDate between @STARTDATETIME and @ENDDATETIME
+and (( 0 in (@Status) and isnull(a.iStatusId,0)  = isnull(a.iStatusId,0) ) or (0 not in (@Status) and isnull(a.iStatusId,0)   in ( @Status )))
+and (( 0 in (@TypeOfCall) and isnull(TypeOfCall,0)  = isnull(TypeOfCall,0) ) or (0 not in (@TypeOfCall) and isnull(TypeOfCall,0)   in ( @TypeOfCall )))
+group by a.sName,b.sName,c.sName,d.sName,e.sName,TypeOfCall,iStartDate,Compleation,a.iStatusId,f.iEndTime,f.iStartTime,a.iStatusId

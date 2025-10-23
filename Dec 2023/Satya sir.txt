@@ -1,0 +1,19 @@
+CREATE OR ALTER PROC udp_ProductToDN(@iMasterId bigint,@iUserId int=0)
+as
+begin
+select @iMasterId=dbo.fCrm_IntToAPITransId(@iMasterId,0)
+update b set b.DCStock=(b.DCStock+a.Quantity)
+from vuCore_DeliveryNote_Product_Info_Details a with(nolock)
+join vCore_Product b with(nolock) on a.Product=b.iMasterId
+where a.iMasterId=@iMasterId
+end
+--------------------------------------------------------------------------------
+CREATE OR ALTER PROC udp_Product(@iMasterId bigint,@iUserId int=0)
+as
+begin
+select @iMasterId=dbo.fCrm_IntToAPITransId(@iMasterId,0)
+update b set b.GRNStock=(b.GRNStock+a.Quantity)
+from vuCore_GRN_ProductInfo_Details a with(nolock)
+join vCore_Product b with(nolock) on a.Product=b.iMasterId
+where a.iMasterId=@iMasterId
+end

@@ -1,0 +1,28 @@
+
+
+/****** Object:  StoredProcedure [dbo].[udp_DprGridQty]    Script Date: 2/16/2024 11:09:45 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE   PROC [dbo].[udp_DprGridQty] (@iTransId bigint,@iUserId int=0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+update a set a.CompletedQty=a.CompletedQty+a.TodayQuantity
+from vuCore_DPR_BOQDetails_Details a
+where a.iMasterId=@iTransId
+
+update a set a.CompletedQty=b.CompletedQty
+from muCore_BOQNEW_BOQDetails_Details a 
+join vuCore_DPR_BOQDetails_Details b on a.iMasterId=b.BOQNo
+where b.iMasterId=@iTransId and a.BOQCode=b.BOQCode
+
+update vuCore_DPR_BOQDetails_Details set ReferenceId=(BOQQty-CompletedQty) 
+where iMasterId=@iTransId
+end
+GO
+
+

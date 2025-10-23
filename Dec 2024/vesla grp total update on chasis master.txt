@@ -1,0 +1,10 @@
+CREATE or ALTER PROC udp_PriceUpdateOnChassis(@iTransId bigint,@iUserId int=0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+Declare @ChassisNo int,@Amount decimal(18,2)
+select @ChassisNo=iCustAssetId from vCore_EstimationQuotation with(nolock) where iMasterId=@iTransId
+select @Amount=SUM(GrandTotal) from vCore_EstimationQuotation with(nolock) where iCustAssetId=@ChassisNo
+
+update b set b.GradeNA=@Amount from vCore_EstimationQuotation a with(nolock) join vCrm_CustAssets b with(nolock) on a.iCustAssetId=b.iTransId where a.iMasterId=@iTransId
+end

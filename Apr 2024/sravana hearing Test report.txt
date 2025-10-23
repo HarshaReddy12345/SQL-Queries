@@ -1,0 +1,18 @@
+select a.sName,PatientName,ISNULL(a.TestingDate,0) [$Date$Testing Date ],b.sName [Registration Number],b.sCode [Registration Code],c.sName [Owner],d.sName [Audiologist],e.sName [Branch Location] ,
+CASE WHEN a.CaseHistory=1 THEN 1 ELSE 0 END [Case History],
+CASE when a.PTA=1 THEN 1 ELSE 0 END  [PTA],
+CASE WHEN a.Tymp=1 THEN 1 ELSE 0 END [Tymp/Reflex],
+CASE WHEN a.OAE=1 THEN 1 ELSE 0 END [OAE],
+CASE WHEN a.BERA=1 THEN 1 ELSE 0 END [BERA],
+CASE WHEN a.SpecialTest=1 THEN 1 ELSE 0 END  [Special Test],
+CASE WHEN a.HearingTrail=1 THEN 1 ELSE 0 END [Hearing Aid Trail],
+CASE WHEN a.DHA=1 THEN 1 ELSE 0 END  [DHA],
+CASE WHEN a.REM=1 THEN 1 ELSE 0 END [REM],
+CASE WHEN a.AidedAudiogram=1 THEN 1 ELSE 0 END [Aided Audiogram],
+CASE WHEN a.HearingAidReprogramming=1 THEN 1 ELSE 0 END [Own Hearing Aid Programming]
+from vCore_CaseHistory a WITH(NOLOCK)
+left join vCore_Account b WITH(NOLOCK) on a.RegistrationNumber=b.iMasterId
+left join vCrm_Users c WITH(NOLOCK) on a.iAssignedTo=c.iMasterId
+left join vCore_Referredby d WITH(NOLOCK) on a.Audiologist=d.iMasterId
+left join vCore_Location e WITH(NOLOCK) on a.iLocation=e.iMasterId
+where a.iMasterId>0

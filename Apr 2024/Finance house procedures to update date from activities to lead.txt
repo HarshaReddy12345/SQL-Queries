@@ -1,0 +1,79 @@
+
+CREATE PROC udp_UpdateLeadFromTask(@iTransId bigint,@iUserId int =0)
+as 
+begin
+DECLARE @CREATEDDATE bigint,@MODIFIEDDATE bigint
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+select @CREATEDDATE = iCreatedDate from vCrm_Tasks WITH(NOLOCk) where iTransId=@iTransId
+select @MODIFIEDDATE = iModifiedDate from vCrm_Tasks WITH(NOLOCk) where iTransId=@iTransId
+
+if(@MODIFIEDDATE>@CREATEDDATE)
+begin
+
+update c set c.LastActivityDateTime=@MODIFIEDDATE  FROM vCrm_Tasks a WITH(NOLOCk)
+JOIN tCrm_CampaignMembers b WITH(NOLOCk) ON a.iRelatedTo = b.iMemberId
+join vCrm_Leads c WITH(NOLOCk) on b.iLeadId=c.iTransId
+where  a.iTransId=@iTransId and iRelatedToType=256
+end
+else 
+begin
+update c set c.LastActivityDateTime=@CREATEDDATE  FROM vCrm_Tasks a WITH(NOLOCk)
+JOIN tCrm_CampaignMembers b WITH(NOLOCk) ON a.iRelatedTo = b.iMemberId
+join vCrm_Leads c WITH(NOLOCk) on b.iLeadId=c.iTransId
+where  a.iTransId=@iTransId and iRelatedToType=256
+end
+end
+
+--------------------------------------------------------------------------------------------------------------------
+
+
+CREATE PROC udp_UpdateLeadFromAppointment(@iTransId bigint,@iUserId int =0)
+as 
+begin
+DECLARE @CREATEDDATE bigint,@MODIFIEDDATE bigint
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+select @CREATEDDATE = iCreatedDate from vCrm_Appointments WITH(NOLOCk) where iTransId=@iTransId
+select @MODIFIEDDATE = iModifiedDate from vCrm_Appointments WITH(NOLOCk) where iTransId=@iTransId
+
+if(@MODIFIEDDATE>@CREATEDDATE)
+begin
+
+update c set c.LastActivityDateTime=@MODIFIEDDATE  FROM vCrm_Appointments a WITH(NOLOCk)
+JOIN tCrm_CampaignMembers b WITH(NOLOCk) ON a.iRelatedTo = b.iMemberId
+join vCrm_Leads c WITH(NOLOCk) on b.iLeadId=c.iTransId
+where  a.iTransId=@iTransId and iRelatedToType=256
+end
+else 
+begin
+update c set c.LastActivityDateTime=@CREATEDDATE  FROM vCrm_Appointments a WITH(NOLOCk)
+JOIN tCrm_CampaignMembers b WITH(NOLOCk) ON a.iRelatedTo = b.iMemberId
+join vCrm_Leads c WITH(NOLOCk) on b.iLeadId=c.iTransId
+where  a.iTransId=@iTransId and iRelatedToType=256
+end
+end
+
+------------------------------------------------------------------------------------------------------
+
+
+CREATE PROC udp_UpdateLeadFromClosedActivities(@iTransId bigint,@iUserId int =0)
+as 
+begin
+DECLARE @CREATEDDATE bigint,@MODIFIEDDATE bigint
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+update c set c.LastActivityDateTime=a.iCreatedDate  FROM vCrm_ClosedActivities a WITH(NOLOCk)
+JOIN tCrm_CampaignMembers b WITH(NOLOCk) ON a.iRelatedTo = b.iMemberId
+join vCrm_Leads c WITH(NOLOCk) on b.iLeadId=c.iTransId
+where  a.iMasterId=@iTransId and iRelatedToType=256
+
+end
+
+
+
+
+
+
+
+

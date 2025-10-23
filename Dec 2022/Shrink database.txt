@@ -1,0 +1,8 @@
+Use Focus8010
+GO
+Alter Database [Focus8010] Set Recovery Simple
+GO
+Alter Database [Focus8010] Set Recovery Full
+GO
+DBCC SHRINKFILE (2, 1)
+GO

@@ -1,0 +1,24 @@
+select  'Planner'[Module],U.sName,
+        case P.SelectPlan when 1 then Count(P.SelectPlan) else 0 end [Planned],
+		0 [PlannedVisit], 0 [UnPlanned]
+        from 
+ vCore_Planner P
+ left join vCore_PlanMaster PM on PM.iMasterId=P.SelectPlan
+ left join vCrm_Users U  on P.iAssignedTo=U.iMasterId
+ where P.PlanningMonth between @STARTDATE and @ENDDATE
+ and (( 0 in (@Owner) and isnull(P.iAssignedTo,0)  = isnull(P.iAssignedTo,0) )
+ or (0 not in (@Owner) and isnull(P.iAssignedTo,0)   in ( @Owner )))
+group by  U.sName,P.SelectPlan
+
+ union all
+
+ select 'PlannedVisit',U.sName,0 [Planned],
+ case DV.SelectPlan when 1 then Count(DV.SelectPlan) else 0 end [Planned Visit],
+ case DV.SelectPlan when 3 then Count(DV.SelectPlan) else 0 end [UNplanned]
+ from vCore_DailyVisit DV
+ left join vCore_PlanMaster PM on PM.iMasterId=DV.SelectPlan
+ left join vCrm_Users U  on DV.iAssignedTo=U.iMasterId
+ where DV.VisitingDate between @STARTDATE and @ENDDATE
+ and (( 0 in (@Owner) and isnull(DV.iAssignedTo,0)  = isnull(DV.iAssignedTo,0) )
+ or (0 not in (@Owner) and isnull(DV.iAssignedTo,0)   in ( @Owner )))
+ group by  U.sName,DV.SelectPlan

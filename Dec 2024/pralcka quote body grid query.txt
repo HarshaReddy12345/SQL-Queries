@@ -1,0 +1,33 @@
+ALTER VIEW nCore_QuoteCrystalBodyGrid as
+
+select top 100 percent 'General Specification' [Grid],a.iTransId,d.sName [Product],f.General General,f.Specification Specification,CONCAT('C:\apache-tomcat-9.0.12_J8\webapps\streamline\WEB-INF\user-resource\Documents\01BO0\',iModuleTypeId,'_',iDocumentId,'_',sFileName) sImageUrl
+from vuCrm_Quote_MachineGrid_Details a with(nolock)
+left join vCore_Product d with(nolock) on a.MachineName=d.iMasterId
+left join vCore_ProductCategory e with(nolock) on d.ProductCategory=e.iMasterId
+left join vuCore_Product_GeneralSpecification_Details f with(nolock) on a.MachineName=f.iMasterId
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex FROM vCrm_Documents WITH (NOLOCK)
+WHERE iModuleTypeId = 2306 AND iFieldId =301176) Docs ON Docs.iRelatedTo = d.iMasterId
+where a.iTransId=9 order by iSequence asc
+
+union all
+
+select top 100 percent 'Motor Specification' [Grid],a.iTransId,d.sName [Product],f.Motor ,f.MotorSpeci ,CONCAT('C:\apache-tomcat-9.0.12_J8\webapps\streamline\WEB-INF\user-resource\Documents\01BO0\',iModuleTypeId,'_',iDocumentId,'_',sFileName) sImageUrl
+from vuCrm_Quote_MachineGrid_Details a with(nolock)
+left join vCore_Product d with(nolock) on a.MachineName=d.iMasterId
+left join vCore_ProductCategory e with(nolock) on d.ProductCategory=e.iMasterId
+left join vuCore_Product_MotorSpecification_Details f with(nolock) on a.MachineName=f.iMasterId
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex FROM vCrm_Documents WITH (NOLOCK)
+WHERE iModuleTypeId = 2306 AND iFieldId =301176) Docs ON Docs.iRelatedTo = d.iMasterId
+where a.iTransId>0 order by iSequence asc
+
+union all
+
+select top 100 percent 'Vibro Specification',a.iTransId,d.sName [Product],f.Vibro ,f.VibroSpec ,CONCAT('C:\apache-tomcat-9.0.12_J8\webapps\streamline\WEB-INF\user-resource\Documents\01BO0\',iModuleTypeId,'_',iDocumentId,'_',sFileName) sImageUrl
+from vuCrm_Quote_MachineGrid_Details a with(nolock)
+left join vCore_Product d with(nolock) on a.MachineName=d.iMasterId
+left join vCore_ProductCategory e with(nolock) on d.ProductCategory=e.iMasterId
+left join vuCore_Product_VibroMotorSpecification_Details f with(nolock) on a.MachineName=f.iMasterId
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex FROM vCrm_Documents WITH (NOLOCK)
+WHERE iModuleTypeId = 2306 AND iFieldId =301176) Docs ON Docs.iRelatedTo = d.iMasterId
+where a.iTransId>0 order by iSequence asc
+

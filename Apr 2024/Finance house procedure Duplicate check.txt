@@ -1,0 +1,67 @@
+  
+ALTER procedure [dbo].[CheckDuplicateCriteria] (@iTransId bigint,@UserId int)  
+as  
+begin  
+    select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0);  
+    if(@iTransId>0)  
+    Begin  
+  declare @ProductType int,@EIDNumber nvarchar(100),@Mobile nvarchar(20),@Email nvarchar(100),@ModifiedDate bigint,@Output nvarchar(10),@DuplicateLeadName nvarchar(250),@DuplicateText nvarchar(200)='Duplicate Lead:  Company Name'  
+  select @ProductType=ProductType,@EIdNumber=EIDNumber,@Mobile=sMobile,@Email=sEmail,@ModifiedDate=iModifiedDate from vaCrm_Leads with(nolock) where iMasterId=@iTransId  
+  ----Update Last Activity Date in the Lead----------  
+  if(@ModifiedDate=0)  
+  begin  
+   update vCrm_Leads set LastActivityDateTime=iCreatedDate where iTransId=@iTransId  
+  End  
+  else  
+  Begin  
+   update vCrm_Leads set LastActivityDateTime=dbo.fCore_DateTimeToInt(getdate()) where iTransId=@iTransId  
+  End  
+  if(@ModifiedDate=0)  
+  begin  
+     
+  
+   IF EXISTS (  
+   SELECT 1 FROM vaCrm_Leads with(nolock) WHERE ProductType = @ProductType  
+   AND ((EIDNumber = @EIDNumber and EIDNumber!='') OR (sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))  
+   AND LeadStage  in(3,4,5,6) and iMasterId<>@iTransId  
+   )  
+   BEGIN  
+    set @DuplicateLeadName=(select top 1 sCompany from vaCrm_Leads with(nolock) WHERE ProductType = @ProductType  
+    AND ((EIDNumber = @EIDNumber and EIDNumber!='') OR (sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))  
+    AND LeadStage  in(3,4,5,6) and iMasterId<>@iTransId)  
+    RAISERROR('%s:- %s',16,1,@DuplicateText,@DuplicateLeadName);  
+   END  
+   else IF EXISTS (  
+   SELECT 1  
+   FROM vaCrm_Leads with(nolock)  
+   WHERE ProductType = @ProductType  
+   AND ((EIDNumber = @EIDNumber and EIDNumber!='') OR (sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))  
+   AND LeadStage = 2  
+   AND DATEADD(DAY, 30, dbo.fCore_IntToDate(LeadFailDate)) > GETDATE() and iMasterId<>@iTransId  
+   )  
+   BEGIN  
+    set @DuplicateLeadName=(select top 1 sCompany FROM vaCrm_Leads with(nolock)  
+    WHERE ProductType = @ProductType  
+    AND ((EIDNumber = @EIDNumber and EIDNumber!='') OR (sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))  
+    AND LeadStage = 2  
+    AND DATEADD(DAY, 30, dbo.fCore_IntToDate(LeadFailDate)) > GETDATE() and iMasterId<>@iTransId)  
+    RAISERROR('%s:- %s',16,1,@DuplicateText,@DuplicateLeadName);  
+   END  
+   else  
+   Begin  
+     ---Update Sub Type based on the Product------------------------  
+    Update a set a.iSubTypeId=b.SubType  from vCrm_Leads a with(nolock) join vCore_Product b with(nolock) on a.ProductType=b.iMasterId  where a.iTransId>0 and  ISNULL(DontUpdateSubType,0)=0 and a.iTransId=@iTransId   
+    ----------------------------------------------------------------  
+      
+    ----Insert into the audit Table  
+    exec dbo.udp_AS_logPickAndRelease @iTransId,@UserId,1  
+    ----------------------------------------------------------------  
+	---updating Company name by Firstname and last name
+
+	update vCrm_Leads set sCompany=CONCAT(sFirstName,' ',sLastName) where iTransId=@iTransId and CustomerType=4
+	----------------------------------------------------------------------------------------
+   End  
+  END  
+ End  
+ return @iTransId  
+End  

@@ -1,0 +1,55 @@
+CREATE VIEW nCore_TaskByLeadOpportunity as
+select 'Lead' [Module],case b.iSalutation when 1 then 'Mr.'
+when 2 then 'Mrs.'
+when 3 then 'Miss'
+when 4 then 'Ms.'
+when 5 then 'Dr.'
+when 6 then 'Prof.'
+when 7 then 'Rev.'
+when 8 then 'Other' end [Salutation],ISNULL(b.sName,'') [Lead/Opportunity Name],ISNULL(b.sLastName,'') [LastName],IsNULL(b.Number,0) [Number],
+ISNULL(b.sEmail,'') [Email],ISNULL(c.sName,'') [Medium],
+ISNULL(d.sName,'') [ProjectName],ISNULL(e.sName,'') [Source],ISNULL(f.sName,'') [SubSource],
+case b.iLeadStage when 1 then 'Open'
+when 2 then 'In Progress'
+when 3 then 'Lost Under Enquiry' end 'Lead/OpportunityStageStage',
+case b.LeadStatus1 when 1 then 'Connected' when 2 then 'Not Connected' end LeadStatus,
+ISNULL(a.sName,'') [Description],case a.Callstatus when 1 then 'Connected' when 2 then 'Not Connected' end CallStatus,
+case a.TaskStatus when 1 then 'Completed' when 2 then 'In-Progress' end TaskStatus,
+ISNULL(g.sName,'') [LostReason],ISNULL(h.sName,'') [Lost Sub Reason],
+case a.LeadStage when 1 then 'Open' when 2 then 'In Progress' when 3 then 'Lost Under Enquiry' end 'Task Lead Stage',
+case when a.ReminderDateAndTime>0 then format(dbo.fCore_IntToDateTime(a.ReminderDateAndTime),'dd/MM/yyyy hh:mm:ss') else '' end [ReminderDateAndTime],
+a.iAssignedTo
+from  vCrm_Leads b WITH(NOLOCK)
+inner join vCore_TasksCustom a WITH(NOLOCK) on a.Lead=b.iTransId
+left join vCore_Medium c WITH(NOLOCK) on b.Medium=c.iMasterId
+left join vCore_ProjectName d WITH(NOLOCK) on b.ProjectName=d.iMasterId
+left join vCore_Source e WITH(NOLOCK) on b.Source=e.iMasterId
+left join vCore_SubSource f WITH(NOLOCK) on b.Sub=f.iMasterId
+left join vCore_LostReason g WITH(NOLOCK) on a.LostReason=g.iMasterId
+left join vCore_LostSubReason h WITH(NOLOCK) on a.LostSubReason=h.iMasterId
+
+union all 
+
+select 'Opportunity' [Module],'' [Salutation],ISNULL(b.sName,'') [Name],'' [LastName],ISNULL(b.MobileNo,0) Mobile,ISNULL(b.Email,'')[Email],
+ISNULL(c.sName,'') [Medium],
+ISNULL(d.sName,'') [ProjectName],ISNULL(e.sName,'') [Source],ISNULL(f.sName,'') [SubSource],
+case b.OpportunityStage when 1 then 'Allocation'
+when 2 then 'Lost Under Allocation'
+when 3 then 'Site Visit Done'
+when 4 then 'Lost After Site Visit'
+when 5 then 'Booked' end OpportunityStage,
+'' LeadStatus,
+ISNULL(a.sName,'') [Description],case a.Callstatus when 1 then 'Connected' when 2 then 'Not Connected' end CallStatus,
+case a.TaskStatus when 1 then 'Completed' when 2 then 'In-Progress' end TaskStatus,
+ISNULL(g.sName,'') [LostReason],ISNULL(h.sName,'') [Lost Sub Reason],
+case a.LeadStage when 1 then 'Open' when 2 then 'In Progress' when 3 then 'Lost Under Enquiry' end 'Task Lead Stage',
+case when a.ReminderDateAndTime>0 then format(dbo.fCore_IntToDateTime(a.ReminderDateAndTime),'dd/MM/yyyy hh:mm:ss') else '' end [ReminderDateAndTime],
+a.iAssignedTo
+from  vCrm_Opportunities b WITH(NOLOCK)
+inner join vCore_TasksCustom a WITH(NOLOCK) on a.Opportunity=b.iTransId
+left join vCore_Medium c WITH(NOLOCK) on b.Medium=c.iMasterId
+left join vCore_ProjectName d WITH(NOLOCK) on b.ProjectName=d.iMasterId
+left join vCore_Source e WITH(NOLOCK) on b.Source=e.iMasterId
+left join vCore_SubSource f WITH(NOLOCK) on b.SubSource=f.iMasterId
+left join vCore_LostReason g WITH(NOLOCK) on a.LostReason=g.iMasterId
+left join vCore_LostSubReason h WITH(NOLOCK) on a.LostSubReason=h.iMasterId

@@ -1,0 +1,115 @@
+CREATE or ALTER VIEW nCore_OrderDeliverables as
+SELECT DISTINCT 
+    a.iTransId,
+    b.sName AS [Deliverables],
+    CASE 
+        WHEN ISNULL(c.TOA, '') <> '' 
+            THEN CONCAT('Game compliance report for (Base - ', ISNULL(d.sName, 'N/A'),')' , ' (TOA - ', c.TOA, ')')
+        ELSE 
+            CONCAT('Game compliance report for (Base - ', ISNULL(d.sName, 'N/A'),')')
+    END AS [Description]
+FROM vuCrm_SalesOrder_General_Details a WITH (NOLOCK)
+LEFT JOIN vCore_Product b WITH (NOLOCK) 
+    ON a.iProductId = b.iMasterId
+LEFT JOIN (
+    SELECT DISTINCT 
+        STRING_AGG(e.sName, ',') AS [TOA],
+        a.iTransId,
+        a.iProductId,
+        a.Region,
+        a.iSequence
+    FROM vuCrm_SalesOrder_General_Details a WITH (NOLOCK)
+    LEFT JOIN vCore_Region c WITH (NOLOCK) 
+        ON a.Region = c.iMasterId
+    LEFT JOIN mCore_Region_MultiValues d WITH (NOLOCK) 
+        ON a.iTOA = d.iMultiId
+    LEFT JOIN vCore_Region e WITH (NOLOCK) 
+        ON d.iMasterId = e.iMasterId
+    WHERE a.iTransId > 0 
+      AND e.sName IS NOT NULL
+    GROUP BY a.iTransId, a.iProductId, a.Region, a.iSequence
+) c 
+    ON a.iTransId = c.iTransId 
+    AND a.iProductId = c.iProductId 
+    AND a.Region = c.Region 
+    AND a.iSequence = c.iSequence
+LEFT JOIN vCore_Region d WITH (NOLOCK) 
+    ON a.Region = d.iMasterId
+WHERE a.iTransId > 0 
+ -- AND a.iTransId = 60
+--------------------------------------------------------------------------
+CREATE or ALTER VIEW nCore_OrderCostingDetails as
+
+WITH pbTOA_unique AS (
+    SELECT 
+        iMasterId,
+        Country,
+        ServiceName,
+        ServiceType,
+        CustomerName,
+        MAX(TOAPrice) AS TOAPrice
+    FROM vuCore_Pricebook_PricesInformation_Details WITH (NOLOCK)
+    GROUP BY 
+        iMasterId,
+        Country,
+        ServiceName,
+        ServiceType,
+        CustomerName
+)
+SELECT top 100 percent
+    a.iTransId, 
+    b.sName AS [Task],
+    CONCAT(a.sProdDescription,'(Base - ',r.sName,')') sProdDescription,
+
+    ISNULL(pbBase.BasePrice, 0.00) AS [Cost per Game],
+
+    -- TOA Name
+    CASE 
+        WHEN e.sName <> '' THEN CONCAT('TOA - ', e.sName)
+        ELSE ''
+    END AS [TOA],
+
+    -- TOA Price
+    CASE 
+        WHEN e.sName <> '' AND ISNULL(pbTOA.TOAPrice, 0.00) > 0
+            THEN pbTOA.TOAPrice
+        ELSE 0.00
+    END AS [TOAPrice],
+
+    a.fLocalNetAmount
+
+FROM vuCrm_SalesOrder_General_Details a WITH (NOLOCK)
+
+LEFT JOIN vCore_Product b WITH (NOLOCK) 
+    ON a.iProductId = b.iMasterId
+LEFT JOIN vCore_Region r WITH(NOLOCK) on a.Region=r.iMasterId
+-- Pricebook Base Price
+LEFT JOIN vuCore_Pricebook_PricesInformation_Details pbBase WITH (NOLOCK)
+    ON pbBase.iMasterId = a.Pricebook
+   AND pbBase.Country = a.Region
+   AND pbBase.ServiceName = a.iProductId 
+   AND a.ServiceType = pbBase.ServiceType 
+   AND a.AccountName = pbBase.CustomerName
+
+-- Expand multi-value TOA field
+LEFT JOIN mCore_Region_MultiValues mv WITH (NOLOCK)
+    ON a.iTOA = mv.iMultiId
+
+-- Get TOA region name
+LEFT JOIN vCore_Region e WITH (NOLOCK)
+    ON mv.iMasterId = e.iMasterId
+
+-- Unique TOA price per country
+LEFT JOIN pbTOA_unique pbTOA
+    ON pbTOA.iMasterId = a.Pricebook
+   AND pbTOA.Country = mv.iMasterId
+   AND pbTOA.ServiceName = a.iProductId 
+   AND a.ServiceType = pbTOA.ServiceType 
+   AND a.AccountName = pbTOA.CustomerName
+
+WHERE a.iTransId > 0
+ -- AND a.iTransId = 60
+
+ORDER BY 
+    a.iTransId,
+    e.sName;

@@ -1,0 +1,62 @@
+select b.sName [Month],c.sName [Year],a.TargetValue,e.sName [Sales Person],[Achieved],[Pipeline]
+
+from vuCore_TargetForSalesmen_Target_Details a with(nolock)
+left join vCore_Month b with(nolock) on a.[Month]=b.iMasterId
+left join vCore_Year c with(nolock) on a.[Year]=c.iMasterId
+left join vCrm_Users e on a.SalesPerson=e.iMasterId
+ left join (select [Month],[Year],sum(Achieved) Achieved,sum(Pipeline) Pipeline,[Sales Person]   from(
+select  
+case when a.iStage=11 then dbo.fCrm_DATEPART(2,c.iModifiedDate) else dbo.fCrm_DATEPART(2,a.iCloseDate) end [Month],
+case when a.iStage=11 then dbo.fCrm_DATEPART(3,c.iModifiedDate) else dbo.fCrm_DATEPART(3,a.iCloseDate) end [Year],
+CASE WHEN a.iStage=11 then  SUM(fLocalNetAmountNew) end [Achieved],CASE WHEN a.iStage<>11 then SUM(fLocalNetAmountNew) end [Pipeline],b.sName [Sales Person],iAssignedTo from vCrm_Opportunities a with(nolock)
+join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+inner join (select iModifiedDate,iMasterId,iStage from
+(select row_number()over(partition by iMasterId order by iModifiedDate asc)rn, iModifiedDate,iMasterId ,iStage from vCrm_StageHistory c where iStage =11 and iTypeId=1792
+)aa where rn=1)  c
+ on a.iStage=c.iStage and a.iTransId=c.iMasterId 
+where a.iTransId>0
+group by b.sName,case when a.iStage=11 then dbo.fCrm_DATEPART(2,c.iModifiedDate) else dbo.fCrm_DATEPART(2,a.iCloseDate) end,
+case when a.iStage=11 then dbo.fCrm_DATEPART(3,c.iModifiedDate) else dbo.fCrm_DATEPART(3,a.iCloseDate) end,
+a.iStage)aaa group by [Month],[Year],[Sales Person]
+) d on b.iMas=d.[Month] and c.sName=d.[Year] and e.sName=[Sales Person]
+
+where a.iMasterId>0 
+
+
+--------------------------------------------------------------------------------
+
+
+select b.sName [Month],c.sName [Year],e.sName [Sales Person],a.TargetValue,[Achieved],(TargetValue-Achieved) [Balance],[Pipeline] from vuCore_TargetForSalesmen_Target_Details a with(nolock)
+join vCore_Month b with(nolock) on a.[Month]=b.iMasterId
+ join vCore_Year c with(nolock) on a.[Year]=c.iMasterId
+ join vCrm_Users e on a.SalesPerson=e.iMasterId
+ left join (select sum(Achieved) [Achieved],sum(Pipeline) [Pipeline],iAssignedTo from (select case when a.iStage=11 then sum(fLocalNetAmountNew) end [Achieved],case when a.iStage<>11 then sum(fLocalNetAmountNew) end [Pipeline],iAssignedTo,a.iStage,[Month],[Year] from vCrm_Opportunities a
+ left join ( select row_number()over(partition by iMasterId order by iModifiedDate asc)rn, iModifiedDate,iMasterId ,iStage from vCrm_StageHistory c where iStage =11 and iTypeId=1792
+)aa on a.iStage=aa.iStage and a.iTransId=aa.iMasterId
+group by iAssignedTo,[Month],[Year],a.iStage
+)ax group by iAssignedTo,[Month],[Year]
+)ab on a.SalesPerson=ab.iAssignedTo
+where a.iMasterId>0
+--and (( 0 in (@Month) and isnull(b.iMasterId,0)  = isnull(b.iMasterId,0) ) or (0 not in (@Month) and isnull(b.iMasterId,0)   in ( @Month )))
+--and (( 0 in (@Year) and isnull(c.iMasterId,0)  = isnull(c.iMasterId,0) ) or (0 not in (@Year) and isnull(c.iMasterId,0)   in ( @Year )))
+--and (( 0 in (@SalesPerson) and isnull(e.iMasterId,0)  = isnull(e.iMasterId,0) ) or (0 not in (@SalesPerson) and isnull(e.iMasterId,0)   in ( @SalesPerson )))
+
+
+
+
+------------------------------------------------------------------------------------------------
+
+select b.sName [Month],c.sName [Year],a.TargetValue,e.sName [Sales Person],[Achieved],[Pipeline]
+
+from vuCore_TargetForSalesmen_Target_Details a with(nolock)
+left join vCore_Month b with(nolock) on a.[Month]=b.iMasterId
+left join vCore_Year c with(nolock) on a.[Year]=c.iMasterId
+left join vCrm_Users e on a.SalesPerson=e.iMasterId
+ left join (select  [Month],[Year],CASE WHEN a.iStage=11 then  SUM(fLocalNetAmountNew) end [Achieved],CASE WHEN iStage<>11 then SUM(fLocalNetAmountNew) end [Pipeline],b.sName [Sales Person] from vCrm_Opportunities a with(nolock)
+join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+where a.iTransId>0
+group by b.sName,[Month],[Year],a.iStage
+) d on b.sName=d.[Month] and c.sName=d.[Year] and e.sName=[Sales Person]
+where a.iMasterId>0 
+
+

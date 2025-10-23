@@ -1,0 +1,43 @@
+CREATE  view nCore_PurchaseGridRpt as
+select a.iMasterId,d.sName [Location],b.sName [Product],c.sName [UOM],QuantityRequired,iGrossamount,(a.CGST+a.SGST) [Gst],a.Grossamount [Total value],d.sAddress from vuCore_iPurchaseorders_ProductDetails_Details a
+join vCore_Product b on a.Product=b.iMasterId
+join vCore_Unitofmeasurement c on a.UOM=c.iMasterId
+join vCore_Location d on a.testlocation=d.iMasterId
+where a.iMasterId>0
+---------------------------------------------------------------------------------
+CREATE   VIEW nCore_PaymentTermsRpt
+as
+select iMasterId,Payment, CASE DeliveryTerms when 1 then 'Advance' 
+ when 2 then 'On Dispatch' 
+ when 3 then 'After Delivery'
+ when 4 then 'Work Completion'
+ when 5 then 'Along With PO'
+ when 6 then 'After Installation'
+ when 7 then'After Go Live'
+ when 8 then'UAT'
+ when 9 then'DLP Period' end DeliveryTerms,Terms from vuCore_iPurchaseorders_PaymentTerms_Details
+ where iMasterId>0
+------------------------------------------------------------------------------------
+
+create  nCore_Purchaserpt as 
+
+select a.iMasterId,VendorAddress,a.sName,FORMAT(dbo.fCore_IntToDate(iAssignedDate),'dd/MM/yyyy') [Date],Vendorcode,ReferenceNo,DeliveryAddressDetails,FORMAT(dbo.fCore_IntToDate(StartDate),'dd/MM/yyyy') [Start Date] ,FORMAT(dbo.fCore_IntToDate(EndDate),'dd/MM/yyyy') [End Date],freightcharges,fGrossTotal,test,Term2,Term3,sNotes,b.sName [Created By] ,SpecialTerms,
+c.sName [Approved By],FORMAT(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd-MM-yyyy hh:mm:ss') [CreatedDate] from vCore_iPurchaseorders a
+join vCrm_Users b on a.iCreatedBy=b.iMasterId
+join vCrm_Users c on a.iApprovedBy=c.iMasterId
+where a.iMasterId>0
+---------------------------------------------------------------------------------
+CREATE  view nCore_PurchaseGrid2Rpt as
+SELECT 18 [Gst],* FROM
+(
+select a.iMasterId,d.sName [Location],b.sName [Product],c.sName [UOM],SUM(QuantityRequired)[Qty],SUM(iGrossamount) [Gross amt],SUM(a.Grossamount) [Total value],d.sAddress from vuCore_iPurchaseorders_ProductDetails_Details a
+join vCore_Product b on a.Product=b.iMasterId
+join vCore_Unitofmeasurement c on a.UOM=c.iMasterId
+join vCore_Location d on a.testlocation=d.iMasterId
+where a.iMasterId=115
+group by d.sName,b.sName,c.sName,a.iMasterId,d.sAddress
+)aa
+------------------------------------------------------------------------------------
+select a.iMasterId,b.sName [Location],b.sAddress from vuCore_iPurchaseorders_ProductDetails_Details a
+join vCore_Location b on a.testlocation=b.iMasterId
+where a.iMasterId>0 and a.iMasterId=115 and a.testlocation<>0

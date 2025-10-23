@@ -1,0 +1,9 @@
+ALTER PROC udp_AgegingUpdate(@iTransId bigint,@iUserId int=0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+Declare @Date int
+select @Date=[Date] from vCrm_Opportunities where iTransId=@iTransId
+update vCrm_Opportunities set sDescription=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate([Date]),GETDATE()),' ','Days') where iTransId=@iTransId
+end
+

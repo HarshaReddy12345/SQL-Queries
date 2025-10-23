@@ -1,0 +1,26 @@
+ALTER PROC udp_PMSContract(@iTransId bigint,@iUserId int=0)
+AS
+BEGIN
+SELECT @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+DECLARE @iSequence int
+SELECT @iSequence=iSequence  FROM tuCrm_PMSContract_VATPosting_Details WHERE iTransId=@iTransId
+
+IF(@iSequence=0)
+begin
+UPDATE tuCrm_PMSContract_VATPosting_Details 
+       set VATAmountG=b.VATAmount,VATModeg=b.VATAmountMode 
+	   FROM 
+	   tuCrm_PMSContract_VATPosting_Details a
+	   JOIN  vCrm_PMSContract b on a.iTransId=b.iTransId
+       where a.iTransId=@iTransId
+end
+else
+INSERT tuCrm_PMSContract_VATPosting_Details(iSequence,VATAmountG,VATModeg)
+SELECT
+     0,VATAmount,VATAmountMode 
+FROM 
+     vCrm_PMSContract  
+WHERE 
+     iTransId=@iTransId
+END
+

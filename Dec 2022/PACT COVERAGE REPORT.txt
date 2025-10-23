@@ -1,0 +1,114 @@
+SELECT
+  P.sName [CompanyName],
+  A.KeyName [CustomerName],
+  A.KCPMobile [ContactMobileNo],
+  L.sName [Location],
+  L.sName [District],
+  I.sName [Segment],
+  U.sFirstName,
+  CC.sName [CUSTOMERCATEGORY],
+  P.PlanningMonth [$Date$PlanningMonth],
+  COUNT(P.iMasterId) [plan],
+  'Planned' [Type]
+FROM vCore_Account A WITH (NOLOCK)
+LEFT JOIN vCrm_RevenueLocations L WITH (NOLOCK)
+  ON A.RevenueLocation = L.iMasterId
+LEFT JOIN vCrm_Industry I WITH (NOLOCK)
+  ON A.iIndustry = I.iTransId
+LEFT JOIN vCrm_CUSTOMERCATEGORY CC WITH (NOLOCK)
+  ON A.CUSTOMERCATEGORY = CC.iMasterId
+LEFT JOIN vCrm_Planner P WITH (NOLOCK)
+  ON P.Account = A.iMasterId
+INNER JOIN vCrm_PlanMaster PM WITH (NOLOCK)
+  ON P.SelectPlan = PM.iMasterId
+and PM.iMasterId=1
+  
+LEFT JOIN vCrm_Users U
+  ON P.iAssignedTo = U.iMasterId
+WHERE P.PlanningMonth BETWEEN @STARTDATE AND @ENDDATE
+AND ((0 IN (@Segment)
+AND ISNULL(A.iIndustry, 0) = ISNULL(A.iIndustry, 0))
+OR (0 NOT IN (@Segment)
+AND ISNULL(A.iIndustry, 0) IN (@Segment)))
+AND ((0 IN (@RevenueLocation)
+AND ISNULL(A.RevenueLocation, 0) = ISNULL(A.RevenueLocation, 0))
+OR (0 NOT IN (@RevenueLocation)
+AND ISNULL(A.RevenueLocation, 0) IN (@Segment)))
+AND ((0 IN (@CUSTOMERCATEGORY)
+AND ISNULL(A.CUSTOMERCATEGORY, 0) = ISNULL(A.CUSTOMERCATEGORY, 0))
+OR (0 NOT IN (@CUSTOMERCATEGORY)
+AND ISNULL(A.CUSTOMERCATEGORY, 0) IN (@CUSTOMERCATEGORY)))
+AND ((0 IN (@Owner)
+AND ISNULL(P.iAssignedTo, 0) = ISNULL(P.iAssignedTo, 0))
+OR (0 NOT IN (@Owner)
+AND ISNULL(P.iAssignedTo, 0) IN (@Owner)))
+GROUP BY P.sName,
+         A.KeyName,
+         A.KCPMobile,
+         L.sName,
+         L.sName,
+         I.sName,
+         CC.sName,
+         P.PlanningMonth,
+         P.SelectPlan,
+         PM.sName,
+         P.iAssignedTo,
+         U.sFirstName
+union all
+SELECT
+  P.sName [CompanyName],
+  A.KeyName [CustomerName],
+  A.KCPMobile [ContactMobileNo],
+  L.sName [Location],
+  L.sName [District],
+  I.sName [Segment],
+  U.sFirstName,
+  CC.sName [CUSTOMERCATEGORY],
+  DV.VisitingDate [$Date$VisitingDate],
+  COUNT(DV.SelectPlan) [Actual],
+  'Actutal' 
+FROM vCore_Account A WITH (NOLOCK)
+LEFT JOIN vCrm_RevenueLocations L WITH (NOLOCK)
+  ON A.RevenueLocation = L.iMasterId
+LEFT JOIN vCrm_Industry I WITH (NOLOCK)
+  ON A.iIndustry = I.iTransId
+LEFT JOIN vCrm_CUSTOMERCATEGORY CC WITH (NOLOCK)
+  ON A.CUSTOMERCATEGORY = CC.iMasterId
+LEFT JOIN vCrm_Planner P WITH (NOLOCK)
+  ON P.Account = A.iMasterId
+INNER JOIN vCrm_PlanMaster PM WITH (NOLOCK)
+  ON P.SelectPlan = PM.iMasterId
+  
+LEFT JOIN vCrm_DailyVisit DV WITH (NOLOCK)
+  ON DV.SELECTCUSTOMER = P.iMasterId
+LEFT JOIN vCrm_Users U
+  ON DV.iAssignedTo = U.iMasterId
+WHERE DV.VisitingDate BETWEEN @STARTDATE AND @ENDDATE
+AND ((0 IN (@Segment)
+AND ISNULL(A.iIndustry, 0) = ISNULL(A.iIndustry, 0))
+OR (0 NOT IN (@Segment)
+AND ISNULL(A.iIndustry, 0) IN (@Segment)))
+AND ((0 IN (@RevenueLocation)
+AND ISNULL(A.RevenueLocation, 0) = ISNULL(A.RevenueLocation, 0))
+OR (0 NOT IN (@RevenueLocation)
+AND ISNULL(A.RevenueLocation, 0) IN (@Segment)))
+AND ((0 IN (@CUSTOMERCATEGORY)
+AND ISNULL(A.CUSTOMERCATEGORY, 0) = ISNULL(A.CUSTOMERCATEGORY, 0))
+OR (0 NOT IN (@CUSTOMERCATEGORY)
+AND ISNULL(A.CUSTOMERCATEGORY, 0) IN (@CUSTOMERCATEGORY)))
+AND ((0 IN (@Owner)
+AND ISNULL(P.iAssignedTo, 0) = ISNULL(P.iAssignedTo, 0))
+OR (0 NOT IN (@Owner)
+AND ISNULL(P.iAssignedTo, 0) IN (@Owner)))
+GROUP BY P.sName,
+         A.KeyName,
+         A.KCPMobile,
+         L.sName,
+         L.sName,
+         I.sName,
+         CC.sName,
+         DV.VisitingDate,
+         P.SelectPlan,
+         PM.sName,
+         P.iAssignedTo,
+         U.sFirstName

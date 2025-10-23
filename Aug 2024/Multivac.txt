@@ -1,0 +1,61 @@
+EXEC sp_configure 'Ole Automation Procedures';
+GO
+sp_configure 'show advanced options', 1;
+GO
+RECONFIGURE;
+GO
+sp_configure 'Ole Automation Procedures', 1;
+GO
+RECONFIGURE;
+GO
+
+create function SendGetRequest(@url varchar(8000)) returns varchar(8000) 
+as 
+BEGIN 
+	DECLARE @win int DECLARE @hr int DECLARE @text varchar(8000)
+	EXEC @hr = sp_OACreate 'WinHttp.WinHttpRequest.5.1', @win OUT IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Open', NULL, 'GET',@url,'false' IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Send' IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAGetProperty @win,'ResponseText',@text OUTPUT IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OADestroy @win IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	RETURN @text 
+END
+go
+
+ALTER function [dbo].[fCore_Var21](@e xml) returns nvarchar(50) 
+as begin    
+DECLARE @Output nvarchar(50)   
+declare @iProductId int,@iUnitId int,@ERPProductId int,@ERPUnitId int, @Currency int, @ERPCurrency int,@iDate int,@Division int, @ERPDivision int ,@sCode varchar(300) ,@DivCode varchar(300),@CurrencyCode varchar(300),@unitCode varchar(300) 
+
+set @iProductId=@e.value('(/Fields/BodyData/BodyRow/iProductId)[1]', 'int')----iProductId to be replaced with the Correct Field name and allow as parameter to be enabled    
+set @iUnitId=@e.value('(/Fields/BodyData/BodyRow/Unit)[1]', 'int')----iUnitId to be replaced with the Correct Field name and allow as parameter to be enabled    
+set @Currency=@e.value('(/Fields/Header/iCurrency)[1]', 'int')    
+set @Division=@e.value('(/Fields/Header/Division)[1]', 'int')    
+set @iDate=@e.value('(/Fields/Header/iDate)[1]', 'int')    
+
+declare @sUrl varchar(max)='https://focus14.focussoftnet.net/Focus8API/GetExecSqlScalar?sCompCode=0P0&SqlCommand=';
+
+select @sCode=sCode from vCore_Product with(nolock) where iMasterId=@iProductId
+select @DivCode=sCode from vCore_Division with(nolock)where iMasterId=@Division
+select @CurrencyCode=sCode from mCore_Currency with(nolock) where iCurrencyId=@Currency
+select @unitCode=sCode from vCore_Units with(nolock) where iMasterId=@iUnitId
+  
+ set @sUrl = @sUrl+'declare @Output nvarchar(50),@product int,@Division int,@currency int,@Unit int
+ select @Product=iMasterId from mCore_Product with(nolock) where sCode='''+@sCode+'''
+ select @Division=iMasterId from mCore_Division with(nolock) where sCode='''+@DivCode+'''
+ select @currency=iCurrencyId from mCore_Currency with(nolock) where sCode='''+@CurrencyCode+'''
+ select @Unit=iMasterId from mCore_Units with(nolock) where sCode='''+@unitCode+'''
+ select @Output=[dbo].[fCore_GetProductRate](@Product,0,@Division,'+cast(@iDate as varchar(20))+',@currency,@Unit,0,0,0,'''+''') select @Output'
+
+select @Output=convert(nvarchar(50),value) from OPENJSON(dbo.SendGetRequest(@sUrl))   
+ with (url varchar(500) '$.url',data2 nvarchar(max) '$.data' as JSON, result nvarchar(50) '$.result')  
+ cross apply openjson(data2) with (Obj1 nvarchar(max) '$' as json)  
+ cross apply openjson(Obj1)   
+return @Output    
+end
+go

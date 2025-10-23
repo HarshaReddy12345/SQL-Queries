@@ -1,0 +1,59 @@
+create or alter Procedure A_UpdateModule(@iTransId bigint,@iUserId int)
+as 
+begin
+     declare @Remarks varchar(max)
+	set @Remarks=(select top 1 sDescription from cCrm_Auth_Approvals order by iApprovalDate desc)
+	select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0)
+	update b set b.sApprovalRemarks=@Remarks
+	from  cCrm_Auth_Approvals a with (NOLOCK)
+	join  vCrm_Calls b with (NOLOCK) on b.iTransId=a.iTransId
+	where a.iModuleId=3840 and a.iTransId=@iTransId
+end
+===============================================================================================
+'QUERY REPORT'
+
+ALTER VIEW [dbo].[nCore_VehicleMasterWithPricebook]  
+as  
+select vb.sName [BRAND],vm.sName [SUBMAKE],  
+       ca.VehicleDescription [CAR DESCRIPTION BY MARKETING DEPARTMENT],  
+  ca.sName [CHASSIS],vy.sName [YEAR],c.sName [COLOR],  
+  ISNULL(ca.OdometerReading,0) [KM],FORMAT(dbo.fCore_IntToDate(ca.iWarrantyExpiry),'dd/MM/yyyy') [WARRANTY],  
+  ISNULL(sm.sName,'') [SERVICE], FORMAT(dbo.fCore_IntToDate(LastServiceDate),'dd/MM/yyyy') [LAST SERVICE DONE],  
+  ISNULL(KeyNumber,'') [SPARE KEYS],vg.sName [Vehicle Group],stm.sName [Status],et.sName [Engine Type],  
+  co.sName [Interior Color],  
+  ca.HyazaName [Location],p.sName [Product],  
+  [dbo].[fn_GetSellingRate](ca.iAccountId,iProductId,0,dbo.fCore_DateToInt(GETDATE()),0,0,0,0,0,ca.LOCATION) [Rate],  
+  [dbo].[fn_GetSellingRate](ca.iAccountId,iProductId,0,dbo.fCore_DateToInt(GETDATE()),0,0,0,1,0,ca.LOCATION) [Vol0],  
+  [dbo].[fn_GetSellingRate](ca.iAccountId,iProductId,0,dbo.fCore_DateToInt(GETDATE()),0,0,0,2,0,ca.LOCATION) [Vol1],  
+  [dbo].[fn_GetSellingRate](ca.iAccountId,iProductId,0,dbo.fCore_DateToInt(GETDATE()),0,0,0,3,0,ca.LOCATION) [Vol2],  
+  [dbo].[fn_GetSellingRate](ca.iAccountId,iProductId,0,dbo.fCore_DateToInt(GETDATE()),0,0,0,4,0,ca.LOCATION) [vol3],  
+  [dbo].[fn_GetSellingRate](ca.iAccountId,iProductId,0,dbo.fCore_DateToInt(GETDATE()),0,0,0,5,0,ca.LOCATION) [vol4],  
+  ca.LISTED,  
+  ca.ADREF,  
+  lo.sName [LOCATION],  
+  case when (ca.BOOKINGDATE) is null then null else dbo.fCore_IntToDate(ca.BOOKINGDATE) end  [BOOKINGDATE],  
+  ca.BOOKINGSTATUS,  
+  ca.SALESPERSON,  
+  ca.iCreatedDate ,
+  ca.iTransId,
+  stm.iMasterId 
+  from vCrm_CustAssets ca with(nolock)  
+left join vCore_VehicleBrand vb with(nolock) on ca.VehicleBrand=vb.iMasterId  
+left join vCore_VehicleModel vm with(nolock) on ca.VehicleModel=vm.iMasterId  
+left join vCore_VehicleYearmodel vy with(nolock) on ca.VehicleyearModel=vy.iMasterId  
+left join vCore_Color c with(nolock) on ca.ColorCode=c.iMasterId  
+left join vCore_StatusMaster sm with(nolock) on ca.TypeofService=sm.iMasterId  
+left join vCore_VehicleGroup vg with(nolock) on ca.VehicleGroup=vg.iMasterId  
+left join vCore_StatusMaster stm with(nolock) on ca.Status=stm.iMasterId  
+left join vCore_EngineType et with(nolock) on ca.EngineType=et.iMasterId  
+left join vCore_Color co with(nolock) on ca.InteriorColor=co.iMasterId  
+left join vCore_Product p with(nolock) on ca.iProductId=p.iMasterId  
+left join vCore_Location lo with(nolock) on ca.LOCATION=lo.iMasterId  
+  where ca.iTransId>0
+=================================================================================
+'REPORT QUERY'
+
+ select * from nCore_VehicleMasterWithPricebook 
+  where dbo.fCrm_DateFromBigInt(iCreatedDate) between @STARTDATE and @ENDDATE
+  and (( 0 in (@CHASISNO) and isnull(iTransId,0)  = isnull(iTransId,0) ) or (0 not in (@CHASISNO) and isnull(iTransId,0)   in ( @CHASISNO )))
+   and (( 0 in (@vehicleStatus) and isnull(iMasterId,0)  = isnull(iMasterId,0) ) or (0 not in (@vehicleStatus) and isnull(iMasterId,0)   in ( @vehicleStatus )))

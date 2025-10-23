@@ -1,0 +1,38 @@
+select *,((Achieve/Commited)*100) perc from
+(
+select b.sName [Owner],a.iAssignedTo,
+case a.ClosureWK when 1 then 'WK 1'
+when 2 then 'WK 2'
+when 3 then 'WK 3'
+when 4 then 'WK 4'
+when 5 then 'WK 5' end ClosureWK, 
+case when PublicSectorStage=1 or EnterpriseStage=1 then '0%' 
+ when PublicSectorStage=2 or EnterpriseStage=2 then '10%' 
+ when PublicSectorStage=3 or EnterpriseStage=3 then '25%' 
+ when PublicSectorStage=4 or EnterpriseStage=4 then '50%' 
+ when PublicSectorStage=5 or EnterpriseStage=5 then '75%' 
+ when PublicSectorStage=6 or EnterpriseStage=6 then '100%' end 'Percentage',
+
+ case when PublicSectorStage=1 or EnterpriseStage=1 then 'Identified' 
+ when PublicSectorStage=2 or EnterpriseStage=2 then  'Opportunity Qualified Under Bant (Budget, Authority, Need & Time)'
+ when PublicSectorStage=3 or EnterpriseStage=3 then 'Pipeline' 
+ when PublicSectorStage=4 or EnterpriseStage=4  then  'Upside'
+ when PublicSectorStage=5 or EnterpriseStage=5  then  'Commit'
+ when PublicSectorStage=6 or EnterpriseStage=6  then 'Won' end 'Stage',
+
+ case when  PublicSectorStage=5 or EnterpriseStage=5 then a.fBaseNetAmount else 0.00 end Commited,
+ case when PublicSectorStage=5 or EnterpriseStage=5 and a.iTransId=c.iOpportunityId then c.fBaseNetAmount end Achieve
+from vCrm_Opportunities a WITH(NOLOCK)
+left join vCrm_Users b WITH(NOLOCK) on a.iAssignedTo=b.iMasterId
+left join vCrm_SalesOrder c on a.iTransId=c.iOpportunityId
+where a.iTransId>0 
+and dbo.fCrm_DateFromBigInt(a.iCreatedDate) between @STARTDATE and @ENDDATE
+) a
+INNER JOIN (SELECT DISTINCT
+  iMasterIdd sToken
+FROM tCrm_UserHirearchyDetails AA WITH (NOLOCK)
+INNER JOIN dbo.fCrm_GetTokens('@USERACCESS', ',') BB
+  ON AA.iUserId = BB.sToken) emphir
+ ON emphir.sToken = a.iAssignedTo
+
+  

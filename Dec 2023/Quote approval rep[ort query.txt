@@ -1,0 +1,13 @@
+select vCrm_Users_iNextToApprove.sName col0,
+vCrm_Users_iNextToApprove.iMasterId ccol0,
+vCore_EstimationQuotation.sName col1,
+vCore_EstimationQuotation.iMasterId ccol1,
+vCore_EstimationQuotation.InwardDocket col2,
+vCore_EstimationQuotation.QuotationRemarks col3,
+vCore_EstimationQuotation.CustApp col4,
+vCore_EstimationQuotation.CustomerDeliveryDate col5,
+vCore_EstimationQuotation.TotalNetAmount col6,
+1 col7  from vCore_EstimationQuotation 
+left join vCrm_Users vCrm_Users_iNextToApprove on vCore_EstimationQuotation.iNextToApprove=vCrm_Users_iNextToApprove.iMasterId   
+where vCore_EstimationQuotation.iMasterId>0   and 
+( vCore_EstimationQuotation.iCreatedDate between 17351701561344 and 17377841479419 and vCore_EstimationQuotation.iApprovalStatus = 115 )    order by  1 asc

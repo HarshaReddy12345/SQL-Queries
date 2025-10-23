@@ -1,0 +1,104 @@
+CREATE   FUNCTION [dbo].[fCore_Var4] (@s xml)      
+RETURNS nvarchar(max)       
+AS       
+BEGIN           
+    DECLARE @Output nvarchar(max)      
+    DECLARE @SubType INT,@Entity int ,@CurrentUser int     
+      
+    SELECT @SubType = @s.value('(/Fields/Header/SubTypeId)[1]', 'INT')        
+    SELECT @Entity = @s.value('(/Fields/Header/Entity)[1]', 'INT')     
+ SELECT @CurrentUser= @s.value('(/Fields/Header/CurrentUser)[1]', 'INT')     
+    if(@SubType>0)      
+    Begin      
+  if exists(select * from cCrm_SecRoleRestrictions with(nolock) where iUserId=@CurrentUser and iModuleTypeId=2306)    
+  Begin    
+   select  @Output = coalesce(@Output+',','')+CONCAT(a.sName,'|',a.iMasterId) from  
+   (  
+   select distinct a.sName,a.iMasterId  
+   FROM vCore_Product a with (nolock)      
+   inner join cCrm_SecRoleRestrictions b with(nolock) on (a.iProductGroup=b.iMasterId or a.iMasterId=b.iMasterId) and b.iModuleTypeId=2306 and iUserId=@CurrentUser    
+   where a.SubType=@SubType and a.iMasterId>0    
+   )a  
+   --set @Output=1  
+  end    
+  else    
+  Begin    
+   select  @Output = coalesce(@Output+',','')+CONCAT(a.sName,'|',a.iMasterId)      
+   FROM vCore_Product a with (nolock)      
+   where a.SubType=@SubType and a.iMasterId>0   
+   --set @Output=2  
+  End    
+ End      
+ else if(@Entity>0)      
+ Begin      
+  select  @Output = coalesce(@Output+',','')+CONCAT(a.sName,'|',a.iMasterId)      
+  FROM vCore_Product a with (nolock)      
+  where a.Entity=@Entity and a.iMasterId>0  
+  --set @Output=3  
+ End      
+ else      
+ Begin      
+  select  @Output = coalesce(@Output+',','')+CONCAT(a.sName,'|',a.iMasterId)      
+  FROM vCore_Product a with (nolock)      
+  where a.iMasterId>0      
+  --set @Output=4  
+ End      
+    RETURN @Output      
+END  
+  
+  
+-------------------------------------------------------------------------------------------------------
+
+alter   FUNCTION [dbo].[fCore_Var1] (@s xml)  
+RETURNS varchar(max)   
+AS   
+BEGIN       
+	 declare @Output varchar(max)  
+		 DECLARE @ProductType INT , @iCRMRole INT, @CurrentUser int,@LEC int  ,@LeadId int,@CurrentStage int
+		 SELECT @ProductType = @s.value('(/Fields/Header/ProductType)[1]', 'INT')   
+	 SET @CurrentUser = @s.value('(/Fields/Header/CurrentUser)[1]', 'int')   
+	 SET @LeadId = @s.value('(/Fields/Header/TransId)[1]', 'int')   
+	 SELECT @iCRMRole = iCRMRole   FROM vCrm_Users with(nolock) where iMasterId=@CurrentUser      
+          
+	 set @LEC=(select top 1 iMasterId from vCore_CountryList with (nolock) where CRMRole=@iCRMRole and Product=@ProductType and [Date]<=dbo.fCore_DateFromBigInt(dbo.fCore_DateTimeToInt(GETDATE())) order by [Date] desc)   
+	 if(@LEC>0 and isnull(@LeadId,0)=0)  
+	 Begin  
+		  SELECT @Output = COALESCE(@Output + ',', '') + CONCAT(a.sName,'|',a.iMasterId)
+            FROM (
+                     SELECT DISTINCT a.sName, a.iMasterId,a.Sequence
+                     FROM vCore_ProspectStatus AS a WITH (NOLOCK)
+                              INNER JOIN mCore_ProspectStatus_MultiValues AS b ON a.iMasterId = b.iMasterId
+                              INNER JOIN vCore_CountryList AS c ON b.iMultiId = c.LeadStage
+                     WHERE c.iMasterId = @LEC
+                   ) AS a
+            ORDER BY a.Sequence ASC  
+	 End  
+	 else 
+	 Begin
+		if(@LEC>0 and isnull(@LeadId,0)>0)  
+		 Begin  
+			set @CurrentStage=(select LeadStage from vaCrm_Leads a with(nolock) 
+			where a.iMemberId=@LeadId)
+			if(@CurrentStage>0)
+			Begin
+				 SELECT @Output = COALESCE(@Output + ',', '') + CONCAT(a.sName,'|',a.iMasterId)
+                FROM (
+              select  a.sName,a.iMasterId,a.Sequence  
+			  FROM vCore_ProspectStatus a with (nolock)  
+			  inner join (
+			  select pcm.iMasterId from vCore_ProspectStatus pc with (nolock) 
+			  join mCore_ProspectStatus_MultiValues pcm with (nolock)  on pc.NextAvailableStages=pcm.iMultiId 
+			  where pc.iMasterId=@CurrentStage union select @CurrentStage a) b on a.iMasterId=b.iMasterId 
+			   )  a INNER JOIN mCore_ProspectStatus_MultiValues  b with (nolock)  ON a.iMasterId = b.iMasterId
+                    INNER JOIN vCore_CountryList  c with (nolock)  ON b.iMultiId = c.LeadStage
+                     WHERE c.iMasterId = @LEC
+			  
+			  order by Sequence asc  
+			End
+		 End 
+	 End
+	 return @Output  
+  
+END  
+
+

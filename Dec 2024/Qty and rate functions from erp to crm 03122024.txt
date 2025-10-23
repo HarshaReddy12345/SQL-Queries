@@ -1,0 +1,700 @@
+CREATE   function [dbo].[fCore_Var18] (@s xml)   --Rate &{SQLFCB18}
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+    
+      
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,0,'-Rate')  
+ return @fRet    
+End  
+  
+  --------------------------------------------------------------
+CREATE   function [dbo].[fCore_Var19] (@s xml)  ----Discount  &{SQLFCB19}
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+      
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,4,'-Discount')  
+ return @fRet    
+End
+-----------------------------------------------------------------------------
+CREATE   function [dbo].[fCore_Var20] (@s xml)    --Discount 2  &{SQLFCB20}
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,5,'-Discount')  
+ return @fRet    
+End  
+-----------------------------------------------------------------
+--Discount3  &{SQLFCB21}
+CREATE   function [dbo].[fCore_Var21] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,6,'-Discount')  
+ return @fRet    
+End  
+----------------------------------------------------------------------
+--Discount4  &{SQLFCB22}
+CREATE   function [dbo].[fCore_Var22] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,7,'-Discount')  
+ return @fRet    
+End  
+-------------------------------------------------------------------
+--Discount 5  &{SQLFCB23}
+CREATE   function [dbo].[fCore_Var23] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,8,'-Discount')  
+ return @fRet    
+End  
+-----------------------------------------------------------------
+--Discount6  &{SQLFCB24}
+
+CREATE   function [dbo].[fCore_Var24] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,9,'-Discount')  
+ return @fRet    
+End  
+----------------------------------------------------------
+--Discount8  &{SQLFCB25}
+
+CREATE   function [dbo].[fCore_Var25] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,10,'-Discount')  
+ return @fRet    
+End  
+-------------------------------------------------------------
+--Discount9  &{SQLFCB26}
+CREATE   function [dbo].[fCore_Var26] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,11,'-Discount')  
+ return @fRet    
+End  
+-------------------------------------
+--RateBasedOnQty  &{SQLFCB27}
+CREATE   function [dbo].[fCore_Var27] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max),@Qty decimal(18,2)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @Qty=@s.value('(/Fields/BodyData/BodyRow/iQuantity)[1]','decimal(18,2)')    
+  
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,@Qty,0,'-Rate')  
+ return @fRet    
+End  
+------------------------------------------------------------------
+--Discount1 based on qty  &{SQLFCB28}
+CREATE   function [dbo].[fCore_Var28] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max),@Qty decimal(18,2)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @Qty=@s.value('(/Fields/BodyData/BodyRow/iQuantity)[1]','decimal(18,2)')    
+  
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,@Qty,4,'-Discount')  
+ return @fRet    
+End  
+-------------------------------------------------------------------
+--Discount2 based on qty  &{SQLFCB29}
+
+CREATE   function [dbo].[fCore_Var29] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max),@Qty decimal(18,2)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @Qty=@s.value('(/Fields/BodyData/BodyRow/iQuantity)[1]','decimal(18,2)')    
+  
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,@Qty,5,'-Discount')  
+ return @fRet    
+End  
+------------------------------------------------------------------
+--Discount3 based on qty  &{SQLFCB30}
+CREATE   function [dbo].[fCore_Var30] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max),@Qty decimal(18,2)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @Qty=@s.value('(/Fields/BodyData/BodyRow/iQuantity)[1]','decimal(18,2)')    
+  
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,@Qty,6,'-Discount')  
+ return @fRet    
+End  
+--------------------------------------------------------------
+--Discount 4 based on qty  &{SQLFCB31}
+
+CREATE   function [dbo].[fCore_Var31] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max),@Qty decimal(18,2)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @Qty=@s.value('(/Fields/BodyData/BodyRow/iQuantity)[1]','decimal(18,2)')    
+  
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,@Qty,7,'-Discount')  
+ return @fRet    
+End  
+
+-------------------------------------------------------------
+--Discount5 based on qty  &{SQLFCB32}
+
+CREATE   function [dbo].[fCore_Var32] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max),@Qty decimal(18,2)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @Qty=@s.value('(/Fields/BodyData/BodyRow/iQuantity)[1]','decimal(18,2)')    
+  
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,@Qty,8,'-Discount')  
+ return @fRet    
+End  
+------------------------------------------------------------
+--Discount 6 based on qty  &{SQLFCB33}
+CREATE   function [dbo].[fCore_Var33] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max),@Qty decimal(18,2)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @Qty=@s.value('(/Fields/BodyData/BodyRow/iQuantity)[1]','decimal(18,2)')    
+  
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,@Qty,9,'-Discount')  
+ return @fRet    
+End  
+---------------------------------------------------------------------------------------
+--dicount7 based on qty  &{SQLFCB34}
+CREATE   function [dbo].[fCore_Var34] (@s xml)    
+returns decimal(18,2)    
+as    
+Begin    
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max),@Qty decimal(18,2)      
+    
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')    
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')    
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')    
+select @Qty=@s.value('(/Fields/BodyData/BodyRow/iQuantity)[1]','decimal(18,2)')    
+  
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer      
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product     
+    
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)    
+    
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)     
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode     
+    
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)     
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId     
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId     
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId     
+where  p.iMasterId=@ProdId    
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc   
+    
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)     
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId     
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup     
+where ma.iMasterId=@AccId     
+   
+  select @fRet=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,@Qty,10,'-Discount')  
+ return @fRet    
+End  

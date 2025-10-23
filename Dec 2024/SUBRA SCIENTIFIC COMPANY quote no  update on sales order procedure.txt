@@ -1,0 +1,9 @@
+CREATE PROC udp_QuoteNoUpdateOnSalesOrder(@iTransId bigint,@iUserId int =0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+Declare @iQuoteId int
+select top 1 @iQuoteId=b.iTransId from vCrm_SalesOrder a with(nolock) join vCrm_Quote b with(nolock) on a.iOpportunityId=b.iOpportunityId where a.iTransId=@iTransId order by b.iCreatedDate desc
+
+update vCrm_SalesOrder set Quote=@iQuoteId where iTransId=@iTransId
+end

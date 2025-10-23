@@ -1,0 +1,33 @@
+ALTER function [dbo].[fCore_Var007](@s xml)  
+returns bit  
+as  
+begin  
+    DECLARE @Appststus int, @SubmitStatus int, @ErpId varchar(max), @return bit,@Id int,@CurrentUser int ,@Owner int ,@iParentId int
+  
+ --select @Id= @s.value('(Fields/Header/iApprovalStatus)[1]','int');  
+ select @SubmitStatus= @s.value('(Fields/Header/SubmitStatus)[1]','int');  
+ select @Id= @s.value('(Fields/Header/TransId)[1]','int');  
+ select @CurrentUser= @s.value('(Fields/Header/CurrentUser)[1]','int');  
+ select @Owner= @s.value('(Fields/Header/iAssignedTo)[1]','int');
+  
+  select @iParentId=ReportingTo FROM vCore_ServiceTravelClaim  WITH(NOLOCK)
+  WHERE iMasterId = @Id
+
+  SELECT @Appststus=iApprovalStatus FROM vCore_ServiceTravelClaim WITH(NOLOCK) 
+  WHERE iMasterId = @Id and (@CurrentUser not in (1,47)  or @CurrentUser<>ReportingTo) 
+
+  IF (@Appststus = 114 or @Appststus =115) AND @SubmitStatus = 0  and @CurrentUser=@Owner
+  begin  
+  set @return=1  
+  end  
+  else if (@Appststus = 114 )  AND @SubmitStatus = 0  and @CurrentUser=@iParentId
+  begin
+  set @return=1
+  end
+  else if ((@Appststus <> 114 OR @Appststus <> 115) AND @SubmitStatus = 0)  
+  begin  
+  set @return=0  
+  end  
+ 
+ return @return  
+ end

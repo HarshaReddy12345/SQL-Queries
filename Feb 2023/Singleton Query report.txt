@@ -1,0 +1,44 @@
+select 
+       a.sName [Account],
+	   A.sEmail,
+	   V.sName [Project],
+	   P.sName [Property],
+	   U.sName [UnitNo],
+	   case U.UnitFacing when 1 then 'North'
+	   when 2 then 'East'
+	   when 3 then 'West'
+	   when 4 then 'South'
+	   when 5 then 'North-East'
+	   when 6 then 'South-East'
+	   when 7 then 'North-West'
+	   when 8 then 'South-West' else '' end [Add on],
+	   U.FacingAmount,
+	   U.BasePrice,
+	   U.fArea [Registered Unit Area],
+	   U.Totalamount,
+	   Case U.iStatusId when 167 then 'Available'
+	   when 168 then 'Booked'
+	   when 169 then 'Reserve'
+	   when 170 then 'Sold' else '' end StatusId,
+	   B.fDiscount [Discount Amount] ,
+	   B.sName [Booking No],
+	   B.AllotmentAmount [Negotiated Value],
+	   B.fSellingPrice [SellingPrice],
+	   R.TotalCollected,
+	   R.DifferenceAmount [Balance Amount],
+	   R.InstallmentDueDate [$Date$InstallmentDueDate],
+	   case R.ReceivableStatus when 1 then 'Un Paid'
+	   when 2 then 'Partial Paid'
+	   when 3 then 'Paid' else '' end ReceivableStatus,
+	   R.InstallmentNo
+from  vCrm_Receivables R  
+left join  vCrm_Bookings B with (NOLOCK) on R.SBookingno=B.iTransId
+left join  vCore_Account A with (NOLOCK) on B.B1CustomerAccount=a.iMasterId
+left join vCrm_Ventures V with (NOLOCK) on V.iMasterId=B.iVentureId
+left join vCrm_Property P with (NOLOCK) on P.iMasterId=B.iPropertyId
+left join  vCrm_PMSUnits U with (NOLOCK) on U.iMasterId=B.iUnitId
+where R.iMasterId>0 
+ and  R.InstallmentDueDate between @STARTDATE and @ENDDATE
+and (( 0 in (@Owner) and isnull(B.iAssignedTo,0)  = isnull(B.iAssignedTo,0) ) or (0 not in (@Owner) and isnull(B.iAssignedTo,0)   in ( @Owner )))
+and (( 0 in (@ReceivableStatus) and isnull(R.ReceivableStatus,0)  = isnull(R.ReceivableStatus,0) ) 
+or (0 not in (@ReceivableStatus) and isnull(R.ReceivableStatus,0)   in ( @ReceivableStatus )))

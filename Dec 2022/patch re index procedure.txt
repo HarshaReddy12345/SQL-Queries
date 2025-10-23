@@ -1,0 +1,203 @@
+alter table cCrm_TransMappings add  [bVoid] [bit]
+
+
+		 
+CREATE TABLE [dbo].[tCrm_ERPPostingsStatus](
+	[iERPPostStatusId] [int] IDENTITY(1,1) NOT NULL,
+	[iERPPostId] [int] NULL,
+	[iStatus] [tinyint] NULL,
+	[sStatusMsg] [nvarchar](2000) NULL,
+	[iNoofAttempts] [tinyint] NULL,
+	[iLastAttempted] [bigint] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[iERPPostStatusId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[tCrm_ERPPostingsStatus]  WITH CHECK ADD  CONSTRAINT [fk_iERPPostId_tCrm_ERPPostingsStatus] FOREIGN KEY([iERPPostId])
+REFERENCES [dbo].[tCrm_ERPPostings] ([iERPPostId])
+GO
+
+ALTER TABLE [dbo].[tCrm_ERPPostingsStatus] CHECK CONSTRAINT [fk_iERPPostId_tCrm_ERPPostingsStatus]
+GO
+
+		
+
+CREATE TABLE [dbo].[cCrm_TransMappingsStatus](
+	[iTransId] [int] NOT NULL,
+	[iStatus] [tinyint] NULL,
+	[sFocusVoucher] [varchar](150) NULL,
+	[iUniqueId] [int] IDENTITY(1,1) NOT NULL,
+ CONSTRAINT [pk_cCrm_TransMappingsStatus] PRIMARY KEY CLUSTERED 
+(
+	[iUniqueId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[cCrm_TransMappingsStatus]  WITH CHECK ADD  CONSTRAINT [fk_iTransId_cCrm_TransMappingsStatus] FOREIGN KEY([iTransId])
+REFERENCES [dbo].[cCrm_TransMappings] ([iTransId])
+GO
+
+ALTER TABLE [dbo].[cCrm_TransMappingsStatus] CHECK CONSTRAINT [fk_iTransId_cCrm_TransMappingsStatus]
+GO
+
+
+
+
+		 declare @tbTransModules table(iCustModId int identity(1,1), iCRMModuleId int)
+        insert into @tbTransModules(iCRMModuleId) select iTypeId from vCrm_ModuleTypes
+            where iTypeId not in (2324,2325,2607,2621,6144,6656)  and iLanguageId=0 and iTypeId>0 and (iTypeId&0XFF00)=2560
+        declare @iRecCount int
+        declare @iCurrRowId int
+        set @iCurrRowId = 1
+        select @iRecCount=count(*) from @tbTransModules
+        if @iRecCount>0
+        begin
+            declare @iCRMModuleId int
+            declare @iERPModuleId int
+            declare @sModuleName varchar(50)
+            declare @sSql nvarchar(MAX)
+            declare @sInternalMasterSql nvarchar(MAX)
+
+            -------- Main Function Start
+            set @sSql= N'IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''fCrm_GetMasterCode'') AND
+                    type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+            begin
+                DROP FUNCTION fCrm_GetMasterCode
+            end'
+            --print @sSql
+            exec (@sSql)
+
+            set @sSql=N'create FUNCTION fCrm_GetMasterCode(@iLinkMasterId int,@sValue VARCHAR(10),@iTagType int)
+            RETURNS varchar(200)
+            AS
+            BEGIN
+                declare @sMasterCode as varchar(200)
+
+                if(@iLinkMasterId is null or @iLinkMasterId=0)
+                    set @sMasterCode = ''''
+                else
+                begin
+
+                    set @sMasterCode = ''''
+                    if(@iTagType=0)
+                        select @iLinkMasterId=iTypeId from vCrm_ModuleTypes where iERPModuleId=@iLinkMasterId
+                    '
+                    set @sSql=@sSql+'
+                    if(@iLinkMasterId&0XFF00=2304 or @iLinkMasterId&0XFF00=22272)
+                    begin
+                        if(@iLinkMasterId<2560)
+                        begin
+                            if(((@iLinkMasterId-2304)/50)=0)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode1(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-2304)/50)=1)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode2(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-2304)/50)=2)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode3(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-2304)/50)=3)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode4(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-2304)/50)=4)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode5(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-2304)/50)=5)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode6(@iLinkMasterId,@sValue)
+                        end
+                        else
+                        begin
+                            if(((@iLinkMasterId-22272)/50)=0)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode7(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-22272)/50)=1)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode8(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-22272)/50)=2)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode9(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-22272)/50)=3)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode10(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-22272)/50)=4)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode11(@iLinkMasterId,@sValue)
+                            else if(((@iLinkMasterId-22272)/50)=5)
+                                select @sMasterCode=dbo.fCrm_GetERPMasterCode12(@iLinkMasterId,@sValue)
+                        end
+                        ---- select @sMasterCode=dbo.fCrm_GetERPMasterCode(@iLinkMasterId,@sValue)
+                    end
+                    else if(@iLinkMasterId&0XFF00=2048)     --- List Masters
+                        select @sMasterCode=dbo.fCrm_GetListMasterCode(@iLinkMasterId,@sValue)
+                    else if(@iLinkMasterId&0XFF00=2560)             --- Internal Modules
+                        select @sMasterCode=dbo.fCrm_GetInternalMasterCode(@iLinkMasterId,@sValue)
+                    else
+                        select @sMasterCode=dbo.fCrm_GetTransMasterCode(@iLinkMasterId,@sValue)
+                            '
+                    set @sSql=@sSql+'
+                end
+
+                return @sMasterCode
+            END'
+            -------- Main Function END
+            -------- Internal Master
+            set @sInternalMasterSql= N'IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''fCrm_GetInternalMasterCode'') AND
+                    type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+            begin
+                DROP FUNCTION fCrm_GetInternalMasterCode
+            end'
+            --print @sInternalMasterSql
+            exec (@sInternalMasterSql)
+
+            set @sInternalMasterSql=N'create FUNCTION fCrm_GetInternalMasterCode(@iLinkMasterId int,@sValue VARCHAR(10))
+                RETURNS varchar(200)
+                AS
+                BEGIN
+                    declare @sMasterCode as varchar(200)
+                    set @sMasterCode = ''''
+                    '
+                    set @sInternalMasterSql=@sInternalMasterSql+' IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N''fCrm_GetMasterCode''+Cast(@iLinkMasterId as varchar(10))) AND
+                            type in (N''FN'', N''IF'', N''TF'', N''FS'', N''FT''))
+                    begin '
+            -------- Internal Master
+
+                        declare @iInternalCounter as int
+                        set @iInternalCounter=0
+
+                        while @iCurrRowId>0
+                        begin
+                            select @iCRMModuleId=iCRMModuleId from @tbTransModules where iCustModId=@iCurrRowId
+
+                            begin try
+
+                                IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'fCrm_GetMasterCode'+Cast(@iCRMModuleId as varchar(10))) AND
+                                        type in (N'FN', N'IF', N'TF', N'FS', N'FT'))
+                                begin
+                                    ------- Need to create functions for Trans Masters/ ERP Masters / List Masters/ Internal Masters
+                                    if(@iCRMModuleId&0XFF00=2560)          --- Internal Modules
+                                    begin
+                                        if(@iInternalCounter=0)
+                                            set @sInternalMasterSql=@sInternalMasterSql+'
+                                                if '
+                                        else
+                                            set @sInternalMasterSql=@sInternalMasterSql+'
+                                                else if '
+                                        set @sInternalMasterSql=@sInternalMasterSql+' (@iLinkMasterId='+Cast(@iCRMModuleId as varchar(10))+')
+                                                    select @sMasterCode=dbo.fCrm_GetMasterCode'+Cast(@iCRMModuleId as varchar(10))+'(@sValue)'
+                                        set @iInternalCounter=@iInternalCounter+1
+                                    end
+                                end
+                            end try
+                            begin catch
+                                print 'Error in '
+                                print Cast(@iCRMModuleId as varchar(10))+'    '+@sModuleName+'    '+Cast(@iERPModuleId as varchar(10))
+                            end catch
+
+                            if @iCurrRowId = @iRecCount
+                                set @iCurrRowId = 0
+                            else
+                                set @iCurrRowId = @iCurrRowId + 1
+                        end
+
+                set @sInternalMasterSql=@sInternalMasterSql+'
+                    end
+                    return @sMasterCode
+                END'
+
+                exec (@sSql)
+                exec (@sInternalMasterSql)
+        end

@@ -1,0 +1,44 @@
+select PRGD.bBillToAccount,
+       B.sName[Branch],
+	   C.sName[Contract],
+       CN.sName[ContractERPRefNo],
+	   Acc.sName[CostofsaleAc],
+	   PRGD.bCreateCustAsset,
+	   Cy.sName[Currency] ,
+	   Acc1.sName[CustomerName],
+	   PRGD.sDescription,
+	   PRGD.sName,
+	   PRGD.s3PERPCompany,
+	   dbo.fCore_IntToDateTime(PRGD.i3PERPDateTime)[i3PERPDateTime],
+	   case PRGD.i3PERPType when 1 then 'Focus6'
+	   when 2 then 'Focus8'
+	   when 3 then 'MYOB'
+	   when 4 then 'Tally'
+	   when 5 then 'Xero'
+	   when 6 then 'QuickBooks'
+	   when 7 then 'Others' else null end as i3PERPType,
+	   PRGD.s3PERPVoucherNo,
+	   PRGD.s3PERPVoucherType,
+	   U.sName[CreatedBy],
+	   case App.iStatus when 114 then 'Approved' when 115 then 'Pending' when 117 then 'Rejected' end [Approval Status] , 
+	   dbo.fCore_IntToDateTime(App.iCreatedDate)[ApprovalDate/RejectedDate],
+	   dbo.fCore_IntToDateTime(PRGD.iCreatedDate)[CreatedDate],
+	   Us.sName[ApprovedBy],
+	    --dbo.fCore_IntToDateTime(PRGD.iApprovalDate)[ApprovedDate],
+	   PRGD.ExchangeRate,Prod.sName[Product],PRGD.sProdDescription,PRGD.fAmount,Cus.sName[Customer Asset],Div.sName[Division],
+	   PRGD.sOldSerialNo,PRGD.iQuantity,PRGD.fRate,PRGD.iReplaceType,PRGD.SalesContractNo,PRGD.sSerialNo
+	   from vuCrm_PartsReplaced_General_Details PRGD WITH(NOLOCK)
+left join vCore_Branch B WITH(NOLOCK) on PRGD.Branch=B.iMasterId
+left join vCrm_Contract C WITH(NOLOCK) on PRGD.Contract=C.iTransId
+left join  vCore_ContractNo CN WITH(NOLOCK) on PRGD.ContractERPRefNo=CN.iMasterId
+left join vCore_Account Acc WITH(NOLOCK) on PRGD.CostofsaleAc=Acc.iMasterId
+left join vCrm_Currency Cy WITH(NOLOCK) on PRGD.Currency=Cy.iMasterId
+left join vCore_Account Acc1 WITH(NOLOCK) on PRGD.CustomerName=Acc1.iMasterId
+left join vCore_Product Prod WITH(NOLOCK) on PRGD.iProductId=Prod.iMasterId
+left join vCore_Division Div WITH(NOLOCK) on PRGD.Division=Div.iMasterId
+left join vCrm_Users U On PRGD.iCreatedBy=U.iMasterId
+left join vCrm_Users Us On PRGD.iApprovedBy=U.iMasterId
+left join vCrm_CustAssets Cus on PRGD.Customerasset=Cus.iTransId
+left join cCrm_Auth_Approvals App on PRGD.iTransId=App.iTransId
+where PRGD.iTransId>0 
+and dbo.fCrm_DateFromBigInt(PRGD.iCreatedDate) between @STARTDATE and @ENDDATE

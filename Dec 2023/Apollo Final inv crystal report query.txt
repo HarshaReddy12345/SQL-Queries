@@ -1,0 +1,40 @@
+SELECT TOP 100 PERCENT
+  b.sName [Location],
+  b.GSTIN,
+  b.sAddress,
+  b.TerminalNo,
+  b.Website,
+  CINNo,
+  a.sName [Inv Num],
+  FORMAT(dbo.fCore_IntToDate(a.[Date]), 'dd/MM/yyyy') [Inv Date],
+  a.[Address] [Inv Add],
+  c.sName [Customer],
+  a.[Address] [Customer Address],
+  c.GSTINNumber,
+  d.sName [Product],
+  a.PANNumber,
+  a.ProductDescription,
+  d.HSNSAC,
+  a.MRPPerPc,
+  a.CGSTAmount,
+  a.CGST,
+  a.SGSTAmount,
+  a.SGSTPR,
+  a.IGSTAmount,
+  a.IGSTPR,
+  a.TotalCGSTTaxAmount,
+  a.TotalSGSTTaxAmount,
+  a.TotalIGSTAmount,
+  fAfterRoundOff,
+  a.TotalMRP,
+  a.TotalBaseAmount,
+  a.fRoundOff
+FROM vuCore_OpticalReceipt_ProductInformation_Details a WITH (NOLOCK)
+JOIN vCore_Location b WITH (NOLOCK)
+  ON a.iLocation = b.iMasterId
+JOIN vCore_Account c WITH (NOLOCK)
+  ON a.CustomernName = c.iMasterId
+JOIN vCore_Product d WITH (NOLOCK)
+  ON a.Product = d.iMasterId
+WHERE a.iMasterId = 744
+ORDER BY iRowIndex ASC

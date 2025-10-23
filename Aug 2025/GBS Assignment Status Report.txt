@@ -1,0 +1,98 @@
+ALTER VIEW nCore_AssignmentStatusReport      
+AS      
+SELECT       
+    ISNULL([Staff Name], '') AS [Staff Name],      
+    ISNULL([StaffId],0) [StaffId],      
+    ISNULL([SubProjectId],'') as [SubProjectId],      
+    ISNULL([Sub Project], '') AS [Sub Project],      
+    ISNULL([Assignment Type],'') [Assignment Type],      
+    ISNULL([Estimated Hrs],0.00) [Estimated Hrs],      
+    ISNULL([Actual Hours],0.00) [Actual Hours],      
+    ISNULL([Estimated Hrs],0.00)-ISNULL([Actual Hours],0.00) [Variance],  
+    ISNULL([Deadline Date],'') as  [Deadline Date],      
+    ISNULL(KeyIssues,'') [Key Issues],      
+    ISNULL(Deliverables,'') [Deliverables],      
+    iMasterId,      
+    ISNULL([Invoice Amt],0.00) [Invoice Amt],      
+    ISNULL([Confirmed], '') AS [Confirmed],      
+    ISNULL([Field Work], '') AS [Field Work],      
+    ISNULL([Query Sent], '') AS [Query Sent],      
+    ISNULL([Query Solved], '') AS [Query Solved],      
+    ISNULL([Report Prepared], '') AS [Report Prepared],      
+    ISNULL([Review], '') AS [Review],      
+    ISNULL([Draft Issued No1], '') AS [Draft Issued No1],      
+    ISNULL([Draft - Final], '') AS [Draft - Final],      
+    ISNULL([Report Issued], '') AS [Report Issued],      
+    ISNULL([Signed], '') AS [Signed],      
+    ISNULL([Work Suspended], '') AS [Work Suspended],     
+    ISNULL(Remarks1, '') AS [Remarks1]      
+  
+FROM (      
+    SELECT       
+        ISNULL(c.sName, '') AS [Staff Name],      
+        CASE       
+            WHEN a.sName IN ('Audit Offer Approved/Confirmed','Confirmed') THEN 'Confirmed'      
+            WHEN a.sName IN ('Field Work Completed','Field Work Start Date') THEN 'Field Work'      
+            WHEN a.sName IN ('Query Sent To Client','Query Sent') THEN 'Query Sent'      
+            WHEN a.sName IN ('Query Solved') THEN 'Query Solved'      
+            WHEN a.sName IN ('Pre Draft:Report Preparation/Report Prepared','Report Prepared') THEN 'Report Prepared'      
+            WHEN a.sName IN ('Reviewed','VAT Return Review','Pre Draft:Verified by Reviewer/Review') THEN 'Review'      
+            WHEN a.sName IN ('Draft Issued No 1') THEN 'Draft Issued No1'      
+            WHEN a.sName IN ('Draft - Final') THEN 'Draft - Final'      
+            WHEN a.sName IN ('Report Issued/Released for Client sign','VAT Return Report') THEN 'Report Issued'      
+            WHEN a.sName IN ('Final audit report signed by Managing Partner') THEN 'Signed'      
+            WHEN a.sName IN ('Work Suspended') THEN 'Work Suspended'      
+            ELSE a.sName END AS [Task Status],       
+    
+            CASE WHEN LEN(b.CompletionDate) = 9  THEN FORMAT(dbo.fCore_IntToDate(b.CompletionDate), 'dd/MM/yyyy') ELSE '' END AS [Val],      
+    
+            ISNULL(d.sName, '') AS [Sub Project],      
+            CASE WHEN LEN(d.DeadlineDate) = 9 THEN FORMAT(dbo.fCore_IntToDate(d.DeadlineDate), 'dd/MM/yyyy')  ELSE '' END [Deadline Date],      
+            d.KeyIssues,      
+            d.iMasterId [SubProjectId],      
+    
+            -- Estimated Hours calculation
+            (SELECT CAST(FLOOR(SUM(ISNULL(PlannedHours, 0))) + 
+                    FLOOR((SUM(ISNULL(PlannedHours, 0)) - FLOOR(SUM(ISNULL(PlannedHours, 0)))) * 100 / 60) +  
+                    (((SUM(ISNULL(PlannedHours, 0)) - FLOOR(SUM(ISNULL(PlannedHours, 0)))) * 100) % 60) / 100.0  
+                    AS DECIMAL(18,2))
+            FROM vuCore_SubProject_TaskAllocation_Details 
+            WHERE iMasterId = d.iMasterId) [Estimated Hrs],      
+    
+           -- Actual Hours calculation with error handling
+           (SELECT CAST(REPLACE(CONVERT(VARCHAR(5), 
+                RIGHT('0' + CAST((CAST(LEFT(dbo.fCore_IntToTime(SUM(CASE WHEN ISNUMERIC(Time1) = 1 THEN CAST(Time1 AS INT) ELSE 0 END)), 2) AS INT) + 
+                (CAST(SUBSTRING(dbo.fCore_IntToTime(SUM(CASE WHEN ISNUMERIC(Time1) = 1 THEN CAST(Time1 AS INT) ELSE 0 END)), 4, 2) AS INT) / 60)) AS VARCHAR), 2) + ':' +
+                RIGHT('0' + CAST((CAST(SUBSTRING(dbo.fCore_IntToTime(SUM(CASE WHEN ISNUMERIC(Time1) = 1 THEN CAST(Time1 AS INT) ELSE 0 END)), 4, 2) AS INT) % 60) AS VARCHAR), 2) + ':' +
+                RIGHT('0' + CAST(CAST(RIGHT(dbo.fCore_IntToTime(SUM(CASE WHEN ISNUMERIC(Time1) = 1 THEN CAST(Time1 AS INT) ELSE 0 END)), 2) AS INT) AS VARCHAR), 2), 108), ':', '.') AS DECIMAL(18,2))    
+               FROM vuCore_Timesheet_TimeandAttendanceInformation_Details      
+               WHERE SubProject = d.iMasterId) [Actual Hours],  
+     
+           d.Deliverables,      
+           c.iMasterId [StaffId],      
+    
+        -- Invoice Amount
+        (SELECT ISNULL(SUM(TotalNetAmount), 0) FROM vCore_SalesInvoice x  
+         WHERE x.SubProjectName = d.iMasterId) [Invoice Amt], 
+        
+        b.iMasterId, 
+        e.sName [Assignment Type],  
+  
+        -- Remarks
+        (SELECT TOP 1 ISNULL(b2.Remarks, '') 
+         FROM vuCore_TaskAllocation_TaskAllocationStatus_Details b2 
+         WHERE b2.SubProjectNo = b.SubProjectNo 
+           AND LTRIM(RTRIM(ISNULL(b2.Remarks, ''))) <> '' 
+         ORDER BY b2.iRowIndex DESC) Remarks1  
+    
+    FROM vCore_SalesExecutive c WITH (NOLOCK)      
+    INNER JOIN vCore_SubProject d WITH (NOLOCK) ON d.SalesExecutiven = c.iMasterId     
+    INNER JOIN vuCore_TaskAllocation_TaskAllocationStatus_Details b WITH (NOLOCK) ON b.SubProjectNo = d.iMasterId      
+    LEFT JOIN vCore_TaskAllocationStatusUpdation a WITH (NOLOCK) ON b.TaskAllocationStatus = a.iMasterId      
+    LEFT JOIN vCore_Product e WITH (NOLOCK) ON b.AssignmentType = e.iMasterId      
+    WHERE d.iMasterId>0 AND d.SubProjectStatus <> 3
+) AS SourceTable      
+PIVOT (      
+    MAX([Val])      
+    FOR [Task Status] IN ([Confirmed], [Field Work], [Query Sent], [Query Solved],[Report Prepared], [Review], [Draft Issued No1], [Draft - Final], [Report Issued], [Signed], [Work Suspended])      
+) AS PivotTable;

@@ -1,0 +1,5 @@
+select b.sModuleName [ModuleName],dbo.fCrm_GetMasterName(a.iRelatedToType,a.iRelatedTo,0) [Record Name],sFrom [From],sTo [To],sSubject [Subject],iSentDate [$Datetime$Sent Date] from tCrm_Emails a
+join vCrm_ModuleTypes b on a.iRelatedToType=b.iTypeId
+join  tCrm_EmailLog c on a.iEmailLogId=c.iEmailLogId
+where a.iEmailId>0 and b.iTypeId>0 and c.iEmailLogId>0
+and iSentDate between @STARTDATETIME and @ENDDATETIME

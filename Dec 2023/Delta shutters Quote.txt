@@ -1,0 +1,62 @@
+ALTER View nCore_QuoteCrystal as  
+select   
+a.iTransId  
+,a.sName [Quote],CASE WHEN b.iCRMRole=10 then e.sName else d.sName end AccountName,  
+CASE WHEN b.iCRMRole=10 then e.sBillingAddress else d.sShippingAddress end [Address],  
+CASE WHEN b.iCRMRole=10 then e.sBillingCity else d.sShippingCity end City,  
+CASE WHEN b.iCRMRole=10 then e.sBillingPinCode else d.sShippingPinCode end Pincode,  
+CASE WHEN b.iCRMRole=10 then i.sAddress else h.sAddress end [LocAddress],  
+CASE WHEN b.iCRMRole=10 then i.sCity else h.sCity end [Loc City],  
+CASE WHEN b.iCRMRole=10 then i.sStreet else h.sStreet end [Loc Street],  
+CASE WHEN b.iCRMRole=10 then i.sState else h.sState end [Loc State],  
+CASE WHEN b.iCRMRole=10 then i.sPinCode else h.sPinCode end [Loc PinCode],  
+CASE WHEN b.iCRMRole=10 then k.sName else j.sName end [Loc Country],  
+CASE WHEN b.iCRMRole=10 then i.Email else h.Email end [Loc Email],  
+CASE WHEN b.iCRMRole=10 then i.EaxNo else h.EaxNo end [Loc Fax],  
+CASE WHEN b.iCRMRole=10 then i.PhoneNo else h.PhoneNo end [Loc Phone],  
+  
+  a.fSubTotal 'GrossAmount',  
+  a.fOverallDiscount 'OverAllDiscount',  
+  a.fSubTotal 'SubTotal',  
+  a.fTaxRate 'TaxRate',  
+  TaxAmount 'TaxAmount',  
+  a.fLocalNetAmountNew 'GrandTotal',  
+  CONVERT(nvarchar(50), (dbo.fCore_IntToDate(a.Date)), 103) AS [DD/MM/YYYY],  
+  a.PO,  
+  CASE WHEN b.iCRMRole=10 then CONCAT('Dealer : ',b.sName) else CONCAT('Sales Rep : ',f.sName) end [Owner],  
+  g.sName [Opportunity name],b.iCRMRole,  
+  CONCAT('http://10.3.0.6:8080/ResourceFromCRM/getres?cc=2W0&docid=',iDocsId) AccImage,  
+  CONCAT('http://10.3.0.6:8080/ResourceFromCRM/getres?cc=2W0&docid=',iDocssId) DelAccImage,  
+CASE WHEN b.iCRMRole=10 then i.CreditTermsandConditionsofSale else h.CreditTermsandConditionsofSale end [CreditTermsandConditionsofSale],  
+CASE WHEN b.iCRMRole=10 then i.SalesQuoteandPricingPolicy else h.SalesQuoteandPricingPolicy end [SalesQuoteandPricingPolicy],  
+CASE WHEN b.iCRMRole=10 then i.OrderingProcedures else h.OrderingProcedures end [OrderingProcedures],  
+CASE WHEN b.iCRMRole=10 then i.ProductDiscrepancies else h.ProductDiscrepancies end [ProductDiscrepancies],  
+CASE WHEN b.iCRMRole=10 then i.FabricDisclaimer else h.FabricDisclaimer end [FabricDisclaimer],  
+CASE WHEN b.iCRMRole=10 then i.CancellationPolicy else h.CancellationPolicy end [CancellationPolicy],  
+CASE WHEN b.iCRMRole=10 then i.BackOrders else h.BackOrders end [BackOrders],  
+CASE WHEN b.iCRMRole=10 then i.Shipmentpolicy else h.Shipmentpolicy end [Shipmentpolicy],  
+CASE WHEN b.iCRMRole=10 then i.[Returns] else h.[Returns] end [Returns],  
+CASE WHEN b.iCRMRole=10 then i.Website else h.Website end Website,a.fOverallDiscount,
+CASE WHEN b.iCRMRole=10 then a.fDealerBaseNetAmount else a.fGrandTotal end TotaGrossAmount  
+from vCrm_Quote a with(nolock)  
+ JOIN vCrm_Users b with(nolock) on a.iCreatedBy=b.iMasterId  
+ join vCrm_Roles c with(nolock) on b.iCRMRole=c.iMasterId  
+ join vCore_Account d with(nolock) on a.AccountName=d.iMasterId  
+ join vCore_DealersCustomers e with(nolock) on a.iDealerCustomer=e.iMasterId  
+JOIN vCore_SalesRepresentative f WITH (NOLOCK) ON f.iMasterId = a.SalesRepresentative  
+JOIN vCrm_Opportunities g WITH (NOLOCK) ON g.iTransId = a.iOpportunityId  
+join vCore_Location h with(nolock) on d.iLocation=h.iMasterId  
+join vCore_Location i with(nolock) on e.iLocation=i.iMasterId  
+join vCore_Country j with(nolock) on h.iCountry=j.iMasterId  
+join vCore_Country k with(nolock) on i.iCountry=k.iMasterId  
+left JOIN (select  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563,0) iDocsId,iRelatedTo,iIndex  
+from vCrm_Documents with(nolock)  
+where iModuleTypeId=2312 and iFieldId=301512) Docs on Docs.iRelatedTo=d.iLocation  
+left JOIN (select  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563,0) iDocssId,iRelatedTo,iIndex  
+from vCrm_Documents with(nolock)  
+where iModuleTypeId=2312 and iFieldId=301512) Docss on Docss.iRelatedTo=e.iLocation  
+where a.iTransId>0
+  
+  
+  
+  

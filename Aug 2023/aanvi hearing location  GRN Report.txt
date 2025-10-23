@@ -1,0 +1,43 @@
+ CREATE or ALTER VIEW nCore_ProductandGrn as
+ select DISTINCT ISNULL(a.sName,'') [Product Serial],
+ ISNULL(b.sName,'') [Product],
+ISNULL(c.sName,'') [Current Location],
+ISNULL(j.sName,'') [Location New],
+a.iTransId,
+FORMAT(dbo.fCore_IntToDateTime(a.iModifiedDate),'dd/MM/yyyy hh:mm:ss') [Location ModifiedDate],
+ISNULL(g.sName,'') [GRN Product],
+ISNULL(f.PSerialNo,'') [GRN serial No],
+FORMAT(dbo.fCore_IntToDate(f.GRNDate),'dd/MM/yyyy') [GRN Created Date],f.GRNDate,
+ISNULL(i.sName,'') [Grn Location]
+ from 
+vCrm_CustAssets a with(nolock)
+LEFT JOIN vCore_Product b with(nolock)
+ on a.iProductId=b.iMasterId  
+LEFT JOIN vCore_Location c with(nolock)
+ on a.CurrentLocation=c.iMasterId 
+LEFT JOIN tCore_MasterAuditLog d with(nolock)
+ on a.iTransId=d.iMasterId
+LEFT JOIN tCrm_TransAuditLog3584 e with(nolock)
+  ON d.iAuditId = e.iAuditId
+LEFT JOIN tCore_MasterLocAuditLog llog with(nolock)
+  ON d.iAuditId = llog.iAuditId
+LEFT JOIN tCrm_LatLngAddress tlla with(nolock)
+  ON llog.iAddressId = tlla.iAddressId
+LEFT JOIN vuCore_GoodsReceiptNote_ProductSerialNo_Details f with(nolock)
+on a.iAccountId=f.Account
+LEFT JOIN vCore_Product g with(nolock) 
+on f.ProductName=g.iMasterId
+LEFT JOIN vCore_Location i with(nolock)
+on f.iLocation=i.iMasterId
+LEFT JOIN vCore_Location j with(nolock)
+on a.iLocationId=j.iMasterId
+ where iMasterTypeId=3002 and a.iTransId>0  and iFieldId=37517
+
+ select * from nCore_ProductandGrn
+ where GRNDate between @STARTDATE and @ENDDATE
+
+
+ select * from tCrm_TransAuditLog3584 where sName='RU22716'
+
+
+

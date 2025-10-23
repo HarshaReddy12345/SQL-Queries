@@ -1,0 +1,70 @@
+alter FUNCTION [dbo].[fnCrm_getUserHierarchyTargetDets] 
+(
+    @iMasterId INT = 0,
+	@iTargetId int,
+    @iYear INT,
+    @iType TINYINT = 0
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    WITH Reports (sUserName, iUserId, iParentId, sLoginName, Level, vbPath, iLocation, iCRMRole, iLinkId, bGroup) AS
+    (
+        SELECT 
+            sUserName, iMasterId, iParentId, sCode, 1 AS Level,
+            CONVERT(VARBINARY(MAX), iMasterId) AS vbPath, iLocation, iCRMRole, iLinkId, bGroup
+        FROM vCrm_Users WITH(NOLOCK)
+        WHERE iParentId = CASE WHEN @iMasterId > 0 THEN 0 ELSE @iMasterId END AND iMasterId > 0 AND iMasterId < 5000001
+
+        UNION ALL
+
+        SELECT 
+            E.sUserName, E.iMasterId, E.iParentId, E.sCode, R.Level + 1 AS Level,
+            R.vbPath + CONVERT(VARBINARY(MAX), E.iMasterId) AS vbPath, E.iLocation, E.iCRMRole, E.iLinkId, E.bGroup
+        FROM vCrm_Users E WITH(NOLOCK)
+        INNER JOIN Reports R  ON R.iUserId = E.iParentId AND E.iMasterId > 0 AND E.iMasterId < 5000001
+    )
+
+    SELECT 
+        vuser.sUserName,
+        vuser.iUserId,
+        vuser.iParentId,
+        vuser.sLoginName,
+        vuser.Level,
+        tv.iPeriodType,
+        (ISNULL(tv.fVal0, 0) + ISNULL(tv.fVal1, 0) + ISNULL(tv.fVal2, 0) + ISNULL(tv.fVal3, 0) + ISNULL(tv.fVal4, 0) +
+         ISNULL(tv.fVal5, 0) + ISNULL(tv.fVal6, 0) + ISNULL(tv.fVal7, 0) + ISNULL(tv.fVal8, 0) + ISNULL(tv.fVal9, 0) +
+         ISNULL(tv.fVal10, 0) + ISNULL(tv.fVal11, 0)) AS [Current Year Total],
+        0 AS [Previous Year Total],
+        ISNULL(tv.fVal0, 0) AS fVal0,
+        ISNULL(tv.fVal1, 0) AS fVal1,
+        ISNULL(tv.fVal2, 0) AS fVal2,
+        ISNULL(tv.fVal3, 0) AS fVal3,
+        ISNULL(tv.fVal4, 0) AS fVal4,
+        ISNULL(tv.fVal5, 0) AS fVal5,
+        ISNULL(tv.fVal6, 0) AS fVal6,
+        ISNULL(tv.fVal7, 0) AS fVal7,
+        ISNULL(tv.fVal8, 0) AS fVal8,
+        ISNULL(tv.fVal9, 0) AS fVal9,
+        ISNULL(tv.fVal10, 0) AS fVal10,
+        ISNULL(tv.fVal11, 0) AS fVal11
+    FROM (
+        SELECT * FROM Reports WITH(NOLOCK)
+        WHERE 
+            (@iMasterId > 0 AND (iLocation = @iMasterId OR iUserId IN (SELECT iParentId FROM Reports WITH(NOLOCK) WHERE iLocation = @iMasterId)))
+            OR @iMasterId = 0
+    ) vuser
+    LEFT JOIN (
+        SELECT 
+            tt.iTargetType, tt.iTargetId, tt.iUserId, tt.iType, tar.iYear, tar.iLocationId, tar.iPeriodType, ttv.iTargetValueId, 
+            ttv.iTargetTypeId, ttv.iMasterId, ttv.fVal0, ttv.fVal1, ttv.fVal2, ttv.fVal3, ttv.fVal4,
+            ttv.fVal5, ttv.fVal6, ttv.fVal7, ttv.fVal8, ttv.fVal9, ttv.fVal10, ttv.fVal11
+        FROM cCrm_TargetType tt WITH(NOLOCK)
+        INNER JOIN cCrm_TargetValues ttv WITH(NOLOCK) ON tt.iTargetType = ttv.iTargetTypeId
+        INNER JOIN cCrm_Targets tar WITH(NOLOCK) ON tar.iTargetId = tt.iTargetId
+        WHERE ISNULL(tar.iYear, @iYear) = @iYear AND ISNULL(tt.iType, @iType) = @iType AND tar.iTargetId = @iTargetId
+    ) tv
+    ON vuser.iUserId = ISNULL(tv.iUserId, vuser.iUserId)
+);
+GO

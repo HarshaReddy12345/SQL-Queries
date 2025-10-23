@@ -1,0 +1,11 @@
+select a.iMasterId,a.sName [Invoice Number],FORMAT(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy') [Inv Date],CONVERT(VARCHAR(8),dbo.fCore_IntToDateTime(a.iCreatedDate),108) [Inv Time],b.sName [Customer],b.TRN,b.sPhone,c.sName[Owner],a.GovernmentFee,a.Additional,a.VATPercent,a.ServiceFee,a.AdditionalServiceFee,a.Discount12,a.VATAmount,
+a.CreditcardCharges,a.TotalVatAmount,PoNumber,a.ApplicationName,d.sName [Service Category],e.sName [Service],a.Quantity12,
+CASE  CardType when 1 then 'Amer(MAF)' when 2 then 'Customer Card' else '' end [Pament By] ,
+CASE PaymentType when 1 then 'Cash' when 2 then 'Credit' when 3 then 'Credit Card ' end [PaymentType],a.CreditCardPercentage,
+((a.GovernmentFee+a.Additional+a.ServiceFee+a.AdditionalServiceFee+a.CreditcardCharges+a.VATAmount)*a.CreditCardPercentage) [Total]
+from vuCore_Invoice_ServiceGrid_Details a with(nolock)
+join vCore_Account b with(nolock) on a.AccountName=b.iMasterId
+join vCrm_Users c with(nolock) on a.iAssignedTo=c.iMasterId
+join vCore_ServiceCategory d with(nolock) on a.ServiceCategory=d.iMasterId
+join vCore_Product e with(nolock) on a.ItemSer=e.iMasterId
+where a.iMasterId=240

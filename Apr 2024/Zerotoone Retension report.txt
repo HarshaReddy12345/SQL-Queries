@@ -1,0 +1,32 @@
+SELECT [Account], 
+SUM([ < 7 Days]) AS [ < 7 Days],
+SUM([8 to 30 Days]) AS [8 to 30 Days],
+SUM([31 to 60 Days]) AS [31 to 60 Days],
+SUM([61 to 90 Days]) AS [61 to 90 Days], 
+SUM([91 to 180 Days]) AS [91 to 180 Days], 
+SUM([ > 180 Days]) AS [ > 180 Days], 
+SUM([Total]) AS [Total], 
+SUM([ < 7 Days]) * 100.0 / SUM([Total]) AS [< 7 Days %],
+SUM([8 to 30 Days]) * 100.0 / SUM([Total]) AS [8 to 30 Days %], 
+SUM([31 to 60 Days]) * 100.0 / SUM([Total]) AS [31 to 60 Days %], 
+SUM([61 to 90 Days]) * 100.0 / SUM([Total]) AS [61 to 90 Days %], 
+SUM([91 to 180 Days]) * 100.0 / SUM([Total]) AS [91 to 180 Days %], 
+SUM([ > 180 Days]) * 100.0 / SUM([Total]) AS [ > 180 Days %] 
+FROM 
+( 
+SELECT b.sName AS [Account],
+a.sName AS [Rental Id],
+DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate),
+dbo.fCore_IntToDate(a.ReturnDate)) AS cnt, 
+CASE WHEN DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) < 7 THEN 1 ELSE 0 END AS [ < 7 Days], 
+CASE WHEN (DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) >= 8 AND DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) <= 30) THEN 1 ELSE 0 END AS [8 to 30 Days], 
+CASE WHEN (DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) >= 31 AND DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) <= 60) THEN 1 ELSE 0 END AS [31 to 60 Days], 
+CASE WHEN (DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) >= 61 AND DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) <= 90) THEN 1 ELSE 0 END AS [61 to 90 Days], 
+CASE WHEN (DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) >= 91 AND DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) <= 180) THEN 1 ELSE 0 END AS [91 to 180 Days], 
+CASE WHEN DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) > 180 THEN 1 ELSE 0 END AS [ > 180 Days],
+COUNT(*) AS [Total] 
+FROM vCore_SalesReturn a WITH (NOLOCK) 
+LEFT JOIN vCore_Account b WITH (NOLOCK) ON a.Account = b.iMasterId 
+LEFT JOIN vCore_Rental c WITH (NOLOCK) ON a.RentalNumber = c.iMasterId 
+WHERE a.iMasterId > 0 and c.RentalStartDate BETWEEN dbo.fCrm_DateFromBigInt(@STARTDATETIME) AND dbo.fCrm_DateFromBigInt(@ENDDATETIME) 
+GROUP BY b.sName, a.sName, DATEDIFF(dd, dbo.fCore_IntToDate(c.RentalStartDate), dbo.fCore_IntToDate(a.ReturnDate)) ) aa GROUP BY [Account]

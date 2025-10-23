@@ -1,0 +1,67 @@
+ALTER PROC udp_RestrictDuplicateEntry @iTransId bigint,@iUserId int = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Convert incoming TransId
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+
+    -- Always update project before validation
+    EXEC [udp_UpdateProject] @iTransId, 0;
+
+    DECLARE 
+        @CurLineId bigint,@Employee int,@CompNumber int,@ExpType int,@FromDate int,@ToDate int,@InstExe nvarchar(max),@ErrMsg nvarchar(max),
+        @Name nvarchar(max);
+
+    -- Cursor on ALL detail rows for the given transaction
+    DECLARE cur CURSOR LOCAL FAST_FORWARD FOR
+        SELECT iMasterId, Employe, ComplaintNumber, ExpensesType, DateFrom, DateTo FROM vuCore_Expenses_Expenses_Details WITH(NOLOCK)
+        WHERE iMasterId = @iTransId;  
+
+    OPEN cur;
+
+    FETCH NEXT FROM cur INTO @CurLineId, @Employee, @CompNumber, @ExpType, @FromDate, @ToDate;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Get installation execution list for this line item
+        SELECT @InstExe = STRING_AGG(c.iMasterId, ',')
+        FROM vCore_Expenses a WITH(NOLOCK)
+        LEFT JOIN mCore_InstallationExecution_MultiValues b  WITH(NOLOCK) ON a.InstallationExecution = b.iMultiId
+        LEFT JOIN vCore_InstallationExecution c WITH(NOLOCK) ON b.iMasterId = c.iMasterId
+        WHERE a.iMasterId = @CurLineId;
+
+        -- Duplicate check 1 (based on Employee + Complaint)
+        IF EXISTS (
+            SELECT 1 FROM vuCore_Expenses_Expenses_Details WITH(NOLOCK)
+            WHERE Employe = @Employee AND ComplaintNumber = @CompNumber AND ExpensesType = @ExpType 
+            and ((@FromDate  between DateFrom and DateTo) or (@ToDate between DateFrom and DateTo) or (DateFrom between @FromDate and @ToDate) or (DateTo between @FromDate and @ToDate)) AND iMasterId <> @CurLineId
+        )
+        BEGIN
+            SELECT @Name = sName FROM vuCore_Expenses_Expenses_Details WITH(NOLOCK) 
+            WHERE Employe = @Employee AND ComplaintNumber = @CompNumber AND ExpensesType = @ExpType 
+            and ((@FromDate  between DateFrom and DateTo) or (@ToDate between DateFrom and DateTo) or (DateFrom between @FromDate and @ToDate) or (DateTo between @FromDate and @ToDate)) AND iMasterId <> @CurLineId
+            SET @ErrMsg = 'Entry Already exists in Expenses';
+            RAISERROR('%s:- %s', 16, 1, @ErrMsg, @Name);
+        END
+        -- Duplicate check 2 (based on Installation Execution)
+        ELSE IF EXISTS (
+            SELECT 1 FROM vuCore_Expenses_Expenses_Details WITH(NOLOCK)
+            WHERE Employe = @Employee AND InstallationExecution IN (SELECT value FROM STRING_SPLIT(@InstExe, ','))
+              AND ExpensesType = @ExpType and ((@FromDate  between DateFrom and DateTo) or (@ToDate between DateFrom and DateTo) or (DateFrom between @FromDate and @ToDate) or (DateTo between @FromDate and @ToDate)) AND iMasterId <> @CurLineId
+        )
+        BEGIN
+            SELECT @Name = sName FROM vuCore_Expenses_Expenses_Details WITH(NOLOCK) 
+            WHERE Employe = @Employee AND InstallationExecution IN (SELECT value FROM STRING_SPLIT(@InstExe, ','))
+              AND ExpensesType = @ExpType and ((@FromDate  between DateFrom and DateTo) or (@ToDate between DateFrom and DateTo) or (DateFrom between @FromDate and @ToDate) or (DateTo between @FromDate and @ToDate)) AND iMasterId <> @CurLineId
+            SET @ErrMsg = 'Entry Already exists in Expenses';
+            RAISERROR('%s:- %s', 16, 1, @ErrMsg, @Name);
+        END
+
+        FETCH NEXT FROM cur INTO @CurLineId, @Employee, @CompNumber, @ExpType, @FromDate, @ToDate;
+    END
+
+    CLOSE cur;
+    DEALLOCATE cur;
+END
+

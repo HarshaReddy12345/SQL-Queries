@@ -1,0 +1,45 @@
+select 
+            dbo.fCore_IntToDate(Opp.Date)[Date],
+            Opp.sName[Opportunity Name],
+            case Opp.iOpportunityType
+            when 1 then 'New Business'
+            when 2 then 'Existing Business'
+            when 3 then 'Upgrade'
+            when 4 then 'Partner Sale' else null end OpportunityType,
+            Acc.sName[AccountName],
+            Us.sName[Owner],
+            SS.sName[Stage],
+            Ops.sName[DealStatus],
+            dbo.fCore_IntToDate(Opp.iCloseDate)[CloseDate],
+            Opp.fTotalSaleAmount[Base Net Amount],
+            Opp.fLocalNetAmountNew[Total Local Net Amount],
+            Opp.LeadNo[Lead Ref :],
+            Opp.iTransactionCurrency[Transaction Currency],
+            Opp.fExchangeRate[Exchange Rate],
+            Cam.sName[Campaign Name],
+            Curr.sName[Company Currency],
+            dbo.fCore_IntToDateTime(Opp.iCreatedDate)[Created On],
+            Prod.sName[Product],
+            ProdM.sName[ProductModel]
+from 
+          vuCrm_Opportunities_General_Details Opp WITH(NOLOCK)
+left join
+          vCore_Account Acc WITH(NOLOCK) on Opp.iAccount=Acc.iMasterId
+left join 
+          vCrm_Users Us WITH(NOLOCK) on Opp.iAssignedTo=Us.iMasterId
+left join 
+          vCrm_SalesStages SS WITH(NOLOCK) on Opp.iStage=SS.iMasterId
+left join 
+          vCrm_OpportunityStatus Ops WITH(NOLOCK) on Opp.OpportunityDealStatus=Ops.iTransId
+left join 
+          vCrm_Campaigns Cam WITH(NOLOCK) on Opp.iCampaign=Cam.iMasterId
+left join 
+          vCrm_Currency Curr WITH(NOLOCK) on Opp.iCurrency=Curr.iMasterId
+
+left join 
+          vCore_Product Prod WITH(NOLOCK) on Prod.iMasterId=Opp.iProductId
+left join 
+          vCore_ProductModel ProdM WITH(NOLOCK) on Opp.ProductModel=ProdM.iMasterId
+where 
+          Opp.iTransId>0 
+          and Opp.iCreatedDate between @STARTDATE and @ENDDATE

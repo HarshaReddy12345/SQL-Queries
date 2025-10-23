@@ -1,0 +1,134 @@
+ALTER VIEW nCore_BaseMisReport as
+
+SELECT
+    (QuantityMinus) AS QuantityMinus,
+    (QuantityPlus) AS QuantityPlus,
+    Product,
+    [User],
+    ProductCode,BatchNumber,
+    SUM([Dispatch Qty]) AS [Dispatch Qty],
+    SUM([Parts Received]) AS [Parts Received],
+    SUM([Damaged Qty]) AS [Damaged Qty],
+    SUM([Replaced Qty]) AS [Replaced Qty],
+    SUM([Parts Return by Engg]) AS [Parts Return by Engg],
+    TransferPrice,
+    ProductId,
+    UserId
+FROM (
+    SELECT
+        a.QuantityMinus,
+        a.QuantityPlus,
+        b.sName AS [Product],
+        c.sName AS [User],
+        b.sCode AS [ProductCode],a.BatchNumber,
+        d.DispatchQty AS [Dispatch Qty],
+        0 AS [Parts Received],
+        0 AS [Damaged Qty],
+        0 AS [Replaced Qty],
+        0 AS [Parts Return by Engg],
+        b.TransferPrice,
+        b.iMasterId AS [ProductId],
+        c.iMasterId AS [UserId]
+    FROM
+        vCore_Stock a WITH(NOLOCK)
+    
+    JOIN
+        vCore_Product b WITH(NOLOCK) ON a.Item = b.iMasterId
+    JOIN
+        vCrm_Users c WITH(NOLOCK) ON a.iAssignedTo = c.iMasterId
+    JOIN
+        vuCore_DispensingUnit_General_Details d WITH(NOLOCK) ON a.PartsDispatch = d.iMasterId
+    WHERE
+        a.iMasterId > 0 AND a.Item = b.iMasterId 
+
+    UNION ALL
+
+    SELECT
+        a.QuantityMinus,
+        a.QuantityPlus,
+        b.sName AS [Product],
+        c.sName AS [User],
+        b.sCode AS [ProductCode],a.BatchNumber,
+        0 AS [Dispatch Qty],
+        d.Quantity AS [Parts Received],
+        d.QuantityDifference AS [Damaged Qty],
+        0 AS [Replaced Qty],
+        0 AS [Parts Return by Engg],
+        b.TransferPrice,
+        b.iMasterId AS [ProductId],
+        c.iMasterId AS [UserId]
+    FROM
+        vCore_Stock a WITH(NOLOCK)
+    
+    JOIN
+        vCore_Product b WITH(NOLOCK) ON a.Item = b.iMasterId
+    JOIN
+        vCrm_Users c WITH(NOLOCK) ON a.iAssignedTo = c.iMasterId
+    JOIN
+        vuCore_DailyActivityPlan_General_Details d WITH(NOLOCK) ON a.ReceivedatEngineer = d.iMasterId
+    WHERE
+        a.iMasterId > 0 AND a.Item = b.iMasterId 
+
+    UNION ALL
+
+    SELECT
+        a.QuantityMinus,
+        a.QuantityPlus,
+        b.sName AS [Product],
+        c.sName AS [User],
+        b.sCode AS [ProductCode],a.BatchNumber,
+        0 AS [Dispatch Qty],
+        0 AS [Parts Received],
+        0 AS [Damaged Qty],
+        CASE WHEN a.iApprovalStatus = 114 THEN d.NewQuantity END AS [Replaced Qty],
+        0 AS [Parts Return by Engg],
+        b.TransferPrice,
+        b.iMasterId AS [ProductId],
+        c.iMasterId AS [UserId]
+    FROM
+        vCore_Stock a WITH(NOLOCK)
+   
+    JOIN
+        vCore_Product b WITH(NOLOCK) ON a.Item = b.iMasterId
+    JOIN
+        vCrm_Users c WITH(NOLOCK) ON a.iAssignedTo = c.iMasterId
+    JOIN
+        vuCore_DUBreakdown_PartReplacementInformation_Details d WITH(NOLOCK) ON a.ReceivedatEngineer = d.iMasterId
+    WHERE
+        a.iMasterId > 0 AND a.Item = b.iMasterId 
+
+    UNION ALL
+
+    SELECT
+        a.QuantityMinus,
+        a.QuantityPlus,
+        b.sName AS [Product],
+        c.sName AS [User],
+        b.sCode AS [ProductCode],a.BatchNumber,
+        0 AS [Dispatch Qty],
+        0 AS [Parts Received],
+        0 AS [Damaged Qty],
+        0 AS [Replaced Qty],
+        d.iQuantity AS [Parts Return by Engg],
+        b.TransferPrice,
+        b.iMasterId AS [ProductId],
+        c.iMasterId AS [UserId]
+    FROM
+        vCore_Stock a WITH(NOLOCK)
+    
+    JOIN
+        vCore_Product b WITH(NOLOCK) ON a.Item = b.iMasterId
+    JOIN
+        vCrm_Users c WITH(NOLOCK) ON a.iAssignedTo = c.iMasterId
+    JOIN
+        vuCore_DefectivePartReturn_DefectiveProductInformation_Details d WITH(NOLOCK) ON a.ReturntoStoreHO = d.iMasterId
+    WHERE
+        a.iMasterId > 0 AND a.Item = b.iMasterId 
+) AS Subquery
+GROUP BY
+    Product,
+    [User],
+    ProductCode,BatchNumber,
+    TransferPrice,
+    ProductId,QuantityMinus,QuantityPlus,
+    UserId

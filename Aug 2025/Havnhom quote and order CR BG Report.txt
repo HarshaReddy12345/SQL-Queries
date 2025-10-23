@@ -1,0 +1,71 @@
+ALTER View nCore_OrderCrystal as  
+  
+SELECT TOP 100 PERCENT   
+    a.iTransId,  
+    a.sName AS [Quote No],  
+    CASE WHEN b.sName <> ''   
+         THEN CONCAT(a.iSequence, '.', b.sName)   
+         ELSE ''   
+    END AS [Quote Group],  
+    c.sCode AS [Product],  
+    a.sProdDescription,  
+    a.iQuantity,  
+    a.fSalesPrice,  
+    a.DiscountAmount fDiscount,  
+    CAST((a.fSalesPrice * a.iQuantity) - a.DiscountAmount AS decimal(18,2)) AS [Total],  
+    a.Comments,  
+    a.fSubTotal,  
+    a.HDiscount,  
+    a.TaxAmount,  
+    a.fLocalNetAmountNew AS [Total Amount],  
+    FORMAT(dbo.fCore_IntToDate(a.iExpiryDate), 'dd/MM/yyyy') AS [Expiry Date],  
+    a.sDescription,  
+    d.AmountDue,  
+    a.CollectedAmount,  
+    a.BalanceAmount,
+    b.sName [QGroup],
+    a.iSequence
+FROM vuCrm_SalesOrder_General_Details a WITH (NOLOCK)  
+LEFT JOIN vCore_QuoteGroup b WITH (NOLOCK) ON a.QuoteGroup = b.iMasterId  
+LEFT JOIN vCore_Product c WITH (NOLOCK) ON a.iProductId = c.iMasterId  
+LEFT JOIN vuCrm_Quote_General_Details d WITH(NOLOCK) on a.iQuoteId=d.iTransId and a.QuoteGroup=d.QuoteGroup and a.iProductId=d.iProductId  
+WHERE a.iTransId >0  
+ORDER BY   
+    CASE WHEN ISNULL(b.sName,'') = '' THEN 0 ELSE 1 END,  -- Blank groups first  
+    a.iSequence ASC;  
+  
+  
+go
+
+ALTER   View nCore_QuoteCrystal as  
+  
+SELECT TOP 100 PERCENT   
+    a.iTransId,  
+    a.sName AS [Quote No],  
+    CASE WHEN b.sName <> ''   
+         THEN CONCAT(iSequence, '.', b.sName)   
+         ELSE ''   
+    END AS [Quote Group],  
+    c.sCode AS [Product],  
+    a.sProdDescription,  
+    a.iQuantity,  
+    a.fSalesPrice,  
+    a.DiscountAmount fDiscount,  
+    CAST((a.fSalesPrice * a.iQuantity) - a.DiscountAmount AS decimal(18,2)) AS [Total],  
+    a.Comments,  
+    a.fSubTotal,  
+    a.fOverallDiscount,  
+    a.TaxAmount,  
+    a.fLocalNetAmountNew AS [Total Amount],  
+    FORMAT(dbo.fCore_IntToDate(a.iExpiryDate), 'dd/MM/yyyy') AS [Expiry Date],  
+    a.sDescription,  
+    a.AmountDue,
+    b.sName [QGroup],
+    a.iSequence
+FROM vuCrm_Quote_General_Details a WITH (NOLOCK)  
+LEFT JOIN vCore_QuoteGroup b WITH (NOLOCK) ON a.QuoteGroup = b.iMasterId  
+LEFT JOIN vCore_Product c WITH (NOLOCK) ON a.iProductId = c.iMasterId  
+WHERE a.iTransId >0  
+ORDER BY   
+    CASE WHEN ISNULL(b.sName,'') = '' THEN 0 ELSE 1 END,  
+    iSequence ASC;  

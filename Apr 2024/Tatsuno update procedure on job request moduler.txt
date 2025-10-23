@@ -1,0 +1,27 @@
+
+CREATE PROC udp_RetailByEmailSubject(@iTransId bigint,@iUserId int=0)
+as
+begin 
+select  @iTransId  =dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+DECLARE @text NVARCHAR(MAX) = (select EmailSubject from vCrm_Calls where iTransId=@iTransId);
+DECLARE @substring NVARCHAR(MAX),@RetailOutlet int,@Id int
+
+DECLARE @position INT = CHARINDEX('/', @text);
+
+IF @position > 0
+SET @substring = LTRIM(RTRIM(SUBSTRING(@text, 1, @position - 1)));
+ELSE
+    SET @substring = LTRIM(RTRIM(@text));
+
+select @Id=iMasterId from vCore_Retailoutlet  where  sCode=@substring
+
+if(@Id>0)
+	begin
+
+update vCrm_Calls set  RetailOutletName=@Id from vCrm_Calls where iTransId=@iTransId
+end
+end 
+
+
+

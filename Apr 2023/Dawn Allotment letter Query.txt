@@ -1,0 +1,43 @@
+select a.iTransId,a.sName [BookingNo],b.sName [B1CustomerAccount],b.sLastName,
+       case b.iSalutation when 1 then 'Mr.'
+	   when 2 then 'Mrs.'
+	   when 3 then 'Miss'
+	   when 4 then 'Ms.'
+	   when 5 then 'Dr.'
+	   when 6 then 'Prof.'
+	   when 7 then 'Rev.'
+	   when 8 then 'Other' END  [Salutation],
+	   a.FathersorHusbandsName ,
+	    CONCAT(b.sBillingAddress, ', ', b.sBillingStreet, ', ', b.sBillingCity, ', ', b.sBillingState, ', ', b.sBillingPinCode) Address,
+	   b.sMobile,
+	   case when a.Noofbeneficiaries in (1) then 'NA' else c.sName end [Co_Applicant],
+	   d.sName [Block],
+	   e.sName [Unit],
+	   h.Amt,
+	   a.UnitAreaMts,
+	   f.PaymentMode,
+	   h.RecievedOn [Date],
+	   case when [Date]>0 then format(dbo.fCore_IntToDate([Date]),'dd/MM/yyyy')  else null end Datee
+	   from vCrm_Bookings a 
+left join vCore_Account b on a.B1CustomerAccount=b.iMasterId
+left join vCore_Account c on a.B2CustomerAccount=c.iMasterId
+left join vCrm_Blocks d on a.iBlockId=d.iMasterId
+left join vCrm_PMSUnits e on a.iUnitId=e.iMasterId
+left join (Select 
+BookingNo,dbo.fCore_IntToDate(ReceivedOn) 'RecievedOn',
+case PaymentMode when 1 then 'Cheque'
+when 2 then 'C.C.' 
+when 3 then 'Demand Draft (D.D.)'
+when 4 then 'Online Transfer' end PaymentMode,
+(ReceivedOn) [Date]
+from vCore_CustomerReceipt group by BookingNo,ReceivedOn,PaymentTowards,PaymentMode) f on a.iTransId=f.BookingNo
+left join(select min(FORMAT(dbo.fCore_IntToDate(ReceivedOn),'dd/MM/yyyy')) 'RecievedOn', 
+sum(Amount) Amt,BookingNo from vCore_CustomerReceipt group by BookingNo) h on a.iTransId=h.BookingNo
+ where a.iTransId>0 and a.iTransId={?iTransId}
+ 
+
+-- select min(dbo.fCore_IntToDate(ReceivedOn)) 'RecievedOn',BookingNo,
+--SUM(Amount) 'Amt' from vCore_CustomerReceipt group by BookingNo,PaymentTowards
+
+--select sum(Amount),BookingNo from vCore_CustomerReceipt group by BookingNo
+

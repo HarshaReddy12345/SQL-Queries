@@ -1,0 +1,37 @@
+create or alter Procedure A_UpdateModule(@iTransId bigint,@iUserId int)
+as 
+begin
+
+	select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0)
+	update a set a.VendorAccount=c.iMasterId from vCore_TravelClaim a with(nolock)
+	inner join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+	inner join vCore_Account c with(nolock) on b.sName=c.sName
+	where a.iMasterId>0 and b.iMasterId<>1 and a.iMasterId=@iTransId
+end
+
+
+
+create or alter Procedure A_UpdateModule(@iTransId bigint,@iUserId int)
+as 
+begin
+
+	select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0)
+	update a set a.Account=c.iMasterId from vCore_DailyVisit a with(nolock)
+	inner join vCore_Planner b with(nolock) on a.SELECTCUSTOMER=b.iMasterId
+	inner join vCore_Account c with(nolock) on b.sName=c.sName
+	where a.iMasterId>0 and b.iMasterId<>1 and a.iMasterId=@iTransId
+end
+
+
+create or alter Procedure A_UpdateModule(@iTransId bigint,@iUserId int)
+as 
+begin
+
+	select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0)
+	update a set a.iAccount=c.iMasterId from vCrm_Opportunities a with(nolock)
+	inner join vCore_DailyVisit b with(nolock) on a.Dailyvisit=b.iMasterId
+	inner join vCore_Account c with(nolock) on b.sName=c.sName
+	where a.iTransId>0 and b.iMasterId<>1 and a.iTransId=@iTransId
+end
+
+

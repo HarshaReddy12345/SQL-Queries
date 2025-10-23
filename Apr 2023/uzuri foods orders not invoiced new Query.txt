@@ -1,0 +1,23 @@
+select 
+    a.sName ,
+    b.sName [Customer] , 
+    a.NoofCrates*700  [Target] , 
+    c.sName [Days of Week] ,
+    f.orderamount [Order Amount] , 
+    p.[Net Amount] [Invoices Raised],
+    t.sName [SalesPerson],
+    case when f.orderamount = p.[Net Amount] then p.[Net Amount] end as 'Orders Fully Invoiced',
+    case when f.orderamount <> p.[Net Amount] then p.[Net Amount] end as 'Orders Partially Invoiced',
+    case when   p.[Net Amount] = 0 then f.orderamount end as 'Orders Not Invoiced',
+    f.orderamount-p.[Net Amount] [Lost] ,
+    case when isnull( f.orderamount ,0)>0 then (isnull( (f.orderamount-p.[Net Amount] ),0) / isnull( f.orderamount ,0) ) * 100 
+    else 0.00 end [%conversion]
+from vCore_CustomerTargetByDaysMaster a with(nolock)
+left join vCore_Account b with(nolock) on  a.Customer=b.iMasterId
+left join vCore_DaysofWeek c with(nolock) on a.DaysofWeek=c.iMasterId
+left join (select SUM([Net Amount]) orderamount,Customer,[weekday]  from (select  isnull(Orderamount,0.00) [Net Amount], Customer, DATENAME(dw,dbo.fCore_IntToDate([Date])) [weekday] from vCrm_SalesOrder with(nolock) where iTransId>0 and [Date] between @STARTDATE and @ENDDATE ) inv   group by Customer,[weekday]) f
+on a.Customer=f.Customer and f.[weekday]=c.sName
+left join (select SUM([Net Amount]) [Net Amount],Customer,[weekday]  from (select  isnull(Net,0.00) [Net Amount], Customer, DATENAME(dw,dbo.fCore_IntToDate([Date])) [weekday] from vCore_SalesInvoice with(nolock) where iMasterId>0 and [Date] between @STARTDATE and @ENDDATE) inv   group by Customer,[weekday]) p
+on  a.Customer=p.Customer and p.[weekday]=c.sName
+left join  vCrm_Users t with(nolock) on b.SalesPerson=t.iMasterId
+where a.iMasterId>0

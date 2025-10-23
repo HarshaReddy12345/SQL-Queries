@@ -1,0 +1,84 @@
+select 
+  sv.sName [SuperVisor], 
+  sp.sName [Salesperson], 
+  acc.sName [Client], 
+  COUNT(acc.iMasterId) [Customers], 
+  MAX(
+    ISNULL(NetSales, 0)
+  ) [Customers Served] ,
+  ( Customers-  COUNT(acc.iMasterId)) CustomersNotServed,
+  [Day]
+from 
+  vCore_Account acc WITH(NOLOCK) 
+  left join vCrm_Users sp WITH(NOLOCK) on acc.SalesPerson = sp.iMasterId 
+  left join vCrm_Users sv WITH(NOLOCK) on acc.Supervisor = sv.iMasterId 
+  left join (
+    select 
+      AA.sName, 
+      AA.iMasterId, 
+      AA.Customer, 
+      ISNULL(
+        COUNT(AA.Customer), 
+        0
+      ) - ISNULL(
+        COUNT(ZZ.Customer), 
+        0
+      ) [NetSales] ,
+	 AA.Day 
+    from 
+      (
+        select 
+          a.Customer, 
+          c.iMasterId, 
+          c.sName ,
+		  a.[Day]
+        from 
+          (
+            select 
+              distinct Customer ,
+			 DateName(WeekDay,dbo.fCore_IntToDate(Date)) [Day]
+            from 
+              vCore_SalesInvoice WITH(NOLOCK) 
+            where 
+              iMasterId > 0
+              and Date between @STARTDATE 
+              and @ENDDATE
+          ) a 
+          inner join vCore_Account b WITH(NOLOCK) on a.Customer = b.iMasterId 
+          inner join vCrm_Users c WITH(NOLOCK) on b.SalesPerson = c.iMasterId
+      ) AA full 
+      outer join (
+        select 
+          d.Customer, 
+          f.sName 
+        from 
+          (
+            select 
+              distinct Customer 
+            from 
+              vCore_SalesReturn WITH(NOLOCK) 
+            where 
+              iMasterId > 0 
+              and Date between @STARTDATE 
+              and @ENDDATE
+          ) d 
+          inner join vCore_Account e WITH(NOLOCK) on d.Customer = e.iMasterId 
+          inner join vCrm_Users f WITH(NOLOCK) on e.SalesPerson = f.iMasterId
+      ) ZZ on ZZ.Customer = AA.Customer 
+    group by 
+      AA.sName, 
+      AA.iMasterId, 
+      AA.Customer,
+	  AA.Day
+  ) inv on inv.Customer = acc.iMasterId 
+where 
+  acc.iMasterId > 0 
+  and acc.SalesPerson > 0 
+  and sp.iMasterId in (@USERACCESS) 
+  and sp.iMasterId <> 1 
+  and acc.iApprovalStatus in (114) 
+group by 
+  sv.sName, 
+  sp.sName, 
+  acc.sName,
+  [Day]

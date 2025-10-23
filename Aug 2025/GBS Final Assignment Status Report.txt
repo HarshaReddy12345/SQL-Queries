@@ -1,0 +1,140 @@
+ALTER   view [dbo].[m_SubProject]   
+as  
+select TOP 100 PERCENT  
+s1.iMasterId,  
+s1.sName subprojectname,  
+p.sName projectname,  
+s1.PeriodFrom,  
+s1.PeriodTo,  
+s1.ReportReferenceNo,  
+a.ClientID accountcode,  
+s1.RiskCategory,  
+s1.Description,  
+d.sName DesignationU,  
+u.sFirstName Users,  
+--case when d.sName='Executive 1' then string_agg(u.sFirstName,'') else ' ' end as secondard_staff,  
+(select top 1 u.sFirstName from   
+ vuCore_SubProject_UserAllocation_Details a 
+left join vPay_Designation d on d.iMasterId=a.DesignationU  
+left join mCrm_Users u on u.iUserId=a.Users  
+where d.sName='Executive' and a.iMasterId=st.iMasterId --st.sName='Premium Brands -A-Adt-2024-12'  
+) SalesExecutiven,  
+(select top 1 u.sFirstName from   
+ vuCore_SubProject_UserAllocation_Details a 
+left join vPay_Designation d on d.iMasterId=a.DesignationU  
+left join mCrm_Users u on u.iUserId=a.Users  
+where d.sName='Executive 1' and a.iMasterId=st.iMasterId --st.sName='Premium Brands -A-Adt-2024-12'  
+) secondard_staff,
+(select TOP 1 u.sFirstName from   
+vCore_SubProject s  
+join vuCore_SubProject_UserAllocation_Details st on st.iMasterId=s.iMasterId  
+left join vPay_Designation d on d.iMasterId=st.DesignationU  
+left join mCrm_Users u on u.iUserId=st.Users  
+where d.sName='Reviewer' and s.iMasterId=s1.iMasterId--st.sName='Premium Brands -A-Adt-2024-12'  
+) Reviewer,  
+(select TOP 1 u.sFirstName  
+from   
+vCore_SubProject s  
+join vuCore_SubProject_UserAllocation_Details st on st.iMasterId=s.iMasterId  
+join vPay_Designation d on d.iMasterId=st.DesignationU  
+join mCrm_Users u on u.iUserId=st.Users  
+where d.sName ='Manager 1' and s.iMasterId=s1.iMasterId  
+) Manager1,  
+(select TOP 1 u.sFirstName  
+from   
+vCore_SubProject s  
+join vuCore_SubProject_UserAllocation_Details st on st.iMasterId=s.iMasterId  
+join vPay_Designation d on d.iMasterId=st.DesignationU  
+join mCrm_Users u on u.iUserId=st.Users  
+where d.sName ='Manager 2' and s.iMasterId=s1.iMasterId  
+) Manager2,  
+(select TOP 1 u.sFirstName  
+from   
+vCore_SubProject s  
+join vuCore_SubProject_UserAllocation_Details st on st.iMasterId=s.iMasterId  
+join vPay_Designation d on d.iMasterId=st.DesignationU  
+join mCrm_Users u on u.iUserId=st.Users  
+where d.sName ='Managing Partner' and s.iMasterId=s1.iMasterId  
+) ManagingPartner,  
+(select TOP 1 u.sFirstName  
+from   
+vCore_SubProject s  
+join vuCore_SubProject_UserAllocation_Details st on st.iMasterId=s.iMasterId  
+join vPay_Designation d on d.iMasterId=st.DesignationU  
+join mCrm_Users u on u.iUserId=st.Users  
+where  d.sName ='Director/partner' and s.iMasterId=s1.iMasterId  
+) Directorpartner,  
+ case when s1.DeadlineDate>0 then FORMAT(dbo.fCore_IntToDate(s1.DeadlineDate), 'dd/MM/yyyy') else ' ' end as [DeadlineDate],  
+ (  
+ select top 1  
+ case when ta.CompletionDate>0 then   
+ FORMAT(dbo.fCore_IntToDate(ta.CompletionDate), 'dd/MM/yyyy') else ' '  
+ end   
+  
+ from  
+ vCore_SubProject s  
+ left join vuCore_TaskAllocation_General_Details ta on ta.iMasterId=s.TaskAllocationNo  
+ left join mCore_TaskAllocationStatusUpdation t on t.iMasterId=ta.TaskAllocationStatus  
+ --where s1.sName='Premium Brands -A-Adt-2024-12' and t.sName='Initial TB Recvd Date'  
+ where s.iMasterId=s1.iMasterId and t.sName='Initial TB Recvd Date'  
+  
+)[StartDate],  
+( select top 1  
+  
+ case when ta.CompletionDate>0 then FORMAT(dbo.fCore_IntToDate(ta.CompletionDate), 'dd/MM/yyyy') else ' ' end as Completiondate  
+  
+ from  
+ vCore_SubProject s  
+ left join vuCore_TaskAllocation_General_Details ta on ta.iMasterId=s.TaskAllocationNo  
+ left join mCore_TaskAllocationStatusUpdation t on t.iMasterId=ta.TaskAllocationStatus  
+ --where s1.sName='Premium Brands -A-Adt-2024-12' and t.sName='Initial TB Recvd Date'  
+ where s.iMasterId=s1.iMasterId and ta.CompletionDate<>' ' order by ta.iRowIndex desc) Last_Completiondate,  
+ ( select top 1  
+  
+ t.sName taskname  
+  
+ from  
+ vCore_SubProject s  
+ left join vuCore_TaskAllocation_General_Details ta on ta.iMasterId=s.TaskAllocationNo  
+ left join mCore_TaskAllocationStatusUpdation t on t.iMasterId=ta.TaskAllocationStatus  
+ --where s1.sName='Premium Brands -A-Adt-2024-12' and t.sName='Initial TB Recvd Date'  
+ where s.iMasterId=s1.iMasterId and ta.CompletionDate<>' ' order by ta.iRowIndex desc)TASTNAME_Last_Completiondate,  
+ s1.OfferAmount,  
+ s1.OfferReferenceNo   
+  
+  
+from  
+vCore_SubProject s1  
+--left join vuCore_SubProject_TaskAllocation_Details sg on sg.iMasterId=s.iMasterId  
+left join vuCore_SubProject_UserAllocation_Details st on st.iMasterId=s1.iMasterId  
+left join vPay_Designation d on d.iMasterId=st.DesignationU  
+left join mCrm_Users u on u.iUserId=st.Users  
+left join vCore_Product p on p.iMasterId=s1.AssignmentType  
+left join vCore_Account a on a.iMasterId=s1.iAccount  
+left join vCore_SalesExecutive se on se.iMasterId=s1.SalesExecutiven  
+--left join  
+--(select st.sName,d.sName ex,u.sFirstName from   
+--vuCore_SubProject_UserAllocation_Details st  
+--left join vPay_Designation d on d.iMasterId=st.DesignationU  
+--left join mCrm_Users u on u.iUserId=st.Users) dt on dt.sName='Premium Brands -A-Adt-2024-12' and dt.ex='Executive 1'  
+--where s.sName='Premium Brands -A-Adt-2024-12'  
+where s1.iMasterId>0--=318--=@iMasterId  
+order by st.iRowIndex  
+  
+  go
+  
+  create or ALTER  VIEW [dbo].[m_matters] as  
+
+SELECT a.iMasterId,
+    MAX(CASE WHEN TaskAllocationStatus = 18 THEN b.Remarks END) AS AuditorRemarks,
+    MAX(CASE WHEN TaskAllocationStatus = 19 THEN b.Remarks END) AS ReviewerRemarks,
+    MAX(CASE WHEN TaskAllocationStatus = 28 THEN b.Remarks END) AS ManagerRemarks,
+    MAX(CASE WHEN TaskAllocationStatus = 29 THEN b.Remarks END) AS AuditPartnerRemarks,
+    a.Deliverables,a.KeyIssues
+FROM vCore_SubProject a
+LEFT JOIN vuCore_TaskAllocation_TaskAllocationStatus_Details b 
+    ON a.iMasterId = b.SubProjectNo
+WHERE a.iMasterId >0--= 318
+group by a.iMasterId, a.Deliverables,a.KeyIssues
+
+go

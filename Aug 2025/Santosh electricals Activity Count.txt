@@ -1,0 +1,64 @@
+CREATE OR ALTER PROCEDURE usp_UpdateActivitiesCount @iRelatedTo INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @TotalCount INT;
+
+    SELECT @TotalCount =
+        ISNULL((SELECT COUNT(iTransId) FROM vCrm_Tasks with(nolock) WHERE iRelatedTo = @iRelatedTo ), 0) +
+        ISNULL((SELECT COUNT(iTransId) FROM vCrm_Appointments with(nolock)
+                WHERE iRelatedTo = @iRelatedTo AND iRelatedToType = 256 AND iAppointmentType = 1 ), 0) +
+        ISNULL((SELECT COUNT(iTransId) FROM vCrm_Appointments with(nolock)
+                WHERE iRelatedTo = @iRelatedTo AND iRelatedToType = 256  AND iAppointmentType = 3 ), 0) +
+        ISNULL((SELECT COUNT(iTransId) FROM vCrm_Appointments with(nolock)
+                WHERE iRelatedTo = @iRelatedTo AND iRelatedToType = 256 AND iAppointmentType = 2 ), 0) +
+        ISNULL((SELECT COUNT(iTransId) FROM vCrm_Plans with(nolock)
+                WHERE iRelatedTo = @iRelatedTo AND iRelatedToType = 256 ), 0);
+
+    UPDATE vaCrm_Leads
+    SET ActivitiesCount = @TotalCount
+    WHERE iMemberId = @iRelatedTo;
+END;
+go
+CREATE OR ALTER TRIGGER trg_UpdateRelatedToTypeCount_OnTasks
+ON tCrm_Tasks
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @iRelatedTo INT;
+    SELECT TOP 1 @iRelatedTo = iRelatedTo FROM inserted with(nolock);
+
+    EXEC usp_UpdateActivitiesCount @iRelatedTo;
+END;
+GO
+
+CREATE OR ALTER TRIGGER trg_UpdateRelatedToTypeCount_OnAppointments
+ON tCrm_Appointments
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @iRelatedTo INT;
+    SELECT TOP 1 @iRelatedTo = iRelatedTo FROM inserted with(nolock);
+
+    EXEC usp_UpdateActivitiesCount @iRelatedTo;
+END;
+GO
+
+CREATE OR ALTER TRIGGER trg_UpdateRelatedToTypeCount_OnPlans
+ON tCrm_Plans
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @iRelatedTo INT;
+    SELECT TOP 1 @iRelatedTo = iRelatedTo FROM inserted with(nolock);
+
+    EXEC usp_UpdateActivitiesCount @iRelatedTo;
+END;
+GO

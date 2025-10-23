@@ -1,0 +1,63 @@
+CREATE function [dbo].[fCore_Var100](@s xml)
+returns decimal(18,2)
+as
+begin
+declare @iProductId int
+declare @result decimal(18,2)
+
+select @iProductId=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')
+ select @result=dbo.Fn_ErpData(@iProductId)
+return @result
+end
+===========================================================================================================
+ ALTER function [dbo].[Fn_ErpData]
+(
+@ProductCode int
+)
+returns Decimal(18,2)
+as 
+begin
+declare @Qty Decimal(18,2)
+--select 
+--   @Qty=sum(Qty2) 
+--from 
+--  (
+--    select 
+--      top 100 percent data.ProductCode, 
+--      (
+--        case when data.VoucherType = 512 then data.Date_ - 1 else data.Date_ end
+--      ) Date, 
+--      - Sign(indta.Qty2) Qty, 
+--      sum(indta.Qty2) Qty2, 
+--      sum(indta.StockValue) value 
+--    from 
+--      Focus5013..data with (nolock)
+--      join Focus5013..indta on data.SalesOff = indta.SalesId 
+--    where 
+--      (
+--        case when data.VoucherType = 512 then data.Date_ - 1 else data.Date_ end
+--      )<= 30290 
+--      and (data.Flags & 0x200)= 0x200 
+--    group by 
+--      data.ProductCode, 
+--      (
+--        case when data.VoucherType = 512 then data.Date_ - 1 else data.Date_ end
+--      ), 
+--      - Sign(indta.Qty2) 
+--    order by 
+--      1, 
+--      2, 
+--      - Sign(indta.Qty2)
+--  ) tt 
+--where 
+--  ProductCode = @ProductCode 
+--group by 
+--  ProductCode;
+
+  return (select Focus5050.dbo.GetQtyBalance(@ProductCode,65535))
+  end
+select dbo.[Fn_ErpData](1)
+
+
+
+

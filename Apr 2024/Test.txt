@@ -1,0 +1,89 @@
+CREATE OR ALTER PROCEDURE udp_JobReqF (@iTransId BIGINT, @iUserId INT = 0)
+AS
+BEGIN
+
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0)
+
+
+    update a set a.SLAReportandAttendTimeHours=b.TimeHrs1,a.SLAResolveTimeHours=b.TimeHrs2
+	from vCrm_Calls a with(nolock)
+	join nCore_CallToSLA b with(nolock) on a.iTransId=b.iTransId
+	where a.iTransId=@iTransId
+
+END
+
+
+==================================================================================
+
+ALTER VIEW nCore_CallToSLA
+as
+SELECT 
+  SUM(CASE WHEN TypeSLA = 1 THEN TimeHrs END) AS TimeHrs1,
+  SUM(CASE WHEN TypeSLA = 2 THEN TimeHrs END) AS TimeHrs2,
+  
+  iMasterId,
+  DistanceFrom,
+  DistanceTo,
+  dbo.fCore_IntToTime(TimeFrom) AS TimeFrom,
+  dbo.fCore_IntToTime(TimeTo) AS TimeTo,
+  iTransId
+FROM 
+  (
+    SELECT 
+      TimeHrs,
+	  TypeSLA,
+      iMasterId,
+      DistanceFrom,
+      DistanceTo,
+      TimeFrom,
+      TimeTo,
+      iTransId 
+    FROM 
+      udv_CalculateTimeDifference AS a WITH (NOLOCK) 
+      JOIN vCrm_Calls AS b WITH (NOLOCK) ON a.iMasterId = b.SLANumber 
+    WHERE 
+      b.DistancefromCompany BETWEEN DistanceFrom AND DistanceTo 
+      AND b.iCreatedDate BETWEEN dbo.fCore_DateTimeToInt(dbo.fCore_IntIntToDateTime(dbo.fCrm_DateFromBigInt(b.iCreatedDate), TimeFrom)) 
+      AND dbo.fCore_DateTimeToInt(DATEADD(hh, a.time_difference_in_ms, dbo.fCore_IntIntToDateTime(dbo.fCrm_DateFromBigInt(b.iCreatedDate), TimeFrom)))
+
+    UNION ALL 
+
+    SELECT 
+    TimeHrs,
+	  TypeSLA,
+      iMasterId,
+      DistanceFrom,
+      DistanceTo,
+      TimeFrom,
+      TimeTo,
+      iTransId 
+    FROM 
+      udv_CalculateTimeDifference AS a WITH (NOLOCK) 
+      JOIN vCrm_Calls AS b WITH (NOLOCK) ON a.iMasterId = b.SLANumber 
+    WHERE 
+      b.DistancefromCompany BETWEEN DistanceFrom AND DistanceTo 
+      AND b.iCreatedDate BETWEEN dbo.fCore_DateTimeToInt(dbo.fCore_IntIntToDateTime(dbo.fCrm_DATEADD(1, dbo.fCrm_DateFromBigInt(b.iCreatedDate), -1), TimeFrom)) 
+      AND dbo.fCore_DateTimeToInt(DATEADD(hh, a.time_difference_in_ms, dbo.fCore_IntIntToDateTime(dbo.fCrm_DATEADD(1, dbo.fCrm_DateFromBigInt(b.iCreatedDate), -1), TimeFrom)))
+  ) AS a 
+WHERE 
+  a.iTransId >0
+GROUP BY 
+  iMasterId, 
+  DistanceFrom, 
+  DistanceTo, 
+  TimeFrom, 
+  TimeTo, 
+  iTransId;
+===========================================================================
+CREATE view udv_CalculateTimeDifference
+as
+SELECT case when TimeFrom>TimeTo then DATEDIFF(HOUR,
+               CAST(CONVERT(VARCHAR(10), GETDATE(), 120) + ' '+dbo.fCore_IntToTime(TimeFrom) AS DATETIME),
+               CAST(CONVERT(VARCHAR(10), DATEADD(DAY, 1, GETDATE()), 120) + ' '+ dbo.fCore_IntToTime(TimeTo) AS DATETIME)) 
+			   else  
+			   DATEDIFF(HOUR,
+               CAST(CONVERT(VARCHAR(10), GETDATE(), 120) + ' '+dbo.fCore_IntToTime(TimeFrom) AS DATETIME),
+               CAST(CONVERT(VARCHAR(10), GETDATE(), 120) + ' '+ dbo.fCore_IntToTime(TimeTo) AS DATETIME))
+			   end AS time_difference_in_ms,*
+			   from vuCore_SLAExtension_SLAMatrix_Details  WITH (NOLOCK) 
+			   where iMasterId>0

@@ -1,0 +1,10 @@
+ALTER view [dbo].[vCore_ibals_0] as
+select iProduct, iDate, iTransactionId, iInvTag, sum(IssuesVal) fQiss, sum(RctVal) fQrec, sum(mStockValue) mVal, 0 fAltQty, 0 fQCQty from
+(
+select iDate, iProduct, iInvTag,
+c.fQuantity, c.fQuantityinBase, b.iTransactionId,
+case when c.fQuantityInBase < 0 then fQuantityInBase else 0 end IssuesVal,
+case when c.fQuantityInBase > 0 then fQuantityInBase else 0 end RctVal, case when fQuantityInBase > 0 then mStockValue else 0 end mStockValue from tCore_Header_0 a WITH(READUNCOMMITTED) join tCore_Data_0 b WITH(READUNCOMMITTED) on a.iHeaderId = b.iHeaderId
+join tCore_Indta_0 c WITH(READUNCOMMITTED) on b.iBodyId = c.iBodyId where bUpdateStocks = 1 and bSuspended = 0 and iAuthStatus < 2 and bSuspendUpdateStocks = 0
+) a group by iDate, iProduct, iInvTag, iTransactionId
+GO

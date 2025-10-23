@@ -1,0 +1,84 @@
+CREATE OR ALTER VIEW nCore_TimeSheetDetails AS
+
+SELECT 
+    iMasterId,
+    [Sub project],
+    [Task],
+    [Staff Name],
+    SUM([Budget Hours]) AS [Budget Hours],
+    [Time Sheet],
+    SUM([Time]) AS [Actual Hours]
+FROM (
+    SELECT 
+        a.iMasterId,
+        a.sName AS [Sub project],
+        c.sName AS [Task],
+        e.sName AS [Staff Name],
+        a.PlannedHours AS [Budget Hours],
+        ISNULL(b.sName, '') AS [Time Sheet],
+
+        CASE WHEN a.iMasterId = b.SubProject AND a.StaffName = b.iStaffName  AND a.Task = b.Tasks 
+            THEN CAST(RIGHT('0' + CAST((CAST(LEFT(dbo.fCore_IntToTime(b.Time1), 2) AS INT) + 
+                 (CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) / 60)) AS VARCHAR), 2) + '.' + 
+                 RIGHT('0' + CAST((CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) % 60) AS VARCHAR), 2) AS DECIMAL(18, 2))
+
+            WHEN a.iMasterId = b.SubProject AND a.StaffName = b.iStaffName AND ISNULL(a.Task, 0) <> 0 AND ISNULL(b.Tasks, 0) = 0
+            THEN CAST(RIGHT('0' + CAST((CAST(LEFT(dbo.fCore_IntToTime(b.Time1), 2) AS INT) + 
+                 (CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) / 60)) AS VARCHAR), 2) + '.' + 
+                 RIGHT('0' + CAST((CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) % 60) AS VARCHAR), 2) AS DECIMAL(18, 2))
+
+                 ELSE 0.00 END AS [Time]
+
+    FROM vuCore_SubProject_TaskAllocation_Details a WITH (NOLOCK)
+    LEFT JOIN vuCore_Timesheet_TimeandAttendanceInformation_Details b WITH (NOLOCK)
+        ON a.iMasterId = b.SubProject AND a.Task = b.Tasks AND a.StaffName = b.iStaffName
+    LEFT JOIN vCore_TaskTemplate c WITH (NOLOCK)
+        ON a.Task = c.iMasterId
+    LEFT JOIN vCore_TaskTemplate d WITH (NOLOCK)
+        ON b.Tasks = d.iMasterId
+    LEFT JOIN vCrm_Users e WITH (NOLOCK)
+        ON a.StaffName = e.iMasterId
+    WHERE a.iMasterId > 0 -- Optional: AND e.sName = 'Rajan Shah'
+) AS detailed
+GROUP BY iMasterId, [Sub project], [Task], [Staff Name], [Time Sheet]
+
+UNION
+
+
+SELECT 
+    iMasterId,
+    [Sub Project],
+    [Task],
+    [Staff Name],
+    [Budget Hours],
+    [Time Sheet],
+    SUM([Actual]) AS [Actual Hours]
+FROM (
+    SELECT DISTINCT
+        a.iMasterId,
+        a.sName AS [Sub Project],
+        'Blank' AS [Task],
+        e.sName AS [Staff Name],
+        0.00 AS [Budget Hours],
+        b.sName AS [Time Sheet],
+
+
+        CASE WHEN a.iMasterId = b.SubProject AND a.StaffName = b.iStaffName 
+             THEN CAST( RIGHT('0' + CAST((CAST(LEFT(dbo.fCore_IntToTime(b.Time1), 2) AS INT) + 
+                  (CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) / 60)) AS VARCHAR), 2) + '.' + 
+                    RIGHT('0' + CAST(
+                  (CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) % 60) AS VARCHAR), 2) AS DECIMAL(18, 2))
+             ELSE 0.00 END AS [Actual]
+
+    FROM vuCore_SubProject_TaskAllocation_Details a WITH (NOLOCK)
+    LEFT JOIN vuCore_Timesheet_TimeandAttendanceInformation_Details b WITH (NOLOCK)
+        ON a.iMasterId = b.SubProject AND a.StaffName = b.iStaffName
+    LEFT JOIN vCore_TaskTemplate c WITH (NOLOCK)
+        ON a.Task = c.iMasterId
+    LEFT JOIN vCore_TaskTemplate d WITH (NOLOCK)
+        ON b.Tasks = d.iMasterId
+    LEFT JOIN vCrm_Users e WITH (NOLOCK)
+        ON a.StaffName = e.iMasterId
+    WHERE a.iMasterId > 0 -- Optional: AND e.sName = 'Rajan Shah' AND b.Tasks = 0
+) AS blank_tasks
+GROUP BY iMasterId, [Sub Project], [Task], [Staff Name], [Budget Hours], [Time Sheet];

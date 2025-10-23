@@ -1,0 +1,89 @@
+ALTER PROCEDURE [dbo].[udp_UpdateRequestUserWise_update] (@iTransId bigint, @iUserId int = 0)
+AS
+BEGIN
+  SELECT
+    @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0)
+
+  DECLARE @Shift int,
+          @Time int,
+          @empcount int,
+          @indexId int,
+          @NextEmployee int,
+          @MaxIndex int,
+          @iCreatedDatetime bigint,
+          @Typeofservice int
+
+  SELECT
+    @Time = dbo.fCore_TimeToInt(CONVERT(varchar, dbo.fCore_IntToDateTime(iCreatedDate), 108)),@iCreatedDatetime = iCreatedDate,@Typeofservice=TypeofRequest
+  FROM vCrm_Calls WITH (NOLOCK) WHERE iTransId = @iTransId;
+  
+  print('  typeofservice  ')
+  print(@Typeofservice)
+
+  SELECT
+    @Shift = iMasterId FROM vCore_ShiftMaster WITH (NOLOCK) WHERE ((ShiftEndTime < ShiftStartTime) AND ((@Time BETWEEN ShiftStartTime AND     dbo.fCore_TimeToInt('23:59:59')) OR (@Time BETWEEN dbo.fCore_TimeToInt('00:00:00') AND ShiftEndTime))) OR (@Time BETWEEN ShiftStartTime AND ShiftEndTime)
+  and TypeofService=@Typeofservice
+  print('shift masterid')
+  print(@shift)
+
+  DECLARE @tbl_ShiftEmps TABLE (iRowId int IDENTITY (1, 1),iEmployeeId int,iRowIndex int,iMasterId int,iShiftId int)
+  
+  INSERT INTO @tbl_ShiftEmps (iEmployeeId, iRowIndex, iMasterId, iShiftId)
+
+    SELECT EmployeeName,iRowIndex,iMasterId,[Shift] FROM vuCore_CallAssignment_ShiftEmployees_Details WHERE EmployeeName NOT IN (SELECT iAssignedTo
+    FROM vCore_LeaveApplication WHERE @iCreatedDatetime BETWEEN [Date] AND [EndTime]) AND [Shift] = @Shift and EmployeeName<>0
+    --select * from @tbl_ShiftEmps
+
+  DECLARE @iLastAssigned int, @iRowIndex int,@iNewUser int,@LeaveUser int;
+
+  SELECT TOP 1
+    @iLastAssigned = calls.iLastAssigned,@iRowIndex = calas.iRowId FROM vCrm_Calls calls WITH (NOLOCK)
+  INNER JOIN @tbl_ShiftEmps calas ON calas.iEmployeeId = calls.iLastAssigned WHERE calas.iShiftId = @Shift AND calls.iTransId <> @iTransId
+  ORDER BY calls.iCreatedDate DESC
+
+  IF (@iLastAssigned IS NULL)
+  BEGIN
+    SET @iLastAssigned = 0;
+    SET @iRowIndex = 0;
+  END
+    print('@iLastAssigned')
+  print(@iLastAssigned)
+    print('@iRowIndex')
+  print(@iRowIndex)
+  DECLARE @iMaxUsersInShift int;
+  SELECT TOP 1 @iMaxUsersInShift = MAX(iRowId) FROM @tbl_ShiftEmps WHERE iShiftId = @Shift;
+
+ -- print @iMaxUsersInShift
+
+  IF (@iRowIndex < @iMaxUsersInShift)
+  BEGIN
+    SELECT TOP 1 @iNewUser = iEmployeeId FROM @tbl_ShiftEmps WHERE iShiftId = @Shift AND iRowId = (@iRowIndex + 1);
+    print 'less then'
+    print(@iNewUser)
+  END
+
+
+
+  ELSE
+
+  IF (@iRowIndex = @iMaxUsersInShift)
+  BEGIN
+    SELECT TOP 1 @iNewUser = iEmployeeId FROM @tbl_ShiftEmps WHERE iShiftId = @Shift AND iRowId = 1
+
+    print @iLastAssigned
+    print @iRowIndex
+    print @iNewUser
+
+  --IF (@iNewUser IS NULL)
+  --    BEGIN
+
+  --        SELECT TOP 1 @iNewUser = iEmployeeId FROM @tbl_ShiftEmps WHERE iShiftId = @Shift and iRowId=(@iRowIndex+1) ;     
+  --    END
+
+  END
+
+  UPDATE vCrm_Calls SET iAssignedTo = @iNewUser,iStatusId = 57 WHERE iTransId = @iTransId
+
+  UPDATE vCrm_Calls SET iLastAssigned = @iNewUser,[Shift] = @Shift WHERE iTransId = @iTransId
+
+END

@@ -1,0 +1,62 @@
+CREATE  or ALTER VIEW nCore_ContractReport as
+select     CASE 
+        WHEN CHARINDEX('Year', [Contract Period]) > 0 THEN 
+            CAST(SUBSTRING([Contract Period], 1, CHARINDEX(' ', [Contract Period]) - 1) AS FLOAT) * 12 
+        WHEN CHARINDEX('Month', [Contract Period]) > 0 THEN 
+            CAST(SUBSTRING([Contract Period], 1, CHARINDEX(' ', [Contract Period]) - 1) AS FLOAT) / 12
+        ELSE NULL
+    END AS [Contract Dur],* from 
+(
+SELECT  'Service Contract' [Mod],
+       a.iTransId,
+       a.sName [Contract No],
+       b.sName [ParkingLotNo],
+       dbo.fCore_IntToDate(a.iStartDate) [Start Date],
+       dbo.fCore_IntToDate(a.iEndDate) [End Date],
+	   c.sName [Contract Period],
+       LEFT(c.sName, CHARINDEX(' ', c.sName) - 1) AS [Contract Duration], -- Extracts the numeric part
+       CASE WHEN CHARINDEX('Year',c.sName)>0 then fGrandTotal/12 else  (a.fGrandTotal/LEFT(c.sName, CHARINDEX(' ', c.sName) - 1)) end Rent, -- Extracts the text part
+       a.fGrandTotal,
+	   (a.fGrandTotal/LEFT(c.sName, CHARINDEX(' ', c.sName) - 1)) [Rent Per Month],dbo.fCore_IntToDateTime(a.iCreatedDate) [iCreatedDate],CONCAT(DATEDIFF(DD,GETDATE(),dbo.fCore_IntToDate(a.iEndDate)),' ','Days') [Expired In],
+	   dbo.fCrm_GetNumberListValue('1,Customer,2,Available,3,Mr. Cars,4,Museum ',a.ParkingStatus) ParkingStatus,a.Account,a.ParkingLotNo [ParkingLotNoId],e.sName [Location],a.Locationw
+FROM vCrm_SalesOrder a WITH (NOLOCK)
+LEFT JOIN vCore_LotMaster b WITH (NOLOCK) ON a.ParkingLotNo = b.iMasterId
+LEFT JOIN vCrm_ContractTerms c WITH (NOLOCK) ON a.iContractPeriod = c.iMasterId
+LEFT JOIN vCore_Location e with(NOLOCK) on a.Locationw=e.iMasterId
+WHERE a.iTransId>0 and a.ServicecontractStatus=1
+
+)a
+UNION ALL 
+select     CASE 
+        WHEN CHARINDEX('Year', [Contract Period]) > 0 THEN 
+            CAST(SUBSTRING([Contract Period], 1, CHARINDEX(' ', [Contract Period]) - 1) AS FLOAT) * 12 
+        WHEN CHARINDEX('Month', [Contract Period]) > 0 THEN 
+            CAST(SUBSTRING([Contract Period], 1, CHARINDEX(' ', [Contract Period]) - 1) AS FLOAT) / 12
+        ELSE NULL
+    END AS [Contract Duration],* from 
+(
+SELECT 'Renewal Contract' [Mod],
+       a.iMasterId,
+       a.sCode,
+       b.sName Name,
+       dbo.fCore_IntToDate(a.iStartDate) [Start Date],
+       dbo.fCore_IntToDate(a.iEndDate) [End Date],
+	   c.sName [Contract Period],
+       LEFT(c.sName, CHARINDEX(' ', c.sName) - 1) AS [Contract Duration], -- Extracts the numeric part
+       CASE WHEN CHARINDEX('Year',c.sName)>0 then a.fGrandTotal/12 else  (a.fGrandTotal/LEFT(c.sName, CHARINDEX(' ', c.sName) - 1)) end Rent,
+       a.fGrandTotal,
+	   (a.fGrandTotal /LEFT(c.sName, CHARINDEX(' ', c.sName) - 1)) rent,
+	   dbo.fCore_IntToDateTime(a.iCreatedDate) iCreatedDate,CONCAT(DATEDIFF(DD,GETDATE(),dbo.fCore_IntToDate(a.iEndDate)),' ','Days') NoOfDAys,
+	   dbo.fCrm_GetNumberListValue('1,Customer,2,Available,3,Mr. Cars,4,Museum ',a.ParkingStatus) ParkingStatus,a.Account,a.ParkingLotNo,e.sName,a.Locationw
+FROM vCore_RenewalContract a WITH (NOLOCK)
+LEFT JOIN vCore_LotMaster b WITH (NOLOCK) ON a.ParkingLotNo = b.iMasterId
+LEFT JOIN vCrm_ContractTerms c WITH (NOLOCK) ON a.iContractPeriod = c.iMasterId
+LEFT JOIN vCrm_SalesOrder d WITH (NOLOCK) ON a.OldContractNo = d.iTransId
+LEFT JOIN vCore_Location e with(NOLOCK) on a.Locationw=e.iMasterId
+WHERE a.iMasterId>0 and RenewalContractStatus=1
+) a
+
+--select * from nCore_ContractReport
+--where
+-- (( 0 in (@Location) and isnull(Locationw,0)  = isnull(a.Locationw,0) ) or (0 not in (@Location) and isnull(a.Locationw,0)   in ( @Location --)))
+--and (( 0 in (@ParkingLotNo) and isnull(ParkingLotNo,0)  = isnull(ParkingLotNo,0) ) or (0 not in (@ParkingLotNo) and --isnull(ParkingLotNo,0)   in ( @ParkingLotNo )))

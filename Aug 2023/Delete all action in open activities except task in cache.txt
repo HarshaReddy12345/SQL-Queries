@@ -1,0 +1,3 @@
+select * from vCrm_ModuleTypes where sModuleName like '%Activities%'
+select *  into cCrm_LayoutActions02082023 from cCrm_LayoutActions where iChildModuleTypeId=2572
+delete from cCrm_LayoutActions where iActionId in (4,5,22,47,48) and  iChildModuleTypeId=2572

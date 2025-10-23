@@ -1,0 +1,116 @@
+create or alter view achivementview as
+select Module,sUserName,[$Date$createdDate],iAssignedTo,COUNT(*)[Achieved] 
+from
+(select 
+       '1.Tele Call' [Module], 
+		 b.sUserName,
+	   dbo.fCrm_DateFromBigInt(a.iCreatedDate) [$Date$createdDate], 
+        a.iAssignedTo,	
+		
+       1 [Avchieved] 
+      
+from 
+       vCrm_TeleCalls a WITH(NOLOCK)
+        left join mSec_Users b  WITH(NOLOCK) on a.iAssignedTo = b.iUserId 
+		
+union all
+select 
+       '2.SuccessfullCalls' [Module], 
+		 b.sUserName,
+	   dbo.fCrm_DateFromBigInt(a.iCreatedDate) [$Date$createdDate], 
+        a.iAssignedTo,	
+		
+       1 [Avchieved] 
+      
+from 
+       vCrm_TeleCalls a  WITH(NOLOCK)
+        left join mSec_Users b  WITH(NOLOCK) on a.iAssignedTo = b.iUserId 
+		where dbo.fCrm_DATEDIFF(6,a.iStartDatetime,iEndDatetime)>120
+	   
+union all 
+select
+		'3.Leads' [Module],
+         b.sUserName,  
+         dbo.fCrm_DateFromBigInt(a.iCreatedDate) [$Date$createdDate], 
+         a.iAssignedTo, 
+         
+		 1 [Avchieved]
+		from 
+         vaCrm_Leads a 
+         left join mSec_Users b  WITH(NOLOCK) on a.iAssignedTo = b.iUserId
+		 
+union all 
+select
+		'4.Opportunities' [Module],
+		  e.sUserName,
+          dbo.fCrm_DateFromBigInt(c.iCreatedDate) [$Date$createdDate], 
+		  c.iAssignedTo,
+          1 [Avchieved]
+		 
+
+from 
+          vCrm_Opportunities c  WITH(NOLOCK)
+		  left join
+		  vCrm_SalesStages d  WITH(NOLOCK)
+		  on d.iStageId=c.iStage
+		  
+		  left join mSec_Users e  WITH(NOLOCK)
+		  on c.iAssignedTo=e.iUserId
+          where c.iStage<>11) bb
+		  
+		  group by bb.[$Date$createdDate],bb.sUserName,bb.iAssignedTo,bb.Module
+
+
+	-------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------------------------------------
+
+FUNCTION	 
+
+create or alter function dbo.udf_GetDates(@STARTDATE bigint,@ENDDATE bigint)
+returns @tblData table (Module varchar(20),Achieved int,[Target] int,[TargetPerDay] int,Datee bigint)
+as
+begin
+	--declare @STARTDATE bigint = dbo.fCore_DateToInt('2022-02-01')
+	--declare @ENDDATE bigint = dbo.fCore_DateToInt('2022-02-28')
+
+	;WITH cteTest (Module,[Achieved],[Target],[TargetPerDay],[Datee])
+	as
+	(select * from 
+	(select '3.Leads' [Module],1[Achieved],1040 [Target],40[TargetPerDay],@STARTDATE [Datee]
+	union all
+	select '4.Opportunities' [Module],1[Achieved],90 [Target],3[TargetPerDay],@STARTDATE [Datee]
+	union all
+	select '2.SuccessfullCalls' [Module],1[Achieved],90 [Target],3[TargetPerDay],@STARTDATE [Datee]
+	union all
+	select '1.Tele Call' [Module],1[Achieved],1820 [Target],70[TargetPerDay],@STARTDATE [Datee]) A
+	union all
+	select Module,Achieved,Target,TargetPerDay,dbo.fCrm_DATEADD(1,[Datee],1) from cteTest a   where [Datee]<@ENDDATE
+	)
+	insert into @tblData (Module,[Achieved],[Target],[TargetPerDay],[Datee])
+	select Module,[Achieved],[Target],[TargetPerDay],[Datee] from cteTest a  
+	
+	
+	order by 1 ASC,3 ASC
+	option (maxrecursion 3000) 
+
+return
+end
+==============================================================================================================================
+
+==============================================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 

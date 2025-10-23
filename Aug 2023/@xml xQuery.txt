@@ -1,0 +1,11 @@
+CREATE function [dbo].[fCore_Var100](@s xml)
+returns decimal(18,2)
+as
+begin
+declare @iProductId int
+declare @result decimal(18,2)
+
+select @iProductId=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')
+ select @result=dbo.Fn_GetSellingPrice(@iProductId)
+return @result
+end

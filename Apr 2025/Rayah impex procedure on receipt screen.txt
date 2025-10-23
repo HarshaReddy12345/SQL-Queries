@@ -1,0 +1,21 @@
+CREATE OR ALTER PROC udp_BalanceUpdate @iTransId bigint,@iUserId int=0
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+DECLARE @Amt decimal(18,2),@Sqn int,@blc decimal(18,2)
+select @Sqn=SQONo from vCore_Receipt with(nolock) where iMasterId=@iTransId
+select @Amt=InvoiceAmount-Amount from vCore_Receipt with(nolock) where  SQONo=@Sqn
+ 
+update vCore_Receipt set Balance=@Amt-BalanceAmt where iMasterId=@iTransId
+ 
+if exists(select 1 from vCore_Receipt with(nolock) where iMasterId<>@iTransId and SQONo=@Sqn)
+begin
+select top 1 @blc= Balance from vCore_Receipt with(nolock) where SQONo=@Sqn order by iCreatedDate desc
+ 
+update vCore_Receipt set Balance=@blc-Balance where iMasterId=@iTransId
+end
+else 
+update vCore_Receipt set Balance=@Amt where iMasterId=@iTransId
+update vCore_Receipt set [Status]=case when Balance=0.00 then 3 else 2 end where iMasterId=@iTransId
+ 
+end         

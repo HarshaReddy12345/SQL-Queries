@@ -1,0 +1,19 @@
+select top 100 percent
+    d.sName[AuthorizationName],
+    b.sName [Approval User]
+    ,a.sDescription
+	,e.sName[TravelTourRequestNo]
+    ,case a.iStatus when 114 then 'Approved' when 115 then 'Pending' when 117 then 'Rejected' end [Approval Status]  
+    ,c.sName[TravelTourSettlement]
+    ,c.sCode
+    ,a.iLevel
+    ,dbo.fCore_IntToDateTime(a.iCreatedDate)[ApprovalDate]
+from cCrm_Auth_Approvals a WITH(NOLOCK)
+inner join vCrm_Users b WITH(NOLOCK) on a.iUserId=b.iMasterId
+inner join vCore_TravelTourSettlement c WITH(NOLOCK) on a.iTransId=c.iMasterId
+left join vCrm_Approvals d WITH(NOLOCK) on a.iAuthorizationId=d.iMasterId
+left join vCore_TravelTourRequest e WITH(NOLOCK) on c.TravelTourRequestNo=e.iMasterId
+where a.iModuleId=2467 and ISNULL(e.iMasterId,0)>0
+and (( 0 in (@TravelTourRequestNo) and isnull(e.iMasterId,0)  = isnull(e.iMasterId,0) )
+ or (0 not in (@TravelTourRequestNo) and isnull(e.iMasterId,0)   in ( @TravelTourRequestNo )))
+    order by a.iTransId ASC,a.iLevel ASC

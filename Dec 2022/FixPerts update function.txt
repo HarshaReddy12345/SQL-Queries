@@ -1,0 +1,13 @@
+create or alter Procedure A_UpdateModule(@iMasterId bigint,@iUserId int)
+as 
+begin
+Declare @OppId int
+select @iMasterId = dbo.fCrm_IntToAPITransId(@iMasterId,0)
+select @OppId=Opportunity from vCrm_SalesEstimations with(NOLOCK) where @iMasterId=iMasterId 
+update tuCrm_Opportunities  with(ROWLOCK) set SalesEstimation=@iMasterId where iTransId=@OppId
+return @iMasterId
+end
+
+
+
+

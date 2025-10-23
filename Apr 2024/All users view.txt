@@ -1,0 +1,43 @@
+USE [Focus8010H0]
+GO
+
+/****** Object:  View [dbo].[vCrm_All_Users]    Script Date: 4/15/2024 6:39:53 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+create view [dbo].[vCrm_All_Users]
+                        AS
+                        select	coreusers.iUserId 'iMasterId',coreusers.sUserName 'sName',coreusers.sUserName,coreusers.sLoginName 'sCode',coreusers.sLoginAbbr,coreusers.iPwdPolicyId,coreusers.sPassword,coreusers.sEmail,coreusers.sPhone,coreusers.sMobile,coreusers.iGroupId,coreusers.sSecurityQuestion,
+                        coreusers.sSecurityAnswer,coreusers.iUserType,coreusers.iLinkId,coreusers.sDomainName,coreusers.sDomainUser,
+                        coreusers.bAccountDisabled,coreusers.bSendEmailNotification,coreusers.bAllowMultipleLogin,
+                        coreusers.bEmailonLoginFailure,coreusers.bEmailUseronLoginSuccess,coreusers.bDontLockAccount,coreusers.iStatus,
+                        coreusers.iNumInvalidAttempts,coreusers.iLockedTill,coreusers.iDays,coreusers.iBlockFromDate,coreusers.iBlockToDate,
+                        coreusers.iTimeRestrictionStartDate,coreusers.iTimeRestrictionEndDate,coreusers.iTimeRestrictionStartTime,coreusers.iTimeRestrictionEndTime,coreusers.iLocation,coreusers.iLanguage,
+                        coreusers.iTimeZone,coreusers.iERPRole,mur.iCRMRole,coreusers.iUserAccess,coreusers.iPWDChangeDate,
+                        case when coreusers.iUserType=1 and coreusers.iLinkId>0 then (select  top 1  iMasterId from vPay_Designation WITH(NOLOCK ReadUnCommitted) where iMasterId=coreusers.iLinkId) else crmusers.iDesignation end 'iDesignation',
+                        crmusers.iDepartmentId,crmusers.iShiftId,crmusers.sFirstName,crmusers.sLastName,crmusers.sExtentions,
+                        crmusers.sAddress,crmusers.iCityId,crmusers.iStateId,crmusers.sZip,crmusers.iCountryId,
+                        ( case when (select COUNT(*) from mCrm_UsersTreeDetails WITH(NOLOCK ReadUnCommitted) where iParentId=crmusers.iUserId )>0 then 1 else 0 end ) bGroup,
+                        ----( case when coreusers.iUserId=0 then NULL when mupemp.iParentId is null then 0 else mupemp.iParentId  end ) 'iParentId',
+                        --( case when coreusers.iUserId=0 then NULL when coreusers.iUserId=1 then 0 when isNull(mupemp.iParentId,0)=0 then 1 else mupemp.iParentId  end ) 'iParentId',
+                        mupemp.iParentId,
+                        isNull(coreusers.iLinkId,0) 'iEmployeeId'
+                        ,crmusers.iTeamId,coreusers.iCreatedBy,coreusers.iModifiedBy,coreusers.iCreatedDate,coreusers.iModifiedDate
+                        ,crmusers.iDefaultTab,crmusers.bInvalidEmail,crmusers.bUnsubscribe,crmusers.iEmpType,coreusers.iLocation 'iLocationId',crmusers.iSyncAccount,roles.sRoleName,
+                        crmusers.iReminderDays,crmusers.iReminderType,crmusers.iReminderTemplate,crmusers.bIncludeEmailAddress,crmusers.iThemeType,crmusers.iDashboardScrollMins
+                        ,crmusers.iStartIPAddress,crmusers.iEndIPAddress,crmusers.bOverrideRoleRestrictions,crmusers.shListViewRecords,crmusers.sIVROutNumber,
+                        crmusers.iWhatsAppState,crmusers.iLastLoginDate
+						,crmusers.iApprovalStatus,crmusers.sApprovalRemarks
+                        from mSec_Users as coreusers WITH(NOLOCK ReadUnCommitted) left outer join mCrm_Users crmusers WITH(NOLOCK ReadUnCommitted) on coreusers.iUserId=crmusers.iUserId
+                        inner join mCrm_UsersTreeDetails mupemp WITH(NOLOCK ReadUnCommitted) on mupemp.iMasterId=coreusers.iUserId
+                        inner join mSec_Users_Roles mur WITH(NOLOCK ReadUnCommitted) on mur.iUserId=coreusers.iUserId and mur.iYearId=0
+                        inner join cCrm_SecRole roles WITH(NOLOCK ReadUnCommitted) on roles.iRoleId=mur.iCRMRole
+
+
+             where coreusers.iUserType in (0,1,110) and coreusers.iStatus<8 
+GO
+
+

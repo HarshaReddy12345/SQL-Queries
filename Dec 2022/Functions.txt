@@ -1,0 +1,74 @@
+create or alter Procedure A_UpdateModule(@iMasterId bigint,@iUserId int)
+as 
+begin
+Declare @OppId int
+select @iMasterId = dbo.fCrm_IntToAPITransId(@iMasterId,0)
+select @OppId=Opportunity from vCrm_SalesEstimations with(NOLOCK) where @iMasterId=iMasterId 
+update tuCrm_Opportunities  with(ROWLOCK) set SalesEstimation=@iMasterId where iTransId=@OppId
+return @iMasterId
+end
+
+===========================================================================================
+1.SALES ENQUIRY
+============================================================================
+CREATE or ALTER function [dbo].[fCore_Var2002](@s xml)  
+returns int  
+as  
+begin  
+declare @DailyVisit int,@MasterId int,@Account int  
+declare @result int  
+  
+select @DailyVisit=@s.value('(/Fields/Header/Dailyvisit)[1]','int')  
+  
+set @result = (select top 1  iMasterId from vCore_Account where sName =(select top 1 sName from vCore_DailyVisit where iMasterId=@DailyVisit )  )
+  
+return @result  
+end 
+=====================================================================
+2.TRAVEL CLAIM
+======================================================================
+CREATE or ALTER function [dbo].[fCore_Var2001](@s xml)  
+returns int
+as  
+begin  
+declare @Owner int,@MasterId int,@Account int  
+declare @result int 
+  
+select @Owner=@s.value('(/Fields/Header/iAssignedTo)[1]','int')  
+  
+set @result = (Select top 1 iMasterId from vCore_Account where sName = 
+(select top 1 sName from vCrm_Users where iMasterId=@Owner and iMasterId<>1)  )
+  
+return @result  
+end
+===================================================================================
+3.DAILY VISIT
+======================================================================================
+
+CREATE or ALTER function [dbo].[fCore_Var2003](@s xml)  
+returns int  
+as  
+begin  
+declare @SELECTCUSTOMER int,@MasterId int,@Account int  
+declare @result int  
+  
+select @SELECTCUSTOMER=@s.value('(/Fields/Header/SELECTCUSTOMER)[1]','int')  
+  
+set @result = (select top 1  iMasterId from vCore_Account where sName =(select top 1 sName from vCore_Planner where iMasterId=@SELECTCUSTOMER )  )
+  
+return @result  
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,150 @@
+--Create or alter view dbo.MONTHLYREPORT as 
+
+select top 100 percent Module,sUserName,iCreatedDate [$Datetime$CreatedDate] ,MAX([Monthly Target]) [Month TGT] ,
+MAX([Daily Traget]) [Daily TGT],count(Avchieved) [Daily Achvd],(count(Avchieved)*100.00)/MAX([Daily Traget]) [Daily Achived %],
+(count(Avchieved)*100.00)/MAX([Monthly Target]) [Month Achvd %],count([Connected])[Connected/NotConnected] from 
+(
+SELECT
+      '7.Tele Call' [Module],
+      b.sUserName,
+      dbo.fCrm_DateFromBigInt(a.iCreatedDate) [$Date$createdDate],
+      a.iAssignedTo,
+      1 [Avchieved],
+      1820 [Monthly Target],
+      1820/26 [Daily Traget],
+      --dbo.getMonthOrMonthYearName(a.iCreatedDate,0) [Month-Year]
+      a.iCreatedDate,
+	  '' [Connected]
+    
+	FROM vCrm_TeleCalls a WITH (NOLOCK)
+    LEFT JOIN mSec_Users b WITH (NOLOCK)
+      ON a.iAssignedTo = b.iUserId
+    WHERE a.iTransId > 0 
+	and  b.iUserId<>1 and b.iUserId<>22 and b.iUserId<>15
+    
+	union all
+
+        select
+        '6.Contacts/Hour' [Module],
+         b.sUserName,  
+         dbo.fCrm_DateFromBigInt(a.iCreatedDate) [$Date$createdDate], 
+         a.iAssignedTo, 
+         1 [Avchieved],
+         1040 [Monthly Target],
+      1040/26 [Daily Traget],
+      --dbo.getMonthOrMonthYearName(a.iCreatedDate,0) [Month-Year]
+      a.iCreatedDate,
+	  '' [Connected]
+        
+		from 
+         vaCrm_Leads a 
+         left join mSec_Users b  WITH(NOLOCK) on a.iAssignedTo = b.iUserId
+         where isnull(a.Connected,-1)>0 and  b.iUserId<>1 and b.iUserId<>22 and b.iUserId<>15
+
+        union all
+
+		  select
+        '5.Appointments Completed' [Module],
+          e.sUserName,
+          dbo.fCrm_DateFromBigInt(A.iCreatedDate) [$Date$createdDate], 
+          A.iAssignedTo,
+          1 [Avchieved],
+           50 [Monthly Target],
+      2 [Daily Traget],
+      --dbo.getMonthOrMonthYearName(a.iCreatedDate,0) [Month-Year]
+      A.iCreatedDate,
+	  '' [Connected]
+
+          from 
+          vCrm_Appointments A  WITH(NOLOCK)
+          left join
+          vCrm_TaskStatus T  WITH(NOLOCK)
+          on A.iStatus=T.iTransId
+          
+          left join mSec_Users e  WITH(NOLOCK)
+          on A.iAssignedTo=e.iUserId
+          where A.iStatus=48 and  e.iUserId<>1 and e.iUserId<>22 and e.iUserId<>15
+         
+		 union all
+
+		 select
+        '4.Test Drive Completed' [Module],
+          e.sUserName,
+          dbo.fCrm_DateFromBigInt(TD.iCreatedDate) [$Date$createdDate], 
+          TD.iAssignedTo,
+          1 [Avchieved],
+           50 [Monthly Target],
+      2 [Daily Traget],
+      --dbo.getMonthOrMonthYearName(a.iCreatedDate,0) [Month-Year]
+      TD.iCreatedDate,
+	  '' [Connected]
+
+          from 
+
+          vCrm_TestDrive TD  WITH(NOLOCK)
+          left join 
+		  mSec_Users e  WITH(NOLOCK)
+          on TD.iAssignedTo=e.iUserId
+          where TDStatus=4 and  e.iUserId<>1 and e.iUserId<>22 and e.iUserId<>15
+          
+
+		  union all
+
+		  select
+        '3.Orders Cnvrtd' [Module],
+          e.sUserName,
+          dbo.fCrm_DateFromBigInt(opp.iCreatedDate) [$Date$createdDate], 
+          opp.iAssignedTo,
+          1 [Avchieved],
+          30 [Monthly Target],
+          30/26 [Daily Traget],
+      --dbo.getMonthOrMonthYearName(a.iCreatedDate,0) [Month-Year]
+      opp.iCreatedDate,
+	  '' [Connected]
+
+          from 
+
+          vCrm_Opportunities opp  WITH(NOLOCK)
+          left join 
+		  mSec_Users e  WITH(NOLOCK)
+          on opp.iAssignedTo=e.iUserId
+          where opp.iStatus=37 and  e.iUserId<>1 and e.iUserId<>22 and e.iUserId<>15
+
+		  union all
+		          select
+        '2.Connected' [Module],
+         b.sUserName,  
+         dbo.fCrm_DateFromBigInt(a.iCreatedDate) [$Date$createdDate], 
+         a.iAssignedTo, 
+         1 [Avchieved],
+         1040 [Monthly Target],
+      1040/26 [Daily Traget],
+      --dbo.getMonthOrMonthYearName(a.iCreatedDate,0) [Month-Year]
+      a.iCreatedDate,
+	  (a.Connected)
+        
+		from 
+         vaCrm_Leads a 
+         left join mSec_Users b  WITH(NOLOCK) on a.iAssignedTo = b.iUserId
+         where  a.iAssignedTo!=22 and a.iAssignedTo!=15 and a.iAssignedTo!=1
+		 and (a.Connected = 4 or a.Connected = 6 or a.Connected =11 or a.Connected = 14 )
+
+		  union all
+		          select
+        '1.NotConnected' [Module],
+         b.sUserName,  
+         dbo.fCrm_DateFromBigInt(a.iCreatedDate) [$Date$createdDate], 
+         a.iAssignedTo, 
+         1 [Avchieved],
+         1040 [Monthly Target],
+      1040/26 [Daily Traget],
+      --dbo.getMonthOrMonthYearName(a.iCreatedDate,0) [Month-Year]
+      a.iCreatedDate,
+	  (a.NotConnected)
+        
+		from 
+         vaCrm_Leads a 
+         left join mSec_Users b  WITH(NOLOCK) on a.iAssignedTo = b.iUserId
+         where  a.iAssignedTo!=22 and a.iAssignedTo!=15 and a.iAssignedTo!=1 
+		 and (a.NotConnected = 2 or a.NotConnected = 3 or a.NotConnected =4 or a.NotConnected = 5 or a.NotConnected = 6 or a.NotConnected = 7  )
+		  )aa group by aa.Module,aa.sUserName,aa.iCreatedDate

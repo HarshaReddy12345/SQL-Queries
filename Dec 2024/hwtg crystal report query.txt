@@ -1,0 +1,91 @@
+
+
+select a.iMasterId,b.sName [Item],c.sName [Product Type],a.[Description],a.Qty,a.Price,a.LabourCharges [Time],a.DiscountAmount,a.TaxAmount ,a.NetAmount,d.sCode [Sub Categroy],e.sCode [Category],
+CASE WHEN a.ProductType=4 then SUM(NetAmount) else 0 end TotalParts,CASE WHEN a.ProductType=8 then SUM(NetAmount) else 0 end TotalLabour,a.TotalNetAmount,a.TotalBaseAmount[subtotal],a.TotalDiscountAmount[TOtaldisc],a.TotalNetAmount[totalnet],a.TotalTaxAmount[totaltax],(select Notice from muCore_Invoice where iMasterId=a.iMasterId)[Notice],
+a.ProductType,CASE when a.ProductType=8 then a.Qty*a.Price else 0.00 end [Labour Cahrges],h.sName [OffersAvailable],a.Notes
+from vuCore_Invoice_ItemInformation_Details a with(nolock)
+left join vCore_WorkOrders f with(nolock) on a.WorkOrderNo=f.iMasterId
+left join vCore_Product b with(nolock) on a.Item=b.iMasterId
+left join vCore_ProductType c with(nolock) on a.ProductType=c.iMasterId
+left join vCrm_SubCategory d with (nolock) on b.SubCategory=d.iMasterId
+left join vCrm_Category e with (nolock) on b.Category=e.iMasterId
+left join vuCrm_PartsReplaced_General_Details g with(nolock) on f.iMasterId=g.WorkOrderNo
+left join vCore_OffersTruckWash h with(nolock) on a.OfferSpecialNotice=h.iMasterId
+where a.iMasterId>0 and a.iMasterId={?iTransId} and c.iMasterId=4
+group by a.iMasterId,b.sName,c.sName,a.[Description],a.Qty,a.Price,a.LabourCharges,a.DiscountAmount,a.TaxAmount ,a.NetAmount,d.sCode,e.sCode,a.TotalNetAmount,a.TotalBaseAmount,a.TotalDiscountAmount,a.TotalNetAmount,a.TotalTaxAmount,a.ProductType,h.sName,a.Notes
+
+union all
+
+select a.iMasterId,b.sName [Item],c.sName [Product Type],a.[Description],a.Qty,a.Price,a.LabourCharges [Time],a.DiscountAmount,a.TaxAmount ,a.NetAmount,d.sCode [Sub Categroy],e.sCode [Category],
+CASE WHEN a.ProductType=4 then SUM(NetAmount) else 0 end TotalParts,CASE WHEN a.ProductType=8 then SUM(NetAmount) else 0 end TotalLabour,a.TotalNetAmount,a.TotalBaseAmount[subtotal],a.TotalDiscountAmount[TOtaldisc],a.TotalNetAmount[totalnet],a.TotalTaxAmount[totaltax],(select Notice from muCore_Invoice where iMasterId=a.iMasterId)[Notice],
+a.ProductType,CASE when a.ProductType=8 then a.Qty*a.Price else 0.00 end [Labour Cahrges],h.sName [OffersAvailable],a.Notes
+from vuCore_Invoice_ItemInformation_Details a with(nolock)
+left join vCore_WorkOrders f with(nolock) on a.WorkOrderNo=f.iMasterId
+left join vCore_Product b with(nolock) on a.Item=b.iMasterId
+left join vCore_ProductType c with(nolock) on a.ProductType=c.iMasterId
+left join vCrm_SubCategory d with (nolock) on b.SubCategory=d.iMasterId
+left join vCrm_Category e with (nolock) on b.Category=e.iMasterId
+left join vCore_OffersTruckWash h with(nolock) on a.OfferSpecialNotice=h.iMasterId
+where a.iMasterId>0 and a.iMasterId={?iTransId} and c.iMasterId=8
+group by a.iMasterId,b.sName,c.sName,a.[Description],a.Qty,a.Price,a.LabourCharges,a.DiscountAmount,a.TaxAmount ,a.NetAmount,d.sCode,e.sCode,a.TotalNetAmount,a.TotalBaseAmount,a.TotalDiscountAmount,a.TotalNetAmount,a.TotalTaxAmount,a.ProductType,h.sName,a.Notes
+
+union all
+
+select a.iMasterId,b.sName [Item],c.sName [Product Type],a.[Description],a.Qty,a.Price,a.LabourCharges [Time],a.DiscountAmount,a.TaxAmount ,a.NetAmount,d.sCode [Sub Categroy],e.sCode [Category],
+CASE WHEN a.ProductType=4 then SUM(NetAmount) else 0 end TotalParts,CASE WHEN a.ProductType=8 then SUM(NetAmount) else 0 end TotalLabour,a.TotalNetAmount,a.TotalBaseAmount[subtotal],a.TotalDiscountAmount[TOtaldisc],a.TotalNetAmount[totalnet],a.TotalTaxAmount[totaltax],(select Notice from muCore_Invoice where iMasterId=a.iMasterId)[Notice],
+a.ProductType,CASE when a.ProductType=8 then a.Qty*a.Price else 0.00 end [Labour Cahrges],h.sName [OffersAvailable],a.Notes
+from vuCore_Invoice_ItemInformation_Details a with(nolock)
+left join vCore_WorkOrders f with(nolock) on a.WorkOrderNo=f.iMasterId
+left join vCore_Product b with(nolock) on a.Item=b.iMasterId
+left join vCore_ProductType c with(nolock) on a.ProductType=c.iMasterId
+left join vCrm_SubCategory d with (nolock) on b.SubCategory=d.iMasterId
+left join vCrm_Category e with (nolock) on b.Category=e.iMasterId
+left join vCore_OffersTruckWash h with(nolock) on a.OfferSpecialNotice=h.iMasterId
+where a.iMasterId>0 and a.iMasterId={?iTransId} and c.iMasterId=7
+group by a.iMasterId,b.sName,c.sName,a.[Description],a.Qty,a.Price,a.LabourCharges,a.DiscountAmount,a.TaxAmount ,a.NetAmount,d.sCode,e.sCode,a.TotalNetAmount,a.TotalBaseAmount,a.TotalDiscountAmount,a.TotalNetAmount,a.TotalTaxAmount,a.ProductType,h.sName,a.Notes
+--------------------------------------------------
+select  iMasterId,CallNo,[Product Type],Item,SubCategory,[Product],iRowIndex,Qty,Price,DiscountAmount,NetAmount,iQuantity,[Description]
+from
+(
+select distinct concat(a.iMasterId,'-',a.Item) iMasterId,c.sName [CallNo],f.sName [Product Type],(select sName from vCore_Product p where p.iMasterId=c.iProductId) Item,(select sName from vCrm_SubCategory s where s.iMasterId=c.iSubCategoryId)SubCategory,h.sName [Product],a.iRowIndex,a.Qty,a.Price,a.DiscountAmount,a.NetAmount,d.iQuantity,a.[Description] from vuCore_Invoice_ItemInformation_Details a 
+left join vuCore_WorkOrders_ItemInformation_Details b on a.WorkOrderNo=b.iMasterId 
+left join vCrm_Calls c on b.TaskNo=c.iTransId and a.Item=c.iProductId
+left join vCore_ProductType f with(nolock) on a.ProductType=f.iMasterId
+left join  vuCrm_PartsReplaced_General_Details d with(nolock) on d.iCallId=c.iTransId 
+left join vCore_Product h on a.Item=h.iMasterId
+where a.iMasterId=1977 and c.sName<>''  and a.ProductType=1 
+)a
+union all 
+
+
+select  iMasterId,CallNo,[Product Type],Item,SubCategory,[Product],iRowIndex,Qty,Price,DiscountAmount,NetAmount,iQuantity,[Description]
+from
+(
+select distinct concat(a.iMasterId,'-',a.Item) iMasterId,c.sName [CallNo],f.sName [Product Type],(select sName from vCore_Product p where p.iMasterId=d.iProductId) Item,(select sName from vCrm_SubCategory s where s.iMasterId=d.SubCategory)SubCategory,h.sName [Product],a.iRowIndex,a.Qty,a.Price,a.DiscountAmount,a.NetAmount,d.iQuantity,a.[Description] from vuCore_Invoice_ItemInformation_Details a 
+left join vuCore_WorkOrders_ItemInformation_Details b on a.WorkOrderNo=b.iMasterId 
+left join vCrm_Calls c on b.TaskNo=c.iTransId and a.Item=c.iProductId
+left join vCore_ProductType f with(nolock) on a.ProductType=f.iMasterId
+left join  vuCrm_PartsReplaced_General_Details d with(nolock) on d.iCallId=c.iTransId
+left join vCore_Product h on a.Item=h.iMasterId
+where a.iMasterId=1977 and b.TaskNo=0  and a.ProductType=1 
+)a
+
+
+
+--------------------------------------------------
+select distinct a.iMasterId,a.sName [Invoice No],FORMAT(dbo.fCore_IntToDate(a.[Date]),'dd/MM/yyyy') [Date],b.sName [Customer],b.sBillingAddress,b.sBillingStreet,b.sBillingCity,b.sBillingState,c.sName [Country],b.sBillingPinCode,c.sName [Vehicle No],d.ODOMeter,d.VIN,b.sEmail,f.sPhone,f.sName,f.sLastName,f.sEmail [Con Mail],b.sFax,d.sName [Vehicle No],h.sName [Model], g.sName[Make],d.PlateNo[Plate No],d.Year [Year],sBillingPinCode,sShippingPinCode,a.Notice,i.sName [WorkOrderNo],j.sName [Estimate Id],a.CustomerPONumber,i.TaskNo,CASE WHEN a.ProductType=4 then SUM(a.NetAmount) else 0 end TotalParts,CASE WHEN a.ProductType=8 then SUM(a.NetAmount) else 0 end TotalLabour,a.TotalNetAmount,a.TotalBaseAmount[subtotal],a.TotalDiscountAmount[TOtaldisc],a.TotalNetAmount[totalnet],a.TotalTaxAmount[totaltax],
+a.ProductType,CASE when a.ProductType=8 then a.Qty*a.Price else 0.00 end [Labour Cahrges],k.sName [OffersAvailable],a.Notes
+from vuCore_Invoice_ItemInformation_Details a with(nolock) 
+left join vCore_Account b with(nolock) on a.Customer=b.iMasterId
+left join vCore_Country c with(nolock) on b.iBillingCountry=c.iMasterId
+left join vCrm_CustAssets d with(nolock) on a.Vehicle=d.iTransId
+left join vCrm_Contacts f with(nolock) on b.iMasterId=f.iAccountId
+left join vCore_Make g with(nolock) on d.Make=g.iMasterId
+left join vCore_Model h with(nolock) on d.Model=h.iMasterId
+left join vuCore_WorkOrders_ItemInformation_Details i with(nolock) on a.WorkOrderNo=i.iMasterId
+left join vCore_Estimation j with (nolock) on a.EstimateId=j.iMasterId
+left join vCore_OffersTruckWash k with(nolock) on a.OfferSpecialNotice=k.iMasterId
+where a.iMasterId>0 and a.iMasterId=2182 and TaskNo>0
+group by 
+a.iMasterId,a.sName ,b.sName ,b.sBillingAddress,b.sBillingStreet,b.sBillingCity,b.sBillingState,c.sName ,b.sBillingPinCode,c.sName ,d.ODOMeter,d.VIN,b.sEmail,f.sPhone,f.sName,f.sLastName,f.sEmail ,b.sFax,d.sName ,k.sName ,h.sName,g.sName,d.PlateNo,d.Year ,sBillingPinCode,sShippingPinCode,a.Notice,i.sName ,j.sName ,a.CustomerPONumber,i.TaskNo,a.TotalNetAmount,a.TotalBaseAmount,a.TotalDiscountAmount,a.TotalNetAmount,a.TotalTaxAmount,a.Date,a.ProductType,a.Qty,a.Price,a.Notes
+

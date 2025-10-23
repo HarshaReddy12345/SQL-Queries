@@ -1,0 +1,8 @@
+create function dbo.fCore_Var0001(@s xml)
+returns varchar(500)
+as
+begin
+	declare @iUserId int;
+	set @iUserId = @s.value('(Fields/Header/CurrentUser)[1]','int');
+	return (select top 1 sName from vCrm_Users where iMasterId=@iUserId)
+end

@@ -1,0 +1,13 @@
+ALTER PROC udp_UpdateTMMandCnt(@iTransId bigint,@iUserId int=0)  
+as  
+begin  
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)  
+DECLARE @cnt int  
+select @cnt=(ISNULL(b.Count123,0)+1) from vCore_EventAttendees a with(nolock)  
+join vCore_DonorAccounts b with(nolock) on a.DonarAccount=b.iMasterId  
+where a.iMasterId>0 and a.iMasterId=@iTransId 
+  
+update b set b.Count123=@cnt,b.TMMCount=(b.TMMCount+1) from vCore_EventAttendees a with(nolock)  
+join vCore_DonorAccounts b with(nolock) on a.DonarAccount=b.iMasterId  
+where a.iMasterId>0 and a.iMasterId=@iTransId  and a.iAttendanceflag=3 
+end
