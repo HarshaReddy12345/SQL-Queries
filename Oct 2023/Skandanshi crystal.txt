@@ -1,0 +1,104 @@
+select a.iTransId,a.sName [Quotation No],b.sName [Account],a.ProjectName,c.sName [Project Scope],d.sName [Designer],e.sName [Sales Executive],e.sMobile,e.sEmail,
+case  a.Room when 1 then a.DiscountAmount
+when 2 then a.DiscountAmount 
+ when 3 then a.DiscountAmount 
+when 4 then a.DiscountAmount 
+ when 5 then a.DiscountAmount end [Discount amount]
+from vuCrm_Quote_Discount_Details a
+join vCore_Account b on a.CustomerName=b.iMasterId
+join vCore_ProjectScope c on a.ProjectScpe=c.iMasterId
+join vCrm_Users d on a.Designer1=d.iMasterId
+join vCrm_Users e on a.SalesExecutive1=e.iMasterId
+where a.iTransId>0 and a.iTransId= {?iTransId}
+------------------------------------------------------------------------------------------------------------
+
+SELECT 
+    RoomType,
+    Category,
+    SUM([Base amount]) AS [Base amount],
+    SUM([Modular]) AS [Modular],
+   SUM([Onsite Services]) AS [Onsite Services],
+    SUM([Furniture]) AS [Furniture],
+    SUM([Appliance]) AS [Appliance],
+    SUM([Home Decor]) AS [Home Decor],
+    SUM([Modular Disc]) AS [Modular Disc],
+    SUM([Onsite Services Disc]) AS [Onsite Services Disc],
+    SUM([Furniture Disc]) AS [Furniture Disc],
+    SUM([Appliance Disc]) AS [Appliance Disc],
+    SUM([Home Decor Disc]) AS [Home Decor Disc],
+    iTransId,SUM(DiscountAmount) DiscountAmount,iSequence
+FROM
+    (SELECT DISTINCT
+        b.sName AS RoomType,
+        CASE
+            WHEN c.iMasterId = 1 THEN 'Modular'
+            WHEN c.iMasterId = 2 THEN 'Onsite Services'
+            WHEN c.iMasterId = 3 THEN 'Furniture'
+            WHEN c.iMasterId = 4 THEN 'Appliance'
+            WHEN c.iMasterId = 5 THEN 'Home Decor'
+        END AS Category,
+        CASE c.iMasterId
+            WHEN 1 THEN a.fAmount
+            WHEN 2 THEN a.fAmount
+            WHEN 3 THEN a.fAmount
+            WHEN 4 THEN a.fAmount
+            WHEN 5 THEN a.fAmount
+        END AS [Base amount],
+         CASE  WHEN c.iMasterId = 1 THEN a.fAmount else 0.00 end AS [Modular],
+         CASE  WHEN c.iMasterId = 2 THEN a.fAmount else 0.00 end  AS [Onsite Services],
+         CASE  WHEN c.iMasterId = 3 THEN a.fAmount else 0.00 end AS [Furniture],
+         CASE  WHEN c.iMasterId = 4 THEN a.fAmount else 0.00 end AS [Appliance],
+         CASE  WHEN c.iMasterId = 5 THEN a.fAmount else 0.00 end AS [Home Decor],
+        CASE  WHEN d.Room = 1 THEN d.DiscountAmount end AS [Modular Disc],
+         CASE  WHEN d.Room = 2 THEN d.DiscountAmount end  AS [Onsite Services Disc],
+         CASE  WHEN d.Room = 3 THEN d.DiscountAmount end AS [Furniture Disc],
+         CASE  WHEN d.Room = 4 THEN d.DiscountAmount end AS [Appliance Disc],
+         CASE  WHEN d.Room = 5 THEN d.DiscountAmount end AS [Home Decor Disc],
+        a.iTransId,d.DiscountAmount,a.iSequence
+    FROM vuCrm_Quote_General_Details a WITH(NOLOCK)
+    JOIN vCore_TypeofRooms b WITH(NOLOCK) ON a.RoomType = b.iMasterId
+    JOIN vCore_Type c WITH(NOLOCK) ON a.WorkType = c.iMasterId
+    LEFT JOIN vuCrm_Quote_Discount_Details d WITH(NOLOCK) ON a.iTransId = d.iTransId
+    WHERE a.iTransId ={?iTransId}) AS CombinedData
+GROUP BY RoomType, Category, iTransId,iSequence
+order by iSequence
+------------------------------------------------------------------------------------------------------------------------
+SELECT
+  b.sName [Room Name],
+  c.sName [Product Name],
+  CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=02GZ0&docid=', iDocsId) sImageUrl,
+  d.sName [ShutterMaterial],
+  e.sName [CoreMaterial],
+  a.depth,
+  a.height,
+  a.width,
+  a.iQuantity,
+  a.fAmount
+FROM vuCrm_Quote_General_Details a WITH (NOLOCK)
+JOIN vCore_TypeofRooms b WITH (NOLOCK)
+  ON a.RoomType = b.iMasterId
+JOIN vCore_Product c WITH (NOLOCK)
+  ON a.iProductId = c.iMasterId
+JOIN vCore_ShutterMaterial d WITH (NOLOCK)
+  ON a.ShutterMaterial = d.iMasterId
+JOIN vCore_Description e WITH (NOLOCK)
+  ON a.sCoreMaterial = e.iMasterId
+LEFT JOIN (SELECT
+  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,
+  iModuleTypeId,
+  iDocumentId,
+  sFileName,
+  iRelatedTo,
+  iIndex
+FROM vCrm_Documents WITH (NOLOCK)
+WHERE iModuleTypeId = 2306
+AND iFieldId = 302625) Docs
+  ON Docs.iRelatedTo = c.iMasterId
+WHERE a.iTransId = {?iTransId}
+ORDER BY a.iSequence
+
+--------------------------------------------------------------------------------------------------------------------
+select fSubTotal [Total Base Amount],fOverallDiscount,ProjectManagementandDesignFeesAmount,
+((fSubTotal-fOverallDiscount)+ProjectManagementandDesignFeesAmount) [Sub Total],TotalTaxAmount [GST],TotalNetAmount from vCrm_Quote 
+where iTransId>0 and iTransId =15
+--join tuCrm_Quote b on a.iTransId=b.iTransId

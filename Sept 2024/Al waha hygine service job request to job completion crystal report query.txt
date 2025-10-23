@@ -1,0 +1,111 @@
+
+
+    
+--xsp_GetRptJobRequest 28793    
+ALTER procedure [dbo].[xsp_GetRptJobRequest](@iTransid int)    
+as    
+begin    
+select distinct cal.iTransId,cal.sName [JobReq],prop.sName property,ac.sName [ClientName],pr.sName [Priority]    
+,cal.sPhone,cat.sName [Category]    
+,concat(format(dbo.fCore_IntToDate( cal.iPreferredDate),'dd/MM/yyyy'),' ' ,dbo.fCore_IntToTime(cal.iPreferredTime)) SchDate    
+,reqStat.sName [WorkCompleted],callWorkLog.sRemarks [JcRemarks]    
+,dbo.fCore_IntToTime( ucallWorkLog.iStartTime) StartTime,dbo.fCore_IntToTime( ucallWorkLog.iEndTime) EndTime    
+,dbo.fCore_IntToDate( ucallWorkLog.iStartDate) StartDate,dbo.fCore_IntToDate( ucallWorkLog.iEndDate) EndDate    
+,concat(usr.sFirstName,' ',usr.sLastName)TechName     
+,format(dbo.fCore_IntToDateTime( cal.iCreatedDate),'dd/MM/yyyy') CreatedDtae    
+,cal.sSubject,ucallWorkLog.sRemarks JCRemarks,isnull(ProductCount,0) ProductCount    
+,cast( ucallWorkLog.CustomerSignatureName as nvarchar(500)) [custSignature],    
+--ucallWorkLog.CustomerSignatureName [custSignatureName]    
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',Docs.iDocsId) sImageUrlCust,    
+--,CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=0F0&docid=',Techsign.iDocsId) sImageUrlTech  ,  
+CASE WHEN ucallWorkLog.Cockroaches = 1 THEN 'Yes' ELSE 'No' END [Cockroaches],  
+CASE WHEN ucallWorkLog.BedBugs = 1 THEN 'Yes' ELSE 'No' END [BedBugs],  
+CASE WHEN ucallWorkLog.Rodent = 1 THEN 'Yes' ELSE 'No' END [Rodent],  
+CASE WHEN ucallWorkLog.Ants = 1 THEN 'Yes' ELSE 'No' END [Ants],  
+CASE WHEN ucallWorkLog.FlyingInsects = 1 THEN 'Yes' ELSE 'No' END [FlyingInsects],  
+CASE WHEN ucallWorkLog.Weevils = 1 THEN 'Yes' ELSE 'No' END [Weevils],  
+CASE WHEN ucallWorkLog.Termite = 1 THEN 'Yes' ELSE 'No' END [Termite],  
+CASE WHEN ucallWorkLog.Cat = 1 THEN 'Yes' ELSE 'No' END [Cat],  
+CASE WHEN ucallWorkLog.Others = 1 THEN 'Yes' ELSE 'No' END [Others],  
+CASE WHEN ucallWorkLog.GPC = 1 THEN 'Yes' ELSE 'No' END [GPC],  
+CASE WHEN ucallWorkLog.TC = 1 THEN 'Yes' ELSE 'No' END [TC],  
+CASE WHEN ucallWorkLog.FM = 1 THEN 'Yes' ELSE 'No' END [FM],  
+CASE WHEN ucallWorkLog.DisinfectionService = 1 THEN 'Yes' ELSE 'No' END [DisinfectionService],  
+CASE WHEN ucallWorkLog.Cleaning = 1 THEN 'Yes' ELSE 'No' END [Cleaning],  
+CASE WHEN ucallWorkLog.WaterTankCleaning = 1 THEN 'Yes' ELSE 'No' END [WaterTankCleaning],  
+CASE WHEN ucallWorkLog.Routine = 1 THEN 'Yes' ELSE 'No' END [Routine],  
+CASE WHEN ucallWorkLog.Retreatment = 1 THEN 'Yes' ELSE 'No' END [Retreatment],  
+CASE WHEN ucallWorkLog.CallOut = 1 THEN 'Yes' ELSE 'No' END [CallOut],  
+CASE WHEN ucallWorkLog.Followup = 1 THEN 'Yes' ELSE 'No' END [Followup],  
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',bef1.iDocsId) Before1 ,  
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',Aft1.iDocsId) After1,  
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',bef2.iDocsId) Before2 ,  
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',Aft2.iDocsId) After2,  
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',bef3.iDocsId) Before3 ,  
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',Aft3.iDocsId) After3 ,  
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',bef4.iDocsId) Before4 ,  
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',Aft4.iDocsId) After4 ,  
+ucallWorkLog.HygieneStandard,ucallWorkLog.AreaTreated,so.sName [Job Order],ucallWorkLog.JobCompletionNo [Job Completion No],con.sName [Contract Name],cal.sName[Job Request No], ucallWorkLog.PreparationStatus, ucallWorkLog.InfestationLevel,tech.sName [Technician Name],
+CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=G30&docid=',Tech.iDocsId) TechSignature,ucallWorkLog.PesticideName,ucallWorkLog.Usage ,ucallWorkLog.EvaluateOurService
+  
+from vCrm_Calls cal with(nolock)   
+inner join mCore_Account ac with(nolock) on ac.iMasterId=cal.iAccountId    
+inner join mCrm_Property prop with(nolock) on prop.iMasterId=cal.iPropertyId    
+inner join vCrm_Priority pr with(nolock) on pr.iTransId=cal.iPriorityId    
+left join mCrm_Category cat with(nolock) on cat.iMasterId=cal.iCategoryId    
+left join tCrm_CallWorkLog callWorkLog with(nolock) on callWorkLog.iTransId=cal.iCallWorkLogId    
+left join vCrm_CallWorkLog ucallWorkLog with(nolock) on ucallWorkLog.iTransId=callWorkLog.iTransId    
+left join vCrm_RequestStatus reqStat with(nolock) on reqStat.iTransId=ucallWorkLog.iStatusId    
+left join mCrm_Users usr with(nolock) on usr.iUserId=ucallWorkLog.iAssignedTo    
+left join tCrm_PartsRequested umatReq with(nolock) on umatReq.iCallId=cal.iTransId    
+left join tCrm_SalesOrder so with(nolock) on cal.JobOrder=so.iTransId  
+left join (select count(iTransId) ProductCount,iTransId from vuCrm_PartsRequested_General_Details  with(nolock) where iTransId>0 group by iTransId ) matReq on matReq.iTransId=umatReq.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300395) Docs ON Docs.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300641) bef1 ON bef1.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300643) Aft1 ON Aft1.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300645) bef2 ON bef2.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300647) Aft2 ON Aft2.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300649) bef3 ON bef3.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300653) Aft3 ON Aft3.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300651) bef4 ON bef4.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 300655) Aft4 ON Aft4.iRelatedTo = ucallWorkLog.iTransId    
+LEFT JOIN vCrm_Contract con WITH (NOLOCK) on cal.iContractId=con.iTransId
+LEFT JOIN vCore_Technician tech WITH (NOLOCK) on cal.Technician=tech.iMasterId
+LEFT JOIN (SELECT dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId,2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex    
+FROM vCrm_Documents WITH (NOLOCK)    
+WHERE iModuleTypeId = 4352 AND iFieldId = 301083) Tech ON Tech.iRelatedTo = ucallWorkLog.iTransId
+--where cal.sName='AWH-JR-27067'   28793 
+where cal.iTransId=@iTransid  
+--group by cal.sName ,prop.sName ,ac.sName ,pr.sName     
+--,cal.sPhone,cat.sName     
+--,concat(format(dbo.fCore_IntToDate( cal.iPreferredDate),'dd/MM/yyyy'),' ' ,dbo.fCore_IntToTime(cal.iPreferredTime))     
+--,reqStat.sName ,callWorkLog.sRemarks     
+--,dbo.fCore_IntToTime( ucallWorkLog.iStartTime) ,dbo.fCore_IntToTime( ucallWorkLog.iEndTime)     
+--,dbo.fCore_IntToDate( ucallWorkLog.iStartDate) ,dbo.fCore_IntToDate( ucallWorkLog.iEndDate)     
+--,cal.iCreatedDate,usr.sFirstName,usr.sLastName    
+--,cal.sSubject,ucallWorkLog.sRemarks    
+--,Docs.iDocsId,ucallWorkLog.CustomerSignatureName,cal.iTransId    
+--,ucallWorkLog.CustomerSignature     
+--,ucallWorkLog.CustomerSignatureName   
+end    
+GO
+
+

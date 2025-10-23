@@ -1,0 +1,142 @@
+ ALTER PROCEDURE [dbo].[udp_UpdateEnquiryStage](@iTransId BIGINT,@iUserId INT)    
+AS    
+BEGIN    
+    DECLARE @MobileNo INT    
+    DECLARE @Stage INT    
+    DECLARE @ParentLead INT    
+    DECLARE @iAssignedTo INT    
+    DECLARE @opportunity INT
+	DECLARE @Assign INT
+    SET @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0)    
+ select @iTransId =iTransId from vaCrm_Leads where iMasterId=@iTransId  
+    IF EXISTS     
+    (    
+        SELECT 1 FROM vaCrm_Leads a WITH (NOLOCK) WHERE iTransId <> @iTransId AND Number = (SELECT  Number FROM vaCrm_Leads WITH (NOLOCK) WHERE iTransId = @iTransId  )  
+    )    
+    BEGIN    
+ --print '1'  
+        SELECT TOP 1 @ParentLead = iTransId FROM vaCrm_Leads a WITH (NOLOCK) WHERE iTransId <> @iTransId AND Number = (SELECT Number FROM vaCrm_Leads WITH (NOLOCK) 
+		WHERE iTransId = @iTransId) ORDER BY iCreatedDate ASC    
+    
+		SELECT TOP 1 @iAssignedTo = iAssignedTo FROM tCrm_CampaignLeads a WITH (NOLOCK) WHERE a.iMemberId <> @iTransId AND a.iMemberId = @ParentLead    
+
+  --print @ParentLead  
+    
+        SET @Stage = 2    
+    END    
+    ELSE    
+    BEGIN    
+  --print '2'  
+        SET @Stage = 1    
+    END    
+  --print '3'  
+  --print '@stage'+cast(@Stage as varchar)  
+  UPDATE vaCrm_Leads  SET StatusOfLead = @Stage WHERE iTransId = @iTransId    
+ 
+ IF(ISNULL(@ParentLead,0)>0)  
+ BEGIN  
+  --print '@ParentLead'+cast(@ParentLead as varchar)  
+  --print '@iAssignedTo'+cast(@iAssignedTo as varchar)  
+  UPDATE vaCrm_Leads SET ParentLead = @ParentLead WHERE iTransId = @iTransId    
+  --UPDATE tCrm_CampaignLeads SET iAssignedTo = @iAssignedTo WHERE iMemberId = @iTransId   
+ END  
+
+END   
+  
+  ----------------------------------------------------------------------------
+ALTER PROCEDURE [dbo].[udp_UpdateEnquiryStage](@iTransId BIGINT, @iUserId INT)    
+AS    
+BEGIN    
+    DECLARE @MobileNo varchar(20)    
+    DECLARE @Stage INT    
+    DECLARE @ParentLead INT    
+    DECLARE @iAssignedTo INT    
+    DECLARE @opportunity INT
+    DECLARE @Assign INT
+    DECLARE @LeadMasterId INT
+    DECLARE @OpportunityStatus INT
+	DECLARE @Number varchar(20)
+	DECLARE @StatusLead int
+
+    SET @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0) 
+    SET @LeadMasterId = @iTransId 
+
+
+    SELECT @iTransId = iTransId FROM vaCrm_Leads WITH (NOLOCK) WHERE iMasterId = @iTransId 
+	--print @iTransId
+
+	SELECT top 1 @MobileNo=MobileNo from vCrm_Opportunities a WITH (NOLOCK) join vaCrm_Leads b WITH (NOLOCK) on a.MobileNo=b.Number where a.iTransId>0 and b.iTransId<>@iTransId
+	order by b.iCreatedDate Desc
+	--print @MobileNo
+	SELECT @Number=Number from vaCrm_Leads WITH (NOLOCK) where iTransId>0 and iTransId=@iTransId
+	--print @Number
+	select @StatusLead= StatusOfLead from vaCrm_Leads where iTransId=@iTransId
+	print @StatusLead
+	IF EXISTS  ( SELECT 1 FROM vaCrm_Leads a WITH (NOLOCK) WHERE iTransId <> @iTransId AND Number = (SELECT Number FROM vaCrm_Leads WITH (NOLOCK) WHERE iTransId = @iTransId)  )    
+	BEGIN    
+			SELECT TOP 1 @ParentLead = iTransId FROM vaCrm_Leads a WITH (NOLOCK) WHERE iTransId <> @iTransId AND Number = (SELECT Number FROM vaCrm_Leads WITH (NOLOCK) 
+			WHERE iTransId = @iTransId) ORDER BY iCreatedDate desc   
+			--print @ParentLead
+			SELECT top 1 @OpportunityStatus=iStatus from vCrm_Opportunities a WITH (NOLOCK)
+			join vaCrm_Leads b WITH (NOLOCK) on a.MobileNo=b.Number where a.iTransId>0 and
+			 b.iTransId=@ParentLead order by b.iCreatedDate desc
+            --print @OpportunityStatus
+			SELECT TOP 1 @iAssignedTo = iAssignedTo FROM vaCrm_Leads a WITH (NOLOCK) WHERE a.iMemberId <> @iTransId AND iTransId = @ParentLead    
+		    --print @iAssignedTo
+
+					SELECT TOP 1  @opportunity=b.iOpportunityId,@Assign=b.iAssignedTo FROM vaCrm_Leads a WITH (NOLOCK) 
+			join tCrm_ConvertedLeads b on a.iMasterId=b.iTransId 
+			WHERE a.iTransId  <>@iTransId AND Number = (SELECT Number FROM vaCrm_Leads WITH (NOLOCK) WHERE iTransId = @iTransId) 
+			ORDER BY iCreatedDate ASC 	--fetching opportunityid and owner from converted lead
+
+			SET @Stage = 2    
+		END    
+		ELSE    
+		BEGIN    
+			SET @Stage = 1    
+    END    
+
+		UPDATE vaCrm_Leads SET StatusOfLead = @Stage WHERE iTransId = @iTransId    
+		--print @Stage
+		IF(ISNULL(@ParentLead,0)>0)  
+		BEGIN 
+			--print 'in parent if' 
+			UPDATE tuCrm_Leads SET ParentLead = ISNULL(@ParentLead,0) WHERE iTransId = @LeadMasterId    
+			UPDATE vaCrm_Leads SET iAssignedTo = @iAssignedTo WHERE iTransId = @iTransId 
+			UPDATE vaCrm_Leads SET Opportunity = ISNULL(@opportunity,0), OpportunityOwner = ISNULL(@Assign,0) WHERE iTransId = @iTransId
+			--print @ParentLead
+			--print @iAssignedTo
+			--print @opportunity
+			--print @Assign
+			--print @iTransId
+			--print @LeadMasterId
+		END
+		ELSE 
+		BEGIN
+			  UPDATE tuCrm_Leads SET ParentLead = 0 WHERE iTransId = @LeadMasterId    
+			  UPDATE vaCrm_Leads SET iAssignedTo = 0 WHERE iTransId = @iTransId 
+			  UPDATE vaCrm_Leads SET Opportunity = 0, OpportunityOwner = 0 WHERE iTransId = @iTransId
+		END
+
+		IF ( @OpportunityStatus in (37,38) and @StatusLead=1 and @Number=@MobileNo)
+		BEGIN 
+			UPDATE tuCrm_Leads set StatusOfLead=2,Opportunity=0,OpportunityOwner=0,ParentLead=ISNULL(@ParentLead,0) where iTransId=@LeadMasterId 
+			--print 3
+		END
+	    
+		ELSE IF(@OpportunityStatus in (36,39,40) and @Number=@MobileNo)
+			BEGIN
+			UPDATE tuCrm_Leads set StatusOfLead=@Stage,Opportunity=@opportunity,OpportunityOwner=@Assign,ParentLead=@ParentLead where iTransId=@LeadMasterId 
+			--print 2
+			END
+		ELSE IF(@OpportunityStatus in (37,38) and @Number=@MobileNo) -- If Opportunity Stage is Lost or Closed and Same mobile no in Lead and Opportunity.
+			BEGIN
+			UPDATE tuCrm_Leads set StatusOfLead=1,Opportunity=0,OpportunityOwner=0,ParentLead=0 where iTransId=@LeadMasterId 
+			--print 1
+			END 
+
+END  
+GO
+
+
+END   

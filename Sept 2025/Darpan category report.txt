@@ -1,0 +1,61 @@
+CREATE OR ALTER VIEW nCore_SalesOrderCategoryWiseConversionReport  
+as  
+WITH SalesOrderDetails AS (  
+    SELECT   
+        a.iTransId,  
+        b.sName AS [Type of Curtain],  
+        SUM(a.fAmount) AS [Amount]  
+    FROM vuCrm_SalesOrder_General_Details a WITH(NOLOCK)  
+    JOIN vCore_TypeofCurtain b WITH(NOLOCK) ON a.TypeofCurtain = b.iMasterId  
+    WHERE a.iTransId > 0  
+    GROUP BY b.sName, a.iTransId  
+),  
+LocationTotals AS (  
+    SELECT   
+        a.iTransId,  
+        b.sName AS [Location],  
+        SUM(a.fAmount) AS [Total],  
+        b.iMasterId ,c.sName [Executive],c.iMasterId [ExecutiveId] 
+    FROM vuCrm_SalesOrder_General_Details a WITH(NOLOCK)  
+    LEFT JOIN vCore_Location b WITH(NOLOCK) ON a.iLocationId = b.iMasterId  
+    LEFT JOIN vCore_EmployeeMaster c WITH(NOLOCK) ON a.ExecutiveNameNew = c.iMasterId
+    WHERE a.iTransId > 0  
+    GROUP BY b.sName, a.iTransId, b.iMasterId,c.sName,c.iMasterId  
+),  
+MainData AS (  
+    SELECT   
+        c.[Location],  
+        b.[Type of Curtain],  
+        b.Amount,  
+        c.Total,  
+        a.SalesOrderDate AS [$Date$Date],  
+        IIF(c.Total = 0 OR c.Total IS NULL, 0,   
+            CAST(ROUND((b.Amount / c.Total) * 100.0, 2) AS DECIMAL(18,2))) AS [Percentage],c.iMasterId ,c.Executive,c.ExecutiveId 
+    FROM vCrm_SalesOrder a WITH(NOLOCK)  
+    JOIN SalesOrderDetails b ON a.iTransId = b.iTransId  
+    JOIN LocationTotals c ON a.iTransId = c.iTransId  
+    WHERE a.iTransId > 0   
+      
+),  
+GroupedData AS (  
+    SELECT   
+        [Location],  
+        [Type of Curtain],  
+        SUM(Amount) AS [Total Amount],  
+        MAX(Total) AS [Location Total], -- Assuming Total is the same for each location  
+        MAX([$Date$Date]) AS [Last Order Date], -- Or use MIN() for first order date  
+        IIF(SUM(Total) = 0 OR SUM(Total) IS NULL, 0,   
+            CAST(ROUND((SUM(Amount) / SUM(Total)) * 100.0, 2) AS DECIMAL(18,2))) AS [Percentage],iMasterId,Executive,ExecutiveId  
+    FROM MainData  
+    GROUP BY [Location], [Type of Curtain],iMasterId,Executive,ExecutiveId  
+)  
+SELECT top 100 percent  
+    [Location],  
+    [Type of Curtain],  
+    CAST([Total Amount] as decimal(18,2)) [Total Amount],  
+    CAST([Location Total] as decimal(18,2)) [Location Total],  
+    [Last Order Date] [$Date$Last Order Date],iMasterId,[Percentage],Executive,ExecutiveId  
+FROM GroupedData  
+where iMasterId>0  
+ORDER BY [Location], [Type of Curtain]  
+  

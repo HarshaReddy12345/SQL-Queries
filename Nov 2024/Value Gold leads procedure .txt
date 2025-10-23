@@ -1,0 +1,76 @@
+CREATE FUNCTION dbo.ConvMobNoTo10Digit (@input_number NVARCHAR(15))
+RETURNS NVARCHAR(10)
+AS
+BEGIN
+    DECLARE @clean_number NVARCHAR(10);
+
+    -- Check for '+91' prefix
+    IF LEFT(@input_number, 3) = '+91'
+        SET @clean_number = SUBSTRING(@input_number, 4, 10);
+
+    -- Check for '91' prefix without '+'
+    ELSE IF LEFT(@input_number, 2) = '91'
+        SET @clean_number = SUBSTRING(@input_number, 3, 10);
+
+    -- If no prefix, assume it's already a 10-digit number
+    ELSE
+        SET @clean_number = @input_number;
+
+    RETURN @clean_number;
+END;
+GO
+=====================================================================
+CREATE OR ALTER PROC udp_LeadsRestriction  @iTransId BIGINT,@iUserId INT = 0
+AS
+BEGIN
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+    DECLARE 
+			@SourceOfCreation INT,
+			@iModifiedDate BIGINT,
+			@DuplicateNumber VARCHAR(200),
+			@MobileNum VARCHAR(50),
+			@iUser INT,
+			@LeadState INT,
+			@DuplicateExists BIT = 0
+    SELECT 
+        @SourceOfCreation = a.iSourceOfCreation, @iModifiedDate = a.iModifiedDate, @MobileNum = dbo.ConvMobNoTo10Digit(MobileNo),@iUser = a.iCreatedBy,@LeadState = LeadState1 
+    FROM vCrm_Leads a WITH (NOLOCK) WHERE a.iTransId = @iTransId
+    SET @DuplicateExists = (
+        SELECT CASE WHEN EXISTS (
+            SELECT 1 FROM vCrm_Leads  WHERE iTransId <> @iTransId 
+              AND dbo.ConvMobNoTo10Digit(MobileNo) = @MobileNum) THEN 1 ELSE 0 END
+    );
+    -- Scenario 1: Prevent manually created duplicate leads
+    IF (ISNULL(@iModifiedDate, 0) = 0 AND (@SourceOfCreation <> 2 OR @SourceOfCreation <> 10))
+    BEGIN
+        IF @DuplicateExists = 1
+        BEGIN
+ 
+            SET @DuplicateNumber = (
+                SELECT TOP 1 LeadNumber FROM vCrm_Leads WITH (NOLOCK) WHERE iTransId <> @iTransId AND dbo.ConvMobNoTo10Digit(MobileNo) = @MobileNum 
+                ORDER BY iCreatedDate DESC
+            )
+            RAISERROR('%s:- %s', 16, 1, 'Duplicate Lead on : ', @DuplicateNumber)
+            EXEC udp_UpdateMobileNoOnLead @iTransId, 0;
+        END
+    END
+    -- Scenario 2: Handle system-created or imported leads
+    ELSE IF (ISNULL(@iModifiedDate, 0) = 0 AND (@SourceOfCreation = 2 OR @SourceOfCreation = 10))
+    BEGIN
+        IF @DuplicateExists = 1
+        BEGIN
+ 
+            EXEC udp_UpdateMobileNoOnLead @iTransId, 0;
+            UPDATE vCrm_Leads SET LeadState1 = 20003 WHERE iTransId = @iTransId
+        END
+		ELSE 
+		BEGIN
+ 
+		UPDATE vCrm_Leads SET LeadState1 = 20002 WHERE iTransId = @iTransId
+ 
+		END
+    END
+END;
+
+=========================================================================
+

@@ -1,0 +1,23 @@
+
+TURNOVER     CURRENT YEAR       REPORT   FOR   DASHBOARD
+
+
+
+Select c.sName[Region],b.Order_Value,b.Despatch_Val_Curr,
+       b.Back_Log_Value_Curr,a.Sortval,a.Mfg_Facility,
+	   a.CYM_No,a.CYM,a.Customer,a.Project,a.RF_No,a.Value_Y_INR,a.Curr,a.Value_Y_Curr
+ From 
+       Sales_Mfg_Facility_Calender_Year a with (Nolock)
+ left join
+       Total_Sales_Orders b on a.RF_No=b.RF_No
+ inner join
+       vCore_Location c on b.RegionId=c.iMasterId
+	   where (( 0 in (@Region) and isnull(RegionId,0)  = isnull(RegionId,0) ) 
+	         or (0 not in (@Region) and isnull(RegionId,0)   in ( @Region )))
+
+
+
+
+
+
+

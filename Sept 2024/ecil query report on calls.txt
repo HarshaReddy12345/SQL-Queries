@@ -1,0 +1,86 @@
+select * from
+(SELECT 
+    a.sName AS CallsNo,a.RequestDate AS [$Datetime$Request Date],a.sSubject AS sSubject,b.sName AS Branch,
+    c.sName AS BranchLocation,d.sName AS [Asset Name],a.iDueDate AS [$Date$Due Date],e.sName AS [Status],f.sName AS CallState,
+    g.sName AS [Priority],h.sName AS [Owner],j.sName AS [RS User],i.sName AS [Request Created],i.iCreatedDate AS [$Datetime$CreatedDate],
+    a.iFirstRespDue AS [$Datetime$FirstRespDue],a.iResPlanDue AS [$Datetime$ResPlanDue],a.iResolvedDue AS [$Datetime$ResolvedDue], 
+    CASE a.TypeOfCall WHEN '1' THEN N'Repair' WHEN '2' THEN N'Installation' WHEN '3' THEN N'PM CALL' END AS TypeOfCall,k.sName [Machine Actual Location],l.sName [Customer Name],
+        (SELECT  top 1 ISNULL(iStartDate,132645889) FROM vCrm_CallWorkLog cal WHERE cal.SerialNo =d.iTransId  and cal.iStatusId in(59,60) order by iStartDate asc) [$Date$SR Date]
+FROM vCrm_Calls a WITH(NOLOCK)
+LEFT JOIN vCore_MainBranch b WITH(NOLOCK) ON a.MainBranch = b.iMasterId  
+LEFT JOIN vCore_customerlocation c WITH(NOLOCK) ON a.Branch = c.iMasterId  
+LEFT JOIN vCrm_CustAssets d WITH(NOLOCK) ON a.iCustAssetId = d.iTransId  
+LEFT JOIN vCrm_RequestStatus e WITH(NOLOCK) ON a.iStatusId = e.iTransId  
+LEFT JOIN vCrm_RequestState f WITH(NOLOCK) ON a.iCallStateId = f.iTransId  
+LEFT JOIN vCrm_Priority g WITH(NOLOCK) ON a.iPriorityId = g.iTransId  
+LEFT JOIN vCrm_Users h WITH(NOLOCK) ON a.iAssignedTo = h.iMasterId  
+LEFT JOIN vCore_RapiscanUser i WITH(NOLOCK) ON a.RequestCreatedBy = i.iMasterId  
+LEFT JOIN vCrm_Users j WITH(NOLOCK) ON i.iAssignedTo = j.iMasterId   
+LEFT JOIN vCore_MachineactualLocation k WITH(NOLOCK) on a.MachineactualLocation=k.iMasterId
+LEFT JOIN vCore_Account l WITH(NOLOCK) on a.iAccountId=l.iMasterId
+--LEFT JOIN vCrm_CallWorkLog m WITH(NOLOCK) on a.iTransId=m.iCallId and d.iTransId=m.SerialNo
+WHERE a.iTransId > 0   and (a.iStatusId not in(59,60)) and a.iStatusId>0
+and a.TypeOfCall=3 and a.iDueDate>132645889
+and (( 0 in (@Customer) and isnull(l.iMasterId,0)  = isnull(l.iMasterId,0) ) or (0 not in (@Customer) and isnull(l.iMasterId,0)   in ( @Customer )))
+and (( 0 in (@MachineCode) and isnull(d.iTransId,0)  = isnull(d.iTransId,0) ) or (0 not in (@MachineCode) and isnull(d.iTransId,0)   in ( @MachineCode )))
+and (( 0 in (@MainBranch) and isnull(b.iMasterId,0)  = isnull(b.iMasterId,0) ) or (0 not in (@MainBranch) and isnull(b.iMasterId,0)   in ( @MainBranch )))	
+	)a
+	where dbo.fCrm_DATEDIFF(1,[$Date$SR Date],[$Date$Due Date])<105
+
+
+
+	--SELECT  top 1 iStartDate FROM vCrm_CallWorkLog cal WHERE cal.SerialNo =7722  and cal.iStatusId in(59,60) order by iStartDate asc
+
+	--select * from vCrm_CustAssets where sName='3339'
+
+	--select dbo.fCore_IntToDate(132645898)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

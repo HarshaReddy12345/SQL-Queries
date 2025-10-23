@@ -1,0 +1,11 @@
+CREATE PROC udp_UpdateInstrumentFromContract (@iTransId bigint,@iUserId int=0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+UPDATE b set b.SLAStatus=a.iSLAId,b.ContractStartDate=a.iStartDate,b.ContractEndDate=a.iEndDate
+from vuCrm_Contract_General_Details a WITH(NOLOCK)
+join vCrm_CustAssets b WITH (NOLOCK) on a.iCustAssetId=b.iTransId
+WHERE a.iTransId=@iTransId
+end
+
+

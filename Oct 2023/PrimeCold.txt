@@ -1,0 +1,28 @@
+SELECT
+   [Working Hours],
+  DATEDIFF(dd, dbo.fCore_IntToDate([$Date$iPreferredDate]), dbo.fCore_IntToDate([$Date$ClosedDate])) [Work in Days],
+  *
+FROM (SELECT
+  a.sName [Request No],
+  b.sName [Company Name],
+  c.sName [Contract Type],
+  a.iPreferredDate [$Date$iPreferredDate],
+  dbo.fCore_IntToTime(a.iPreferredTime) [PreferredTime],
+  a.ClosedDate [$Datetime$ClosedDate],
+  CASE
+    WHEN a.ClosedDate IS NULL THEN NULL
+    ELSE CAST(dbo.fCore_IntToDateTime(a.ClosedDate) AS time)
+  END [ClosedTime],
+  CASE
+    WHEN a.ClosedDate IS NULL THEN NULL
+    ELSE dbo.fCrm_DateFromBigInt(a.ClosedDate)
+  END [$Date$ClosedDate],
+ca.WorkingHours [Working Hours]
+FROM vCrm_Calls a WITH (NOLOCK)
+JOIN vuCrm_Calls ca WITH (NOLOCK) on a.iTransId=ca.iTransId
+JOIN vCore_Account b WITH (NOLOCK)
+  ON a.iAccountId = b.iMasterId
+JOIN vCrm_RequestType c WITH (NOLOCK)
+  ON a.iCallType = c.iTransId
+WHERE a.iTransId > 0
+AND dbo.fCrm_DateFromBigInt(a.iCreatedDate) BETWEEN @STARTDATE AND @ENDDATE) aa

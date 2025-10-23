@@ -1,0 +1,48 @@
+SELECT '1.MRN' AS [Screen], b.sName, SUM(NetWeight) AS [Weight], SUM(NetAmount) AS [Amount],b.iMasterId
+FROM vuCore_MRN_ProductInfo_Details a
+JOIN vCore_Location b on a.iLocation=b.iMasterId
+WHERE a.iMasterId > 0 --AND a.iCreatedDate BETWEEN @STARTDATETIME AND @ENDDATETIME
+GROUP BY b.sName,b.iMasterId
+
+UNION ALL
+
+SELECT '2.GoldStockOut' AS [Screen], b.sName, SUM(Qty) AS [Weight], SUM(Gross) AS [Amount],b.iMasterId
+FROM vuCore_GoldStockTransferOut_Body_Details a
+JOIN vCore_Location b on a.iLocation=b.iMasterId
+WHERE a.iMasterId > 0-- AND iCreatedDate BETWEEN @STARTDATETIME AND @ENDDATETIME
+GROUP BY b.sName,b.iMasterId
+
+UNION ALL
+
+select '3.Opening' [Screen],sName,SUM(([Weight]-[Weight1])) [Weight],SUM(([Amount]-[Amount1])) [Amount],iMasterId from
+(
+SELECT * FROM (
+    SELECT 'MRN' AS [Screen], 
+        b.sName, 
+        SUM(NetWeight) AS [Weight], 
+        SUM(NetAmount) AS [Amount],
+        SUM(0) AS [Weight1], 
+        SUM(0) AS [Amount1],b.iMasterId
+    FROM vuCore_MRN_ProductInfo_Details a
+    JOIN vCore_Location b ON a.iLocation = b.iMasterId
+    WHERE a.iMasterId > 0 --AND a.iCreatedDate BETWEEN @STARTDATETIME AND @ENDDATETIME
+    GROUP BY b.sName, b.iMasterId
+
+    UNION ALL
+
+    SELECT 'GoldStockOut' AS [Screen], 
+        b.sName, 
+        0 AS [Weight], 
+        0 AS [Amount],
+        SUM(Qty) AS [Weight1], 
+        SUM(Gross) AS [Amount1],b.iMasterId
+    FROM vuCore_GoldStockTransferOut_Body_Details a
+    JOIN vCore_Location b ON a.iLocation = b.iMasterId
+    WHERE a.iMasterId > 0 --AND a.iCreatedDate BETWEEN @STARTDATETIME AND @ENDDATETIME
+    GROUP BY b.sName, b.iMasterId
+) AS UnionResult
+
+
+)aa
+group by aa.sName,aa.iMasterId
+ORDER BY [Screen], sName, iMasterId

@@ -1,0 +1,142 @@
+CREATE view nCore_AssignmentStatusReport1 as
+SELECT       
+    ISNULL([Staff Name], '') AS [Staff Name],      
+    ISNULL([StaffId],0) [StaffId],      
+    ISNULL([SubProjectId],'') as [SubProjectId],      
+    ISNULL([Sub Project], '') AS [Sub Project],      
+    ISNULL([Assignment Type],'') [Assignment Type],      
+    ISNULL([Estimated Hrs],0.00) [Estimated Hrs],      
+    ISNULL([Actual Hours],0.00) [Actual Hours],      
+    ISNULL([Estimated Hrs],0.00)-ISNULL([Actual Hours],0.00) [Variance],  
+    ISNULL([Deadline Date],'') as  [Deadline Date],      
+    ISNULL(KeyIssues,'') [Key Issues],      
+    ISNULL(Deliverables,'') [Deliverables],      
+    iMasterId,      
+    ISNULL([Invoice Amt],0.00) [Invoice Amt],      
+    ISNULL([Confirmed], '') AS [Confirmed],      
+    ISNULL([Name Reserved], '') AS [Name Reserved],      
+    ISNULL([Docs Signed], '') AS [Docs Signed],      
+    ISNULL([Docs Filed], '') AS [Docs Filed],      
+    ISNULL([Initial Approval], '') AS [Initial Approval],      
+    ISNULL([In Progress], '') AS [In Progress],      
+    ISNULL([Final Approval], '') AS [Final Approval],      
+    ISNULL([Payment Made],'') AS [Payment Made],      
+    ISNULL([Legal Docs Received], '') AS [Legal Docs Received],      
+    ISNULL([Work Suspended], '') AS [Work Suspended],         
+    ISNULL(Remarks1, '') AS [Remarks1]      
+  
+FROM (      
+    SELECT       
+        ISNULL(c.sName, '') AS [Staff Name],      
+        CASE       
+            WHEN a.ForReportMaster =1 THEN 'Confirmed'      
+            WHEN a.ForReportMaster=18 THEN 'Name Reserved'      
+            WHEN a.ForReportMaster =3 THEN 'Docs Signed'      
+            WHEN a.ForReportMaster=2 THEN 'Docs Filed'      
+            WHEN a.ForReportMaster =16 THEN 'Initial Approval'      
+            WHEN a.ForReportMaster =15 THEN 'In Progress'      
+            WHEN a.ForReportMaster =10 THEN 'Final Approval'      
+            WHEN a.ForReportMaster =19 THEN 'Payment Made' 
+            WHEN a.ForReportMaster=17 THEN 'Legal Docs Received'
+            WHEN a.ForReportMaster =4 THEN 'Work Suspended'      
+            ELSE a.sName END AS [Task Status],       
+    
+            CASE WHEN LEN(b.CompletionDate) = 9  THEN FORMAT(dbo.fCore_IntToDate(b.CompletionDate), 'dd/MM/yyyy') ELSE '' END AS [Val],      
+    
+            ISNULL(d.sName, '') AS [Sub Project],      
+            CASE WHEN LEN(d.DeadlineDate) = 9 THEN FORMAT(dbo.fCore_IntToDate(d.DeadlineDate), 'dd/MM/yyyy')  ELSE '' END [Deadline Date],      
+            d.KeyIssues,      
+            d.iMasterId [SubProjectId],      
+    
+            -- Estimated Hours calculation
+            (SELECT CAST(FLOOR(SUM(ISNULL(PlannedHours, 0))) + 
+                    FLOOR((SUM(ISNULL(PlannedHours, 0)) - FLOOR(SUM(ISNULL(PlannedHours, 0)))) * 100 / 60) +  
+                    (((SUM(ISNULL(PlannedHours, 0)) - FLOOR(SUM(ISNULL(PlannedHours, 0)))) * 100) % 60) / 100.0  
+                    AS DECIMAL(18,2))
+            FROM vuCore_SubProject_TaskAllocation_Details 
+            WHERE iMasterId = d.iMasterId) [Estimated Hrs],      
+    
+           -- Simplified Actual Hours calculation
+      ISNULL((
+   SELECT SUM(
+       DATEPART(HOUR, dbo.fCore_IntToDateTime(Time1)) 
+       + DATEPART(MINUTE, dbo.fCore_IntToDateTime(Time1)) / 60.0
+   )
+   FROM vuCore_Timesheet_TimeandAttendanceInformation_Details
+   WHERE SubProject > 0 AND SubProject = d.iMasterId
+), 0.00) AS [Actual Hours],
+     
+           d.Deliverables,      
+           c.iMasterId [StaffId],      
+    
+        -- Invoice Amount
+        (SELECT ISNULL(SUM(TotalNetAmount), 0) FROM vCore_SalesInvoice x  
+         WHERE x.SubProjectName = d.iMasterId) [Invoice Amt], 
+        
+        b.iMasterId, 
+        e.sName [Assignment Type],  
+  
+        -- Remarks
+        (SELECT TOP 1 ISNULL(b2.Remarks, '') 
+         FROM vuCore_TaskAllocation_TaskAllocationStatus_Details b2 
+         WHERE b2.SubProjectNo = b.SubProjectNo 
+           AND LTRIM(RTRIM(ISNULL(b2.Remarks, ''))) <> '' 
+         ORDER BY b2.iRowIndex DESC) Remarks1  
+    
+    FROM vCore_SalesExecutive c WITH (NOLOCK)      
+    INNER JOIN vCore_SubProject d WITH (NOLOCK) ON d.SalesExecutiven = c.iMasterId     
+    INNER JOIN vuCore_TaskAllocation_TaskAllocationStatus_Details b WITH (NOLOCK) ON b.SubProjectNo = d.iMasterId      
+    LEFT JOIN vCore_TaskAllocationStatusUpdation a WITH (NOLOCK) ON b.TaskAllocationStatus = a.iMasterId      
+    LEFT JOIN vCore_Product e WITH (NOLOCK) ON b.AssignmentType = e.iMasterId 
+    WHERE c.iMasterId>0 AND d.SubProjectStatus <> 3
+) AS SourceTable      
+PIVOT (      
+    MAX([Val])      
+    FOR [Task Status] IN ([Confirmed], [Name Reserved], [Docs Signed], [Docs Filed],[Initial Approval], [In Progress], [Final Approval], [Payment Made], [Legal Docs Received], [Work Suspended])      
+) AS PivotTable;
+
+
+
+
+
+go
+
+
+CREATE VIEW nCore_AssignmentStatusReportFinal2 AS  
+WITH Base AS (  
+    SELECT  
+        *,
+        CAST(FLOOR([Estimated Hrs]) AS decimal(18,2)) AS EstH,  
+        CAST(ROUND(([Estimated Hrs] - FLOOR([Estimated Hrs])) * 100, 0) AS decimal(18,2)) AS EstM,  
+        CAST(FLOOR([Actual Hours]) AS decimal(18,2)) AS ActH,  
+        CAST(ROUND(([Actual Hours] - FLOOR([Actual Hours])) * 100, 0) AS decimal(18,2)) AS ActM  
+    FROM nCore_AssignmentStatusReport1 WITH(NOLOCK)  
+    WHERE StaffId > 0  
+),  
+Diff AS (  
+    SELECT  
+        b.*,
+        (b.EstH * 60 + b.EstM) - (b.ActH * 60 + b.ActM) AS VarTotalMinutes  
+    FROM Base b WITH(NOLOCK)  
+),  
+Normalized AS (  
+    SELECT  
+        d.*,
+        CASE WHEN d.VarTotalMinutes < 0 THEN -1 ELSE 1 END AS VarSign,
+        ABS(d.VarTotalMinutes) AS AbsVarMinutes  
+    FROM Diff d WITH(NOLOCK)  
+)  
+SELECT  
+    n.*,
+    (n.AbsVarMinutes / 60) AS VarHoursPart,
+    (n.AbsVarMinutes % 60) AS VarMinutesPart,  
+    CASE 
+        WHEN n.VarSign = -1 THEN '-' 
+        ELSE '' 
+    END + 
+    CAST(CAST(n.AbsVarMinutes / 60 AS INT) AS varchar(10)) + 
+    '.' + 
+    RIGHT('0' + CAST(CAST(n.AbsVarMinutes % 60 AS INT) AS varchar(2)), 2) AS Variance_HH_Dot_MM,  
+    CAST(n.VarSign * (n.AbsVarMinutes / 60.0) AS decimal(18,2)) AS VarianceDecimalHours  
+FROM Normalized n WITH(NOLOCK)
+where StaffId>0

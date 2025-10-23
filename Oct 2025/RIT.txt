@@ -1,0 +1,274 @@
+ALTER VIEW [dbo].[nCore_StudentLedger] AS
+--WRITTEN BY :- Harsha Reddy (SQL Support Developer / CRM Head Office Branch / 29-Aug-2025)
+
+WITH AllData AS    
+(    
+    SELECT     
+        s.iMasterId,
+        s.sName AS [Student],
+        s.sCode AS [UID],
+        b.sName AS [Program],
+        c.sName AS [Payment Plan],
+        d.sName AS [Term],
+        ISNULL(CONCAT_WS(', ', s.MobileNumber, s.ParentMobileNumber), '') AS [MobileNumber],
+        ISNULL(CONCAT_WS(', ', s.RITEmail, s.ParentEmailAddress, s.PersonalEmailiD), '') AS [RITEmail],
+        e.sName AS [ScholarshipSecA],
+        ISNULL(s.ScholarshipPerSecA,0.00) AS ScholarshipPerSecA,
+        f.sName AS [ScholarshipSecB],
+        ISNULL(s.ScholarshipPerSecB,0.00) AS ScholarshipPerSecB,
+        g.sName AS [ScholarshipSecC],
+        ISNULL(s.ScholarshipPerSecC,0.00) AS ScholarshipPerSecC,
+        h.sName AS [ScholarshipSecD],
+        ISNULL(s.ScholarshipPerSecD,0.00) AS ScholarshipPerSecD,
+        'Yes' AS [Financial Hold],
+        'Yes' AS [Guarantee Cheque],
+        2251 AS [Financial Hold Value],
+        CAST(10000 AS INT) AS [Guarantee Cheque Value],
+        x.[Voucher No],
+        x.DateSort AS DateSortRaw,
+        x.DueDateSort AS DueDateSortRaw,
+        DateSort,
+        DueDateSort,
+        x.[Semester],
+        x.[Description],
+        x.[CreditHours],
+        x.[Inv Amount],
+        x.[Payment Adjustment Amt],
+        x.NetAmount,  -- Added for consistent balance calculation
+        x.SortOrder,
+        x.iDate
+    FROM vCore_Student s WITH (NOLOCK)
+    LEFT JOIN vCore_Program b WITH (NOLOCK) ON s.Program=b.iMasterId
+    LEFT JOIN vCore_StudentType c WITH (NOLOCK) ON s.StudentType1=c.iMasterId
+    LEFT JOIN vCore_Term d WITH (NOLOCK) ON s.Term=d.iMasterId
+    LEFT JOIN vCore_Discount e WITH (NOLOCK) ON s.ScholarshipSecA=e.iMasterId
+    LEFT JOIN vCore_Discount f WITH (NOLOCK) ON s.ScholarshipSecB=f.iMasterId
+    LEFT JOIN vCore_Discount g WITH (NOLOCK) ON s.ScholarshipSecC=g.iMasterId
+    LEFT JOIN vCore_Discount h WITH (NOLOCK) ON s.ScholarshipSecD=h.iMasterId
+
+    OUTER APPLY    
+    (    
+        -------------------------------------------------------------------    
+        -- 1. Payment Received    
+        -------------------------------------------------------------------    
+        SELECT     
+            p.sName AS [Voucher No],
+            p.iDate AS DateSort,
+            0 AS DueDateSort,
+            st.sName AS [Semester],
+            sNotes AS [Description],
+            CAST(0.00 AS DECIMAL(18,2)) AS [CreditHours],
+            CAST(0.00 AS DECIMAL(18,2)) AS [Inv Amount],
+            ABS(p.fNet) AS [Payment Adjustment Amt],
+            -p.fNet AS NetAmount,  -- Negative for payments
+            1 AS SortOrder,
+            iDate   
+        FROM vCrm_FPaymentsReceived p WITH (NOLOCK)
+        LEFT JOIN vCore_Term st WITH (NOLOCK) ON p.Semester=st.iMasterId
+        WHERE p.iTransId>0 AND s.iMasterId = p.StudentName    
+
+        UNION ALL    
+        -------------------------------------------------------------------    
+        -- 2. Proforma Invoice    
+        -------------------------------------------------------------------    
+        SELECT     
+            pi.sName,
+            pi.iDate,
+            CASE WHEN LEN(pi.bDueDate)<>9 THEN 0 ELSE pi.bDueDate END,
+            st.sName,
+            pi.sDescription,
+            pi.CreditHours,
+            pi.NetAmount,
+            CAST(0.00 AS DECIMAL(18,2)),
+            pi.NetAmount AS NetAmount,  -- Positive for invoices
+            2,
+            iDate
+        FROM vuCrm_FSalesOrders_General_Details pi WITH (NOLOCK)
+        LEFT JOIN vCore_Term st WITH (NOLOCK) ON pi.SemesterB=st.iMasterId
+        WHERE pi.iTransId>0 AND s.iMasterId = pi.Student    
+
+        UNION ALL    
+        -------------------------------------------------------------------    
+        -- 3. Sales Invoice    
+        -------------------------------------------------------------------    
+        SELECT     
+            inv.sName,
+            inv.iDate,
+            CASE WHEN LEN(inv.bDueDate)<>9 THEN 0 ELSE inv.bDueDate END,
+            st.sName,
+            inv.sDescription,
+            CASE WHEN inv.iProductId=76 THEN inv.CreditHours ELSE 0.00 END,
+            inv.NetAmount,
+            CAST(0.00 AS DECIMAL(18,2)),
+            inv.NetAmount AS NetAmount,  -- Positive for invoices
+            3,
+            iDate
+        FROM vuCrm_FSalesInvoices_General_Details inv WITH (NOLOCK)
+        LEFT JOIN vCore_Term st WITH (NOLOCK) ON inv.SemesterB=st.iMasterId
+        WHERE inv.iTransId>0 AND s.iMasterId = inv.Student    
+
+        UNION ALL  
+        -------------------------------------------------------------------    
+        -- 4. Adhoc Invoice    
+        -------------------------------------------------------------------    
+        SELECT     
+            inv.sName,
+            inv.iDate,
+            CASE WHEN LEN(inv.bDueDate)<>9 THEN 0 ELSE inv.bDueDate END,
+            st.sName,
+            inv.sDescription,
+            0.00,
+            inv.NetAmount,
+            CAST(0.00 AS DECIMAL(18,2)),
+            inv.NetAmount AS NetAmount,  -- Positive for invoices
+            3,
+            iDate
+        FROM vuCore_AdhocInvoice_ItemDetails_Details inv WITH (NOLOCK)
+        LEFT JOIN vCore_Term st WITH (NOLOCK) ON inv.SemesterB=st.iMasterId
+        WHERE inv.iMasterId>0 AND s.iMasterId = inv.Student    
+
+        UNION ALL    
+        -------------------------------------------------------------------    
+        -- 5. Opening Balance    
+        -------------------------------------------------------------------    
+        SELECT     
+            ob.sName,
+            ob.[Date],
+            ISNULL(CASE WHEN LEN(ob.DueDate)<>9 THEN 0 ELSE ob.DueDate END,0),
+            t.sName,
+            ob.Notes,
+            CAST(0.00 AS DECIMAL(18,2)),
+            ob.DebitAmount,
+            ob.CreditAmount,
+            (ob.DebitAmount - ob.CreditAmount) AS NetAmount,  -- Net effect
+            4,
+            [Date]
+        FROM vuCore_OpeningBalance_ItemDetails_Details ob WITH (NOLOCK)
+        LEFT JOIN vCore_Semester t WITH (NOLOCK) ON ob.Semester=t.iMasterId
+        WHERE ob.Student=s.iMasterId  
+
+        UNION ALL    
+        -------------------------------------------------------------------    
+        -- 6. Credit Note    
+        -------------------------------------------------------------------    
+        SELECT     
+            cn.sName,
+            cn.[Date],
+            0,
+            '' AS Semester,
+            cn.Notes,
+            CAST(0.00 AS DECIMAL(18,2)),
+            cn.NetAmount,
+            CAST(0.00 AS DECIMAL(18,2)),
+            -cn.NetAmount AS NetAmount,  -- Negative for credit notes
+            5,
+            [Date]
+        FROM vCore_CreditNote cn WITH (NOLOCK)
+        WHERE s.iMasterId = cn.StudentName    
+
+        UNION ALL    
+        -------------------------------------------------------------------    
+        -- 7. Debit Note    
+        -------------------------------------------------------------------    
+        SELECT     
+            dn.sName,
+            dn.[Date],
+            0,
+            '' AS Semester,
+            dn.[Description],
+            CAST(0.00 AS DECIMAL(18,2)),
+            dn.NetAmount,
+            CAST(0.00 AS DECIMAL(18,2)),
+            dn.NetAmount AS NetAmount,  -- Positive for debit notes
+            6,
+            [Date]
+        FROM vCore_DebitNote dn WITH (NOLOCK)
+        WHERE s.iMasterId = dn.Student    
+
+        UNION ALL    
+        -------------------------------------------------------------------    
+        -- 8. Journals    
+        -------------------------------------------------------------------    
+        SELECT 
+            a.sName,
+            CASE WHEN LEN(a.Date)=9 THEN a.[Date] ELSE 0 END,
+            0,
+            '',
+            Notes,
+            0.00,
+            (SUM(Credit)-SUM(Debit)),
+            0.00,
+            (SUM(Credit)-SUM(Debit)) AS NetAmount,  -- Net effect
+            7,
+            [Date]
+        FROM vuCore_Journals_ItemDetails_Details a WITH (NOLOCK)
+        WHERE s.iMasterId=a.Student
+        GROUP BY a.sName,a.Date,a.Notes    
+    ) x    
+), Numbered AS    
+(    
+    SELECT     
+        iMasterId,    
+        Student,    
+        [Voucher No],    
+        FORMAT(dbo.fCore_IntToDate(DateSort),'dd-MMM-yy') AS [Date],    
+        CASE WHEN DueDateSort=0 THEN '' ELSE FORMAT(dbo.fCore_IntToDate(DueDateSort),'dd-MMM-yy') END AS [Due Date],    
+        DateSort,    
+        DueDateSort,    
+        [Semester],    
+        [Description],    
+        [CreditHours],    
+        [Inv Amount],    
+        [Payment Adjustment Amt],    
+        ISNULL(NetAmount,0) AS NetAmount,    
+        SortOrder,  
+        iDate,
+        ROW_NUMBER() OVER (PARTITION BY iMasterId ORDER BY 
+            CASE WHEN DateSort IS NULL THEN 1 ELSE 0 END,    
+            DateSort ASC,
+            CASE WHEN SortOrder = 1 THEN 0 ELSE 1 END,    
+            SortOrder,    
+            [Voucher No]
+        ) AS RowId,
+        [UID],[Program],[Payment Plan],[Term],[MobileNumber],[RITEmail],
+        [ScholarshipSecA],ScholarshipPerSecA,[ScholarshipSecB],ScholarshipPerSecB,
+        [ScholarshipSecC],ScholarshipPerSecC,[ScholarshipSecD],ScholarshipPerSecD,
+        [Financial Hold],[Guarantee Cheque],[Financial Hold Value],[Guarantee Cheque Value]
+    FROM AllData    
+)
+SELECT TOP 100 PERCENT    
+    iMasterId,    
+    ISNULL(Student, '') AS Student,    
+    ISNULL([Voucher No],'') AS [Voucher No],    
+    ISNULL([Date],'') AS [Date],    
+    ISNULL([Due Date],'') AS [Due Date],    
+    ISNULL([Semester],'') AS [Semester],    
+    ISNULL([Description],'') AS [Description],    
+    ISNULL([CreditHours],0.00) AS [CreditHours],    
+    ISNULL([Inv Amount],0.00) AS [Inv Amount],    
+    ISNULL(CAST([Payment Adjustment Amt] AS DECIMAL(18,2)),0.00) AS [Payment Adjustment Amt],    
+    CAST(
+        SUM(NetAmount) OVER (
+            PARTITION BY iMasterId
+            ORDER BY
+                CASE WHEN DateSort IS NULL THEN 1 ELSE 0 END,
+                DateSort ASC,
+                CASE WHEN SortOrder = 1 THEN 0 ELSE 1 END,
+                SortOrder,
+                [Voucher No]
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS DECIMAL(18,2)
+    ) AS [Balance Amount],
+    iDate,[UID],[Program],[Payment Plan],[Term],[MobileNumber],[RITEmail],
+    [ScholarshipSecA],ScholarshipPerSecA,[ScholarshipSecB],ScholarshipPerSecB,
+    [ScholarshipSecC],ScholarshipPerSecC,[ScholarshipSecD],ScholarshipPerSecD,
+    [Financial Hold],[Guarantee Cheque],[Financial Hold Value],[Guarantee Cheque Value]
+FROM Numbered
+WHERE iMasterId>0 AND iMasterId=7692
+ORDER BY
+    iMasterId,
+    CASE WHEN DateSort IS NULL THEN 1 ELSE 0 END,
+    DateSort ASC,
+    CASE WHEN SortOrder = 1 THEN 0 ELSE 1 END,
+    SortOrder,
+    [Voucher No];

@@ -1,0 +1,38 @@
+ALTER VIEW nCore_JobCardRpt as
+select 
+       a.iMasterId,
+	   a.sName [Doc No],
+	   FORMAT(dbo.fCore_IntToDate(a.[Date]),'dd/MM/yyyy') [Date],
+	   b.sName [Asset No],
+	   a.AssetNumber,
+	   a.DoorNo,
+	   c.sName [Brand],
+	   d.sName [Model],
+       FORMAT(dbo.fCore_IntToDate(a.PreviousServiceDate),'dd/MM/yyyy') [Previous Service Date],
+	   a.PreviousUsageReading,
+	   a.PresentReading,
+	   a.Complaints,
+	   a.DetailsofWorkDone,
+	   case a.JobCompleted when 1 then 'Yes' when 0 then 'No' end JobCompleted,
+	   FORMAT(dbo.fCore_IntToDate(a.ReleaseDate),'dd/MM/yyyy') [Release Date],
+	   a.Remarks,
+	   e.sName [Created By],
+	   f.sName [Technician],
+	   i.sName [Supervisor],
+	   j.sName [MechanicalEngineer],
+	   k.sName [DepartmentHead]
+from 
+        vCore_JobCard a with(nolock) 
+		left join vCrm_CustAssets b with(nolock) on a.Asset=b.iTransId
+		left join vCore_Brands c with(nolock) on a.Brand=c.iMasterId
+		left join vCore_Model d with(nolock) on a.Model=d.iMasterId
+		left join vCrm_Users e with(nolock) on a.iAssignedTo=e.iMasterId
+		left join mCore_TechnicianMaster_MultiValues g with (nolock) on a.TechnicianM=g.iMasterId
+		left join vCore_TechnicianMaster f with(nolock) on g.iMasterId=f.iMasterId
+		left join mCore_SupervisorMaster_MultiValues h with (nolock) on a.SupervisorMM=h.iMasterId
+		left join vCore_SupervisorMaster i with(nolock) on h.iMasterId=i.iMasterId
+		left join vCore_MechanicalEngineer j with(nolock) on a.MechanicalEngineerMM=j.iMasterId
+		left join vCrm_Users k with(nolock) on a.DepartmentHead=k.iMasterId
+where a.iMasterId>0
+
+

@@ -1,0 +1,127 @@
+    
+    
+    
+    
+    
+CREATE   view [dbo].[vRpt_QuoteMF]    
+as    
+select q.iMasterId iTransId,q.iMasterId,q.sName quoteno,opp.iMasterId enqtransid,opp.sName enqno ,dbo.fCore_IntToDate(ExpiryDate) iExpiryDate,qu.Description sDescription,qu.QuotationStatus,  
+curr.sCode currcode,curr.sName currname,    
+case when isnull(qu.Date,0)=0 then '' else dbo.fCore_IntToDate(qu.Date) end qdate,    
+acc.iMasterId accid,acc.sName cname,acc.CustomerNamePrint Customer, acc.sCode custcode,cont.iMasterId contid,cont.sName contact,dept.sName dept,qu.Phone sPhone,qu.Email sEmail,qu.Mobile,qu.AddressInfo,    
+cont.sMailingCity,cntry.sName mailingcntry,qu.AddressInfo + CHAR(13)+CHAR(10) +isnull(cont.sMailingCity,'')+ CHAR(13)+CHAR(10) +isnull(cntry.sName,'')  custaddress,    
+qu.InwardDocket,    
+qu.PONo PONumber,qu.EnquiryRef,qu.PSA,qu.CustomerProject,qu.CustomerRigInfo,dterms.sName deliveryterms,qu.TCDeliveryINCOTerms DeliveryIncoTerms,qu.PaymentTerms,    
+qu.TCNotes Note,qu.TCValidity Validity,cm.sName WHTType,qu.WHT,qu.VAT,qu.WHTType whttypeid,    
+qu.SSubTotal SubTotal,qu.STotalDiscount TotalDiscountFooter,qu.STotalAmountAftDisc TotalAmountAftDisc,qu.STotalWHTAmount TotalWHTAmount,    
+0 TotalAmountAfterWHT,qu.STotalRoundOff TotalRoundOff,qu.STotalTaxableAmount TotalTaxableAmount,qu.STotalVATAmount TotalVATAmount,qu.STotalAmount TotalAmountFooter,    
+qu.STotalNetAmount TotalNetAmount,    
+--bodydetails    
+'Finished Goods' groupby,1 gid,    
+qgu.EquipmentName,eqp.sCode Eqpcode,eqp.sName Eqpname,qgu.EquipmentDescription,qgu.Notes EquipmentNotes,qgu.Qty EquipmentQty,eqpunit.sName EqpUOM,qgu.iRowIndex Sequence,    
+--qgu.ServiceCode pid,pdt.sName pname,pdt.sCode pcode,qgu.Description proddesc,qgu.Notes,qgu.Sequence,u.sName units,qgu.Quantity qty,ServiceCostAmount,ServiceCostRate,    
+Rate,isnull(TotalPrice,0) SubTotalBody,isnull(qgu.Discount,0) discper, isnull(qgu.DiscountAmount,0)DiscountAmount,    
+isnull(qgu.TotalDiscountBody,0) TotalDiscount,AmountAfterDiscount,qgu.WHTBody,qgu.WHTAmountBody,qgu.AmountAfterWHT,isnull(qgu.Roundoff,0)Roundoff,    
+TaxableAmount,VATBody,VATAmount,qgu.fAmount netamountBP,    
+case when qu.WHTType=4 then qgu.fAmount-qgu.WHTAmountBody else fAmount end netamount,    
+isnull(TotalPrice,0)+isnull(Roundoff,0) stotalRndoff,isnull(TotalPrice,0)+isnull(Roundoff,0)-isnull(qgu.TotalDiscountBody,0) stotalRndoffwithdisc,    
+case when qu.WHTType=5 then TotalPrice+isnull(Roundoff,0)+isnull(WHTAmountBody,0) else TotalPrice+isnull(Roundoff,0) end stotalRndoffwwht,    
+--case when isnull(qgu.iQuantity,0)<>0 then cast(round(SubTotalBody/qgu.iQuantity,2) as numeric(36,2)) else 0 end rate,    
+PartNo,qgu.POLineitemno,CostCenterWBS,    
+pcp.sName pcontact, pcp.Email pemail,pcp.Mobile pmobile,    
+c.address1,c.address2,c.address4,c.pno,Addressline2,    
+sgn.sFirstName+' '+ sgn.sLastName signatory,degn.sName designation,    
+convert(date,dbo.fCore_IntToDateTime(q.iCreatedDate),105)createddate, createdby.sUserName createdby,    
+case when isnull(q.iModifiedDate,0)=0 then '' else convert(varchar,dbo.fCore_IntToDateTime(q.iModifiedDate),105) end modifieddate,    
+tc1.Description tc1desc,tc2.Description tc2desc,tc3.Description tc3desc,tc4.Description tc4desc,tc5.Description tc5desc,tc6.Description tc6desc,cast('' as varchar(100)) Qualitydno    
+--,bnk.sName bname,bnk.sCode bcode,bnk.Address baddress,bnk.SwiftCode,bnk.AcNumber,bnk.IBANNo,bnk.CurrencyName,bnk.IntermediaryBank,bnk.CorrespondentBank    
+from vRpt_Company c,    
+mCore_QuotationMF q inner join muCore_QuotationMF qu on q.iMasterId=qu.iMasterId and q.iStatus=0    
+inner join muCore_QuotationMF_BodyGroup_Details qgu on q.iMasterId=qgu.iMasterId    
+inner join mCore_EnquiryManufacturing opp on opp.iMasterId=qu.EnquiryNo    
+inner join vdCore_Account acc on acc.iMasterId=qu.Customer    
+inner join vCrm_Contacts cont on cont.iMasterId=qu.Contact    
+inner join mCore_Department dept on dept.iMasterId=qu.Department    
+left join mCore_CommonMaster cm on cm.iMasterId=qu.WHTType    
+left join mCore_DeliveryTerms dterms on dterms.iMasterId=qu.DeliveryTerms    
+left join muCore_TermsandConditions tc1 on tc1.iMasterId=qu.TermsandConditions1    
+left join muCore_TermsandConditions tc2 on tc2.iMasterId=qu.TermsandConditions2    
+left join muCore_TermsandConditions tc3 on tc3.iMasterId=qu.TermsandConditions3    
+left join muCore_TermsandConditions tc4 on tc4.iMasterId=qu.TermsandConditions4    
+left join muCore_TermsandConditions tc5 on tc5.iMasterId=qu.TermsandConditions5    
+left join muCore_TermsandConditions tc6 on tc6.iMasterId=qu.TermsandConditions6    
+left join vCore_PioneerContactPerson pcp on pcp.iMasterId=qu.PioneerContactPerson    
+left join mCore_Country cntry on cntry.iMasterId=cont.iMailingCountry    
+--left join vaCore_Bank bnk on bnk.iMasterId=qu.Bank    
+left join mCore_Currency curr on curr.iCurrencyId=qu.Currency    
+--left join mCore_WorkBreakdown wb on wb.iMasterId=qgu.WorkBreakDown    
+left join mCore_Product eqp on eqp.iMasterId=qgu.EquipmentName    
+left join mCore_Units eqpunit on eqpunit.iMasterId=qgu.UOM    
+--inner join mCore_Product pdt on pdt.iMasterId=qgu.ServiceCode    
+--left join vCrm_TaskType ttype on ttype.iTransId=qgu.TaskType    
+left join mCore_Units u on u.iMasterId=qgu.UOM    
+left join mCrm_Users sgn on sgn.iUserId=qu.Signatory    
+left join mPay_Designation degn on degn.iMasterId=sgn.iDesignation    
+left join mSec_Users createdby on createdby.iUserId=q.iCreatedBy    
+--where q.iMasterId=49    
+union all    
+select q.iMasterId iTransId,q.iMasterId,q.sName quoteno,opp.iMasterId enqtransid,opp.sName enqno ,dbo.fCore_IntToDate(ExpiryDate) iExpiryDate,qu.Description sDescription,qu.QuotationStatus,    
+curr.sCode currcode,curr.sName currname,    
+case when isnull(qu.Date,0)=0 then '' else dbo.fCore_IntToDate(qu.Date) end qdate,    
+acc.iMasterId accid,acc.sName cname,acc.CustomerNamePrint Customer, acc.sCode custcode,cont.iMasterId contid,cont.sName contact,dept.sName dept,qu.Phone sPhone,qu.Email sEmail,qu.Mobile,qu.AddressInfo,    
+cont.sMailingCity,cntry.sName mailingcntry,qu.AddressInfo + CHAR(13)+CHAR(10) +isnull(cont.sMailingCity,'')+ CHAR(13)+CHAR(10) +isnull(cntry.sName,'')  custaddress,    
+qu.InwardDocket,    
+qu.PONo PONumber,qu.EnquiryRef,qu.PSA,qu.CustomerProject,qu.CustomerRigInfo,dterms.sName deliveryterms,qu.TCDeliveryINCOTerms DeliveryIncoTerms,qu.PaymentTerms,    
+qu.TCNotes Note,qu.TCValidity Validity,cm.sName WHTType,qu.WHT,qu.VAT,qu.WHTType whttypeid,    
+qu.SSubTotal SubTotal,qu.STotalDiscount TotalDiscountFooter,qu.STotalAmountAftDisc TotalAmountAftDisc,qu.STotalWHTAmount TotalWHTAmount,    
+0 TotalAmountAfterWHT,qu.STotalRoundOff TotalRoundOff,qu.STotalTaxableAmount TotalTaxableAmount,qu.STotalVATAmount TotalVATAmount,qu.STotalAmount TotalAmountFooter,    
+qu.STotalNetAmount TotalNetAmount,    
+--bodydetails    
+'ADDITIONAL CHARGES' Groupby,2 gid,    
+qgu.ItemCode  EquipmentName,eqp.sCode Eqpcode,eqp.sName Eqpname,qgu.ItemDescription EquipmentDescription,qgu.ACNotes EquipmentNotes,qgu.Quantity EquipmentQty,eqpunit.sName EqpUOM,qgu.iRowIndex Sequence,    
+--qgu.ServiceCode pid,pdt.sName pname,pdt.sCode pcode,qgu.Description proddesc,qgu.Notes,qgu.Sequence,u.sName units,qgu.Quantity qty,ServiceCostAmount,ServiceCostRate,    
+ACRate Rate,isnull(ACTotalAmount,0) SubTotalBody,isnull(qgu.ACDiscount,0) discper, isnull(qgu.ACDiscountAmount,0)DiscountAmount,    
+isnull(qgu.ACTotalDiscount,0) TotalDiscount,ACAmountAfterDiscount,qgu.ACWHT WHTBody,qgu.ACWHTAmount WHTAmountBody,qgu.ACAmountAfterWHT AmountAfterWHT,isnull(qgu.ACRoundoff,0)Roundoff,    
+ACTaxableAmount TaxableAmount,ACVAT VATBody,ACVATAmount VATAmount,    
+qgu.ACTotalAmount2  netamountBP,    
+case when qu.WHTType=4 then qgu.ACTotalAmount2 -qgu.ACWHTAmount else ACTotalAmount2 end netamount,    
+isnull(ACTotalAmount,0)+isnull(ACRoundoff,0) stotalRndoff,isnull(ACTotalAmount,0)+isnull(ACRoundoff,0)-isnull(qgu.ACTotalDiscount,0) stotalRndoffwithdisc,    
+case when qu.WHTType=5 then isnull(ACTotalAmount,0)+isnull(ACRoundoff,0)+isnull(ACWHTAmount,0) else isnull(ACTotalAmount,0)+isnull(ACRoundoff,0) end stotalRndoffwwht,    
+--case when isnull(qgu.iQuantity,0)<>0 then cast(round(SubTotalBody/qgu.iQuantity,2) as numeric(36,2)) else 0 end rate,     
+'' PartNo,''POLineitemno,''CostCenterWBS,    
+pcp.sName pcontact, pcp.Email pemail,pcp.Mobile pmobile,    
+c.address1,c.address2,c.address4,c.pno,Addressline2,    
+sgn.sFirstName+' '+ sgn.sLastName signatory,degn.sName designation,    
+convert(date,dbo.fCore_IntToDateTime(q.iCreatedDate),105)createddate, createdby.sUserName createdby,    
+case when isnull(q.iModifiedDate,0)=0 then '' else convert(varchar,dbo.fCore_IntToDateTime(q.iModifiedDate),105) end modifieddate,    
+tc1.Description tc1desc,tc2.Description tc2desc,tc3.Description tc3desc,tc4.Description tc4desc,tc5.Description tc5desc,tc6.Description tc6desc,cast('' as varchar(100)) Qualitydno    
+--,bnk.sName bname,bnk.sCode bcode,bnk.Address baddress,bnk.SwiftCode,bnk.AcNumber,bnk.IBANNo,bnk.CurrencyName,bnk.IntermediaryBank,bnk.CorrespondentBank    
+from vRpt_Company c,    
+mCore_QuotationMF q inner join muCore_QuotationMF qu on q.iMasterId=qu.iMasterId and q.iStatus=0    
+inner join muCore_QuotationMF_AdditionalCostandTradingItem_Details qgu on q.iMasterId=qgu.iMasterId    
+inner join mCore_EnquiryManufacturing opp on opp.iMasterId=qu.EnquiryNo    
+inner join vdCore_Account acc on acc.iMasterId=qu.Customer    
+inner join vCrm_Contacts cont on cont.iMasterId=qu.Contact    
+inner join mCore_Department dept on dept.iMasterId=qu.Department    
+left join mCore_CommonMaster cm on cm.iMasterId=qu.WHTType    
+left join mCore_DeliveryTerms dterms on dterms.iMasterId=qu.DeliveryTerms    
+left join muCore_TermsandConditions tc1 on tc1.iMasterId=qu.TermsandConditions1    
+left join muCore_TermsandConditions tc2 on tc2.iMasterId=qu.TermsandConditions2    
+left join muCore_TermsandConditions tc3 on tc3.iMasterId=qu.TermsandConditions3    
+left join muCore_TermsandConditions tc4 on tc4.iMasterId=qu.TermsandConditions4    
+left join muCore_TermsandConditions tc5 on tc5.iMasterId=qu.TermsandConditions5    
+left join muCore_TermsandConditions tc6 on tc6.iMasterId=qu.TermsandConditions6    
+left join vCore_PioneerContactPerson pcp on pcp.iMasterId=qu.PioneerContactPerson    
+left join mCore_Country cntry on cntry.iMasterId=cont.iMailingCountry    
+--left join vaCore_Bank bnk on bnk.iMasterId=qu.Bank    
+left join mCore_Currency curr on curr.iCurrencyId=qu.Currency    
+--left join mCore_WorkBreakdown wb on wb.iMasterId=qgu.WorkBreakDown    
+left join mCore_Product eqp on eqp.iMasterId=qgu.ItemCode    
+left join mCore_Units eqpunit on eqpunit.iMasterId=qgu.ACUOM    
+--inner join mCore_Product pdt on pdt.iMasterId=qgu.ServiceCode    
+--left join vCrm_TaskType ttype on ttype.iTransId=qgu.TaskType    
+left join mCore_Units u on u.iMasterId=qgu.ACUOM    
+left join mCrm_Users sgn on sgn.iUserId=qu.Signatory    
+left join mPay_Designation degn on degn.iMasterId=sgn.iDesignation    
+left join mSec_Users createdby on createdby.iUserId=q.iCreatedBy    
+--where q.iMasterId=49 

@@ -1,0 +1,79 @@
+ALTER function [dbo].[fCore_Var100](@s xml)
+returns varchar(max)
+as
+begin
+declare @iProductId int,@sCode varchar(500),@Fun1 decimal(18,2),@Fun2 decimal(18,2),@Fun3 decimal(18,2),@Fun4 decimal(18,2),@Fun5 decimal(18,2),@Fun6 decimal(18,2),@Fun7 decimal(18,2),@Fun8 decimal(18,2),@Fun9 decimal(18,2),@Fun10 decimal(18,2),@Fun11 decimal(18,2),@Fun12 decimal(18,2),@Fun13 decimal(18,2)
+declare @result varchar(max)
+
+select @iProductId=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int' ) 
+select @sCode=sCode from vCore_Product where iMasterId=@iProductId
+
+select top 1 @Fun1=b.fVal0 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun2=b.fVal1 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun3=b.fVal2 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun4=b.fVal3 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun5=b.fVal4 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun6=b.fVal5 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun7=b.fVal6 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun8=b.fVal7 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun9=b.fVal8 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun10=b.fVal9 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun11=b.fVal10 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun12=b.fVal11 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select top 1 @Fun13=b.fVal12 from Focus8020..vCore_Product a with(nolock)           
+join Focus8020..mCore_BuyingPriceBookDetails b on a.iMasterId=b.iProductId           
+join Focus8020..mCore_BuyingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@sCode       
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+select @result='{"M3093B1C7":"'+CAST(@Fun1 as varchar(50))+'","M3093B1C19":"'+Cast(@Fun7  as varchar(50))+'"}'
+return @result
+end
+

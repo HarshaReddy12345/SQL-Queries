@@ -1,0 +1,24 @@
+select * from (
+select [ModuleId],[SalesOrder],[User],[ModifiedBy],[ModifiedDate],sERPVoucherNo,[ApprovalDate],[CreatedDate],iLevel,iTransId,
+case when iStatus=114 then 'Approved' when iStatus='115' then 'Pending' when iStatus=117 then 'Rejected' end [Status],
+iStatus  from dbo.VW_Approval where iStatus in (114,115,117) 
+and iTransId=IIF(@SalesOrder>0,@SalesOrder,iTransId)
+union all
+select b.sName [ModuleId],c.sName [SalesOrder],d.sName [User],c.iModifiedBy [ModifiedBy],dbo.fCore_IntToDateTime(c.iModifiedDate)[ModifiedDate],
+c.sERPVoucherNo,
+       dbo.fCore_IntToDateTime(a.iApprovalDate)[ApprovalDate],
+	   dbo.fCore_IntToDateTime(a.iCreatedDate)[CreateDate],a.iLevel,c.iTransId,
+	   case when a.iStatus=114 then 'Approved' when a.iStatus='115' then 'Pending' when a.iStatus=117 then 'Rejected' end [Status],a.iStatus
+	   --a.iTransId,e.iTransId,a.iModuleId,a.iLevel
+	   from  cCrm_Auth_Approvals a
+       inner join vCrm_ModuleTypes b on a.iModuleId=b.iMasterId and b.iMasterId=3072
+       inner join vCrm_SalesOrder c on a.iTransId=c.iTransId
+       inner join vCrm_Users d on a.iUserId=d.iMasterId
+       inner join (select iTransId,iLevel,COUNT(*) [Pending Count] from cCrm_Auth_Approvals with(nolock)
+	   where iStatus not in (114,117) and iModuleId=3072 group by iTransId,iLevel)e on c.iTransId=e.iTransId
+	   inner join (select iTransId,iLevel,COUNT(*) [Total Count] from cCrm_Auth_Approvals with(nolock) 
+	   where iModuleId=3072 group by iTransId,iLevel)f on c.iTransId=f.iTransId
+	   where a.iStatus!=114   
+and c.iTransId=IIF(@SalesOrder>0,@SalesOrder,c.iTransId)
+	   and e.[Pending Count]=f.[Total Count]
+	   )aa

@@ -1,0 +1,99 @@
+CREATE FUNCTION dbo.fn_DecimalToTime
+(
+    @DecimalTime DECIMAL(10,2)
+)
+RETURNS VARCHAR(10)
+AS
+BEGIN
+    DECLARE @Hours INT, @Minutes INT, @Result VARCHAR(10);
+
+    -- Split into hours and decimal part
+    SET @Hours = FLOOR(@DecimalTime);
+    SET @Minutes = ROUND((@DecimalTime - @Hours) * 100 * 60 / 100, 0);
+
+    -- Handle overflow if minutes = 60
+    IF @Minutes >= 60
+    BEGIN
+        SET @Hours = @Hours + 1;
+        SET @Minutes = @Minutes - 60;
+    END;
+
+    -- Format result as H.MM (e.g., 9.45)
+    SET @Result = CAST(@Hours AS VARCHAR(2)) + '.' + RIGHT('0' + CAST(@Minutes AS VARCHAR(2)), 2);
+
+    RETURN @Result;
+END;
+GO
+ALTER PROC [dbo].[sp_ValidateDailyLogSheetDates]
+    @iTransId BIGINT,
+    @iUserId INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Convert transaction ID
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+
+    DECLARE @StartDate DATE, @EndDate DATE;
+    DECLARE @ActualDays INT, @ExpectedDays INT;
+    DECLARE @MissingDays VARCHAR(MAX);
+
+    -- Get start and end dates from the logs (convert int to date)
+    SELECT 
+        @StartDate = dbo.fCore_IntToDate(MIN([Date])),
+        @EndDate   = dbo.fCore_IntToDate(MAX([Date]))
+    FROM vuCore_DailyLogSheet_LogDetails_Details
+    WHERE iMasterId = @iTransId;
+
+    -- Count actual distinct days
+    SELECT @ActualDays = COUNT(DISTINCT [Date])
+    FROM vuCore_DailyLogSheet_LogDetails_Details
+    WHERE iMasterId = @iTransId;
+
+    -- Count expected days
+    SET @ExpectedDays = DATEDIFF(DAY, @StartDate, @EndDate) + 1;
+
+    -- Generate all dates in the expected range
+    ;WITH DateRange AS
+    (
+        SELECT @StartDate AS [Date]
+        UNION ALL
+        SELECT DATEADD(DAY, 1, [Date])
+        FROM DateRange
+        WHERE [Date] < @EndDate
+    )
+    -- Find missing dates by left joining to actual logs
+    SELECT @MissingDays = STRING_AGG(CONVERT(VARCHAR(10), dr.[Date], 120), ',')
+    FROM DateRange dr
+    LEFT JOIN vuCore_DailyLogSheet_LogDetails_Details l
+        ON l.iMasterId = @iTransId AND dbo.fCore_IntToDate(l.[Date]) = dr.[Date]
+    WHERE l.[Date] IS NULL
+    OPTION (MAXRECURSION 0);
+
+    -- Raise error if there are missing dates
+    IF @ActualDays < @ExpectedDays
+    BEGIN
+        RAISERROR(
+            'There are missing dates in the log Details Grid. Missing Dates: %s', 
+            16, 1, 
+            @MissingDays
+        );
+        RETURN -1;
+    END
+    ELSE IF @ActualDays > @ExpectedDays
+    BEGIN
+        RAISERROR(
+            'There are extra dates in the log Details Grid. Actual days: %d, Expected days: %d', 
+            16, 1, 
+            @ActualDays, @ExpectedDays
+        );
+        RETURN -1;
+    END
+    ELSE
+    BEGIN
+        PRINT 'Date count validation passed. Actual days: ' + CAST(@ActualDays AS VARCHAR)
+              + ', Expected days: ' + CAST(@ExpectedDays AS VARCHAR);
+        RETURN 0;
+    END
+END;
+GO

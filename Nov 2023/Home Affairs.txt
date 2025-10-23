@@ -1,0 +1,168 @@
+USE [FOCUS8ZX0]
+GO
+
+/****** Object:  StoredProcedure [dbo].[nsp_UpdateInventoryDetailsInSO]    Script Date: 08-11-2023 13:09:01 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+/*
+select * from vuCrm_SalesOrder_Inventory_Details where sName='SO-216'
+select * from vCore_FDSalesOrder
+exec [dbo].[nsp_UpdateInventoryDetailsInSO] 1,1*/
+
+ALTER procedure [dbo].[nsp_UpdateInventoryDetailsInSO]
+@iTransId bigint=0,
+@UserId int=0
+as
+begin
+  
+	select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+    if(@iTransId>0)
+    begin
+        declare @iBodyId int,@iProduct int,@iQty int,@Warehouse int,@balQty int,@TotalIssueQty int,@MaxBodyId int,@iSequence int,@AvlQty int,@Count int,@IssueQty int,@LoopQty int,
+		@UID int,@BalLoopQty int,@SODate int,@sProdDescription nvarchar(2000),@PerQtyNet decimal(18,2)
+		set @Count=0
+		
+		if not exists(select * from vuCore_FDSalesOrder_Inventory_Details with(nolock) where iMasterId=@iTransId and isnull(iProductName,0)>0 and iMasterId>0)
+		Begin
+			print 1
+			if exists(select * from vuCore_FDSalesOrder_Inventory_Details with(nolock) where iMasterId=@iTransId and isnull(iProductName,0)=0 and iMasterId>0)
+			Begin
+				delete from muCore_FDSalesOrder_Inventory_Details where iMasterId=@iTransId and isnull(iProductName,0)=0 and iMasterId>0
+			End
+       		declare s1 cursor for select iBodyId from vuCore_FDSalesOrder_ProductInfo_Details with(nolock) where iMasterId=@iTransId
+       		open s1;
+       		fetch next from s1 into @iBodyId;
+			--print @iBodyId
+			
+       		WHILE @@FETCH_STATUS = 0    
+       		BEGIN    
+				set @TotalIssueQty=0
+           		select @iProduct=iProductId,@iQty=iQuantity,@balQty=iQuantity,@sProdDescription=sProdDescription,@PerQtyNet=PerQtyNet from vuCore_FDSalesOrder_ProductInfo_Details with(nolock) where iMasterId=@iTransId and iBodyId=@iBodyId
+				--print 'iQty'
+				--print @iQty
+           		if(@iQty>0)
+           		Begin
+               		declare s2 cursor for select Warehouse from nCore_AvailableStock with(nolock) where iProductName=@iProduct and iSequenceId>0 order by iSequenceId asc
+               		open s2;
+               		fetch next from s2 into @Warehouse;
+					--print 'Warehouse'
+					--print @Warehouse
+               		WHILE @@FETCH_STATUS = 0    
+               		BEGIN   
+                   		set @AvlQty=(select [Avl Qty] from  nCore_AvailableStock with(nolock) where iProductName=@iProduct and Warehouse=@Warehouse and iSequenceId>0)
+						--print 'Avl Qty'
+						--print @AvlQty                    
+						if(@AvlQty>0)
+                   		Begin
+                       		set @IssueQty=case when (@AvlQty-@balQty)=0 then @balQty when (@AvlQty-@balQty)>0 then @balQty when (@AvlQty-@balQty)<0 then @AvlQty else @AvlQty End
+                       		if(@IssueQty>0)
+                       		Begin
+								if(isnull(@TotalIssueQty,0)=0)
+								Begin
+									set @TotalIssueQty=isnull(@IssueQty,0)
+								end
+								else
+								Begin
+									set @TotalIssueQty=isnull(@IssueQty,0)+isnull(@TotalIssueQty,0)
+								end
+								set @LoopQty=0
+								while @IssueQty>@LoopQty
+								Begin
+									
+									--print 'Total Issue Qty'
+									--print @TotalIssueQty
+									--print 'Issue Qty'
+									--print @IssueQty
+                           			set @MaxBodyId=isnull((select max(iBodyId)+1 from muCore_FDSalesOrder_Inventory_Details with(nolock)),0)
+									--print @MaxBodyId
+                           			set @iSequence=isnull((select max(iRowIndex)+1 from muCore_FDSalesOrder_Inventory_Details with(nolock) where iMasterId=@iTransId),0)
+									--print @iSequence
+									set @UID=(select top 1 iMasterId from vCore_Inventory with(nolock) where isnull(HStatus,0)=1 and Warehouse=@Warehouse and iProductName=@iProduct order by iCreatedDate asc)
+									set @SODate=(select [Date] from vCore_FDSalesOrder with(nolock) where iMasterId=@iTransId )
+                           			if(@UID>0)
+									Begin
+										set identity_insert muCore_FDSalesOrder_Inventory_Details on
+										insert into muCore_FDSalesOrder_Inventory_Details(iBodyId,iMasterId,iRowIndex,iProductName,ReservationQty,PickUpLocation,IsIndentApplicable,[UID],InvStatus,StagingWarehouse,sBodyId,sProductDescription,InvPerQtyNet)
+                           				values(@MaxBodyId,@iTransId,@iSequence,@iProduct,1,@Warehouse,0,@UID,2,@Warehouse,@MaxBodyId,@sProdDescription,@PerQtyNet)
+										update muCore_Inventory set HStatus=2,SONumber=@iTransId,SODate=@SODate,LastUpdatedDate=@SODate where iMasterId=@UID and HStatus=1
+										set identity_insert muCore_FDSalesOrder_Inventory_Details off
+									End
+									--print 'Warehouse Inside'
+									--print @Warehouse
+									set @LoopQty=@LoopQty+1
+								End
+                           		set @balQty=@iQty-@TotalIssueQty
+								--print @iQty
+								--print @TotalIssueQty
+								--print 'Bal Qty'
+								--print @balQty
+								
+                       		End
+                   		End
+						if(@balQty=0)
+						Begin
+							
+							break
+						end
+                   		FETCH NEXT FROM s2 INTO @Warehouse    
+               		end
+                
+					set @Count=@Count+1
+					--print @Count
+               		CLOSE s2;
+               		DEALLOCATE s2;
+					if(@balQty>0)
+					Begin
+						set @BalLoopQty=0
+						While @balQty>@BalLoopQty
+						Begin
+							set @MaxBodyId=(select max(iBodyId)+1 from muCore_FDSalesOrder_Inventory_Details with(nolock))
+                   			set @iSequence=isnull((select max(iRowIndex)+1 from muCore_FDSalesOrder_Inventory_Details with(nolock) where iMasterId=@iTransId),0)
+							set identity_insert muCore_FDSalesOrder_Inventory_Details on
+                   			insert into muCore_FDSalesOrder_Inventory_Details(iBodyId,iMasterId,iRowIndex,iProductName,ReservationQty,PickUpLocation,IsIndentApplicable,UID,InvStatus,StagingWarehouse,sBodyId,sProductDescription,InvPerQtyNet)
+                   			values(@MaxBodyId,@iTransId,@iSequence,@iProduct,1,9,1,0,8,9,@MaxBodyId,@sProdDescription,@PerQtyNet)
+							set identity_insert muCore_FDSalesOrder_Inventory_Details off
+							set @BalLoopQty=@BalLoopQty+1
+						End
+					End
+					--if(@TotalIssueQty>0)
+					--Begin
+					--	update muCore_FDSalesOrder_Inventory_Details set AllocatedQty=@TotalIssueQty where iBodyId=@iBodyId and iMasterId=@iTransId
+					--End
+           		end
+           		FETCH NEXT FROM s1 INTO @iBodyId    
+       		END     
+       		CLOSE s1;    
+       		DEALLOCATE s1; 
+		End
+		-----Update Wallet Module
+			update a
+			set a.fSOConsumedAmt=WA
+			from vCore_Wallet a 
+			inner join (select isnull(sum(BWalletAmount),0) WA,BWalletId from vuCore_FDSalesOrder_WalletPaymentInfoBody_Details group by BWalletId)b on a.iMasterId=b.BWalletId
+			inner join vuCore_FDSalesOrder_WalletPaymentInfoBody_Details c on b.BWalletId=c.BWalletId
+			where c.iMasterId=@iTransId and isnull(c.BWalletId,0)>0
+
+			update a
+			set iWalletStatus=St
+			from vCore_Wallet a
+			inner join (select case
+			when (isnull(fSOConsumedAmt,0)+isnull(fReceiptConsumedAmt,0))=0 then 1
+			when fTotalAmount>isnull(fSOConsumedAmt,0)+isnull(fReceiptConsumedAmt,0) then 2
+			when fTotalAmount<=isnull(fSOConsumedAmt,0)+isnull(fReceiptConsumedAmt,0) then 3 end St,iMasterId from
+			vCore_Wallet with(nolock) )c on a.iMasterId=c.iMasterId
+			inner join vuCore_FDSalesOrder_WalletPaymentInfoBody_Details b with(nolock) on a.iMasterId=b.BWalletId
+			where b.iMasterId=@iTransId and isnull(b.BWalletId,0)>0
+    End
+END
+
+--select * from vuCore_FDSalesOrder_WalletPaymentInfo_Body_Details
+
+--select * from sys.tables where name like '%FDSalesOrder%'
+GO
+
+

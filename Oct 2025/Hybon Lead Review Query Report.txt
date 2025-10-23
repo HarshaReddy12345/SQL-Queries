@@ -1,0 +1,62 @@
+CREATE VIEW nCore_LeadReview as
+select 
+            a.iTransId,
+            a.sName [Lead Name],
+            c.sName [Branch],
+            d.sName [Sales Manager],
+            k.sName [Sales Coordinator],
+            b.SiteCity,
+            case when ISNULL(a.iCreatedDate,0)=0 then '' else FORMAT(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy')end [Lead Created Date],
+            e.sName [Lead Status],
+            f.sName [Lead Source],
+            g.sName [Lead State],
+            b.sName [Opportunity Name],
+            h.sName [Account],
+            case when i.iCreatedDate>0 then FORMAT(dbo.fCore_IntToDateTime(i.iCreatedDate),'dd/MM/yyyy') else '' end [Last Activity Date],
+            i.sDescription [Last Activity Remark],
+            case when j.iCreatedDate>0 then FORMAT(dbo.fCore_IntToDateTime(j.iCreatedDate),'dd/MM/yyyy') else '' end [Next Action Date],
+            j.sDescription [Next Action Remark],
+            case when l.salesmeetingwithcustomerPlanneddate>0 
+            then FORMAT(dbo.fCore_IntToDateTime(l.salesmeetingwithcustomerPlanneddate),'dd/MM/yyyy') else '' end [Meeting Scheduled Date],
+            case when l.salesmeetingwithcustomerclosedate>0 
+            then FORMAT(dbo.fCore_IntToDateTime(l.salesmeetingwithcustomerclosedate),'dd/MM/yyyy') else '' end [Meeting Completed Date],
+            case when m.SiteVisitCloseDate>0 
+            then FORMAT(dbo.fCore_IntToDateTime(m.SiteVisitCloseDate),'dd/MM/yyyy') else '' end [Technical Site Visit  Completed Date],
+            n.sName [Type Of Lift],
+            o.sName [No. of Stops],
+            l.xPitDepthmm [Pit Depth],
+            l.xOverheadHeightmm [Headroom],
+            CONCAT(p.sName,',',q.sName,',',r.sName) [Suggested Cabin size CD x CW],
+            s.sName [No Of Passengers],
+            t.CustomerBudget,
+            ISNULL(u.sName,'') [Model Recommended],
+            CASE WHEN t.iExpiryDate>0 then FORMAT(dbo.fCore_IntToDate(t.iExpiryDate),'dd/MM/yyyy') else '' end  [Operational Date],
+            t.fSalesPrice [MRP],
+            t.fSalesPrice [Quoted Price],
+            t.TopCompetitor,
+            CASE WHEN t.QuoteLostDate>0 then FORMAT(dbo.fCore_IntToDate(t.QuoteLostDate),'dd/MM/yyyy') else '' end [Lost Date],
+            dbo.fCrm_GetNumberListValue('1,Price ,2,Location,3,Shift Size,4,Payment Terms,5,Others',t.QuoteLossReason) [Lost Reason ],
+            ISNULL(a.[Date],0) [LeadDate]
+            from vaCrm_Leads a with(nolock) 
+left join tCrm_ConvertedLeads cl with(nolock) on a.iMasterId=cl.iTransId
+left join vCrm_Opportunities b with(nolock) on cl.iOpportunityId=b.iTransId
+left join vCore_ERPLocation c with(nolock) on a.BRANCH=c.iMasterId
+left join vCrm_Users d with(nolock) on a.iAssignedTo=d.iMasterId
+left join vCrm_LeadStatus e with(nolock) on a.iSuspectStatus=e.iTransId
+left join vCrm_LeadSource f with(nolock) on a.iLeadSource=f.iTransId
+left join vCrm_LeadState g with(nolock) on a.iLeadState=g.iTransId
+left join vCore_Account h with(nolock) on b.iAccount=h.iMasterId
+left join (select top 1 iCreatedDate,iRelatedTo,sDescription from vCrm_ClosedActivities i with(nolock) where i.iMasterId>0 and iRelatedToType=256 order by iCreatedDate desc)i  on a.iTransId=i.iRelatedTo
+left join (select top 1 iCreatedDate,iRelatedTo,sDescription from vCrm_OpenActivities i with(nolock) where i.iMasterId>0 and iRelatedToType=256 order by iCreatedDate desc)j  on a.iTransId=j.iRelatedTo
+left join vCrm_Users k with(nolock) on a.SalesCoordinator=k.iMasterId
+left join vuCore_SalesSiteVisit_ProductInformation_Details l with(nolock) on b.iTransId=l.OpportunityNo
+left join vCore_PrepatorySiteVisit m with(nolock) on b.iTransId=m.OpportunityNo
+left join vCore_Product n with(nolock) on l.iProductId=n.iMasterId
+left join vCore_SpecificationMaster o with(nolock) on l.xNumberOfStops=o.iMasterId
+left join vCore_SpecificationMaster p with(nolock) on l.xCabinDepthMm=p.iMasterId
+left join vCore_SpecificationMaster q with(nolock) on l.xCabinWidthMm=q.iMasterId
+left join vCore_SpecificationMaster r with(nolock) on l.xCabinDepthMm=r.iMasterId
+left join vCore_SpecificationMaster s with(nolock) on l.iNumberOfPassengers=s.iMasterId
+left join vuCrm_Quote_General_Details t with(nolock) on b.iTransId=t.iOpportunityId
+left join vCore_SpecificationMaster u with(nolock) on t.xCabinDesignModel=u.iMasterId
+where a.iTransId>0

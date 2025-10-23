@@ -1,0 +1,103 @@
+alter FUNCTION GetContractDataByDateRanges
+(
+    @StartDate DATE,
+    @EndDate DATE
+)
+ RETURNS @weeklist TABLE (
+        monthweek int,
+        [Week] int,
+        MonthYear VARCHAR(255),
+        OrderYear int,
+        OrderMonth int
+    )
+AS
+begin
+   
+WITH numbers AS (
+  SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS num
+  FROM sys.columns AS c1
+  CROSS JOIN sys.columns AS c2
+)
+,date_sequence AS (
+  SELECT DATEADD(day, num - 1, @StartDate) AS date
+  FROM numbers
+  WHERE num <= DATEDIFF(day, @StartDate, @EndDate)
+),date_week_sequence as (
+ SELECT distinct DATEPART(WEEK, date) AS Week,
+            CONCAT(
+                DATENAME(MONTH, date), 
+                '-', 
+                DATEPART(YEAR, date)
+            ) AS MonthYear,
+            DATEPART(YEAR, date) AS OrderYear,
+            DATEPART(MONTH, date) AS OrderMonth
+FROM date_sequence
+)
+insert into @weeklist select ROW_NUMBER() over(PARTITION by OrderMonth,OrderYear order by OrderYear) monthweek,* from date_week_sequence
+
+RETURN
+end
+=================================================================================================================
+
+SET DATEFIRST 1;
+select * from (
+select iTransId,iCustomerId,iCustAssetId,iStartDate,iEndDate,OrderMonth,OrderYear,MonthYear 
+from
+(select * from date_week_sequenc where iDate between 
+(select iStartDate from vCrm_Contract where iTransId=563)and
+(select iEndDate from vCrm_Contract where iTransId=563)) w
+,
+vuCrm_Contract_General_Details where iTransId=563
+) a left join
+(
+SELECT
+    a.iTransId AS iContractId,
+    a.sName AS [Contract],
+    b.iMasterId AS [AccountId],
+    b.sName AS [Customer],
+    c.iTransId AS [AssetId],
+    c.sName [Asset],
+    ca.iCreatedDate,
+    ISNULL(d.sName, '') AS [Frequency],
+    FORMAT(dbo.fCore_IntToDate(ca.iDueDate), 'dd/MM/yyyy') AS [DueDate],
+   --ISNULL(t.WeekNumber,0) [WeekName],
+    CONCAT(DATENAME(MONTH, dbo.fCore_IntToDate(ca.iDueDate)), '-', DATEPART(YEAR, dbo.fCore_IntToDate(ca.iDueDate))) AS DueDateMonthYear,
+    pc.asset_cnt   AssetQty
+FROM vCrm_Calls ca
+INNER JOIN vCrm_Contract a ON ca.iContractId = a.iTransId
+INNER JOIN vCore_Account b ON ca.iAccountId = b.iMasterId
+INNER JOIN vCrm_CustAssets c ON ca.iCustAssetId = c.iTransId
+INNER JOIN vCrm_FrequencyTemplate d ON a.iFrequencyId = d.iMasterId
+INNER JOIN vCore_Product e ON ca.iProductId = e.iMasterId
+LEFT JOIN 
+( select case when COUNT(iProductId) >1 then 1 end asset_cnt,iProductId from vCrm_CustAssets with(nolock) where iTransId>0 
+and iProductId>0 group by iProductId) pc on pc.iProductId=e.iMasterId
+
+WHERE ca.iTransId > 0 and ca.iCallType=55) b on a.iTransId=b.iContractId and a.MonthYear=b.DueDateMonthYear
+
+======================================================================================================================
+
+WITH numbers AS (
+  SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS num
+  FROM sys.columns AS c1
+  CROSS JOIN sys.columns AS c2
+)
+,date_sequence AS (
+  SELECT DATEADD(day, num - 1, '1950-01-01') AS date
+  FROM numbers
+  WHERE num <= DATEDIFF(day, '1950-01-01', '2100-12-31')
+),date_week_sequence as(
+select *,DATEPART(WEEK, date) AS Week,
+            CONCAT(
+                DATENAME(MONTH, date), 
+                '-', 
+                DATEPART(YEAR, date)
+            ) AS MonthYear,
+            DATEPART(YEAR, date) AS OrderYear,
+            DATEPART(MONTH, date) AS OrderMonth,
+			dbo.fCore_DateToInt(date) iDate
+			from date_sequence
+			)
+			select * into date_week_sequenc from date_week_sequence
+
+select * from  date_week_sequenc

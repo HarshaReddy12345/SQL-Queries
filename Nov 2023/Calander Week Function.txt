@@ -1,0 +1,62 @@
+ALTER FUNCTION GetContractDataByDateRange
+(
+    @STARTDATETIME bigint,
+    @ENDDATETIME bigint
+)
+ RETURNS @weeklist TABLE (
+        monthweek int,
+        [Week] int,
+        MonthYear VARCHAR(255),
+        OrderYear int,
+        OrderMonth nvarchar(50),
+		iOrderMonth int
+    )
+AS
+begin
+
+WITH numbers AS (
+  SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS num
+  FROM sys.columns AS c1
+  CROSS JOIN sys.columns AS c2
+)
+,date_sequence AS (
+  SELECT DATEADD(day, num - 1, dbo.fCore_IntToDateTime(@STARTDATETIME)) AS date
+  FROM numbers
+  WHERE num <= DATEDIFF(day, dbo.fCore_IntToDateTime(@STARTDATETIME), dbo.fCore_IntToDateTime(@ENDDATETIME))
+),date_week_sequence as (
+ SELECT distinct DATEPART(WEEK, date) AS Week,
+            CONCAT(
+                DATENAME(MONTH, date), 
+                '-', 
+                DATEPART(YEAR, date)
+            ) AS MonthYear,
+            DATEPART(YEAR, date) AS OrderYear,
+            CASE DATEPART(MONTH, date) when 1 then 'January'
+			when 2 then 'February'
+			when 3 then 'March'
+			when 4 then 'April'
+			when 5 then 'May'
+			when 6 then 'June'
+			when 7 then 'July'
+			when 8 then 'August'
+			when 9 then 'September'
+			when 10 then 'October'
+			when 11 then 'November'
+			when 12 then 'December' end
+			AS OrderMonth,
+			DATEPART(MONTH, date) iOrderMonth
+FROM date_sequence
+)
+
+
+INSERT INTO @weeklist
+SELECT ROW_NUMBER() over(PARTITION by OrderMonth,OrderYear order by OrderYear) monthweek,* 
+FROM date_week_sequence
+
+
+RETURN
+end
+
+
+
+

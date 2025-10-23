@@ -1,0 +1,97 @@
+ALTER VIEW nCore_OfferletterHeader as
+SELECT
+  a.iTransId,
+  FORMAT(GETDATE(), 'dd MMMM yyyy') [RUNDATE],
+  b.sName [ContactName],
+  b.sLastName,
+  c.sName [AccountName],
+  c.sBillingAddress,
+  c.sBillingCity,
+  d.sName [Acc Country],
+  b.Mobile2,
+  b.sEmail,
+  e.sName [Owner],
+  e.sPhone,
+  e.sMobile,
+  e.sEmail [Owner Mail],
+  f.sName [Opportunity],
+  a.sName [Offer No],
+  g.sName [Ship],
+  h.sCode [Brand],
+  FORMAT(dbo.fCore_IntToDate(a.SailDate), 'dd MMM yyyy') [SailingDate],
+  i.sName [Itinerary],
+  CONCAT('Booking Status :', ' ', CASE a.BookingStatus
+    WHEN 1 THEN 'OFFERED'
+    WHEN 2 THEN 'CONFIRMED'
+  END) BookingStatus,
+  CASE
+    WHEN a.TotalNetDueafterVAT IS NULL OR
+      a.TotalNetDueafterVAT = 0 THEN ''
+    ELSE CONCAT('Balance Due : ', 'USD ', a.TotalNetDueafterVAT,'  by',FORMAT(dbo.fCore_IntToDate(a.PaymentDueDate), 'dd MMMM yyyy'),';16:00 UAETime' )
+  END TotalNetDueafterVAT,
+  CASE
+    WHEN a.DepositDue IS NULL OR
+      a.DepositDue = 0 THEN ''
+    ELSE CONCAT('Deposit Due : ', 'USD ', CAST(a.DepositDue AS varchar(max)),' by',FORMAT(dbo.fCore_IntToDate(OptionDate), 'dd MMMM yyyy') ,';16:00 UAETime')
+  END AS DepositDue,
+  a.Gratuities,a.Message2
+FROM vCrm_SalesOrder a WITH (NOLOCK)
+JOIN vCrm_Contacts b WITH (NOLOCK)
+  ON a.iContactId = b.iMasterId
+JOIN vCore_Account c WITH (NOLOCK)
+  ON a.AccountName = c.iMasterId
+JOIN vCore_Country d WITH (NOLOCK)
+  ON c.iBillingCountry = d.iMasterId
+JOIN vCrm_Users e WITH (NOLOCK)
+  ON a.iAssignedTo = e.iMasterId
+JOIN vCrm_Opportunities f WITH (NOLOCK)
+  ON a.iOpportunityId = f.iTransId
+JOIN vCore_Ship g WITH (NOLOCK)
+  ON a.Ship = g.iMasterId
+JOIN vCore_Brand h WITH (NOLOCK)
+  ON g.Brand = h.iMasterId
+JOIN vCore_Itinerary i WITH (NOLOCK)
+  ON a.Itinerary = i.iMasterId
+WHERE a.iTransId >0
+
+
+
+==============================================================
+ALTER VIEW nCore_OfferLetterProductGrid as
+SELECT
+  a.iTransId,
+  b.sCode [Booking ID],
+  d.sCode [CatCode],
+  a.CabinCategoryName,
+  CabinNo,
+  a.iQuantity [Guests],
+  a.GuestName,
+  b.FirstName1,
+  b.LastName1,
+  b.FirstName2,
+  b.LastName2,
+  b.FirstName3,
+  b.LastName3,
+  b.FirstName4,
+  b.LastName4,
+  c.sName Dining,
+  a.Remarks,
+  NetCruiseFare,
+  (NCCF + FCCLOC + OtherSavings) [Nccf],
+  a.Taxes,
+  a.ServiceCharge [Gratitues],
+  a.AssistCard,
+  (a.FuelSupplement + a.Transfers + PrePost + a.OtherCharge) [Other Charges],
+  a.TotalChargeUSD,
+  (a.AgencyCommissionamount + CMgntDiscount) [Agency Commission],
+  a.CNetCharges
+FROM vuCrm_SalesOrder_General_Details a WITH (NOLOCK)
+JOIN vCore_Product b WITH (NOLOCK)
+  ON a.iProductId = b.iMasterId
+JOIN vCore_Dinning c WITH (NOLOCK)
+  ON a.Dining = c.iMasterId
+JOIN vCore_CabinCategory d with(NOLOCK)
+  ON a.CabinCategoryCode=d.iMasterId
+WHERE a.iTransId >0
+
+

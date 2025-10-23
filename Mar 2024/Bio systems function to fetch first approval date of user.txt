@@ -1,0 +1,14 @@
+
+CREATE FUNCTION dbo.fCore_Var2027(@s xml)
+returns DateTime
+as 
+begin
+DECLARE @TransId int,@ApprDate DateTime
+select @TransId=@s.value('(/Fields/Header/TransId)[1]', 'INT')
+
+SET @ApprDate=(SELECT top 1 Format(dbo.fCore_IntToDateTime(iApprovalDate),'dd/MM/yyyy hh:mm:ss') from vCrm_Approvals  with(nolock)
+where iTransId=@TransId
+order by iApprovalDate asc
+)
+return @ApprDate
+end

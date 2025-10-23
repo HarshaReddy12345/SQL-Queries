@@ -1,0 +1,110 @@
+Create or Alter view nCore_ProjectCostSummaryReport 
+as
+WITH ProjectDetails AS (
+    SELECT 
+        a.iMasterId,a.sName AS [Project Name],a.sCode AS [Project Code],b.sName AS [Prepared By],FORMAT(GETDATE(), 'dd/MM/yyyy') AS [Date],
+        a.iProjectStartDate,a.iProjectExpectedEndDate
+    FROM vCore_Projects a WITH (NOLOCK)
+    LEFT JOIN vCrm_Users b WITH (NOLOCK) ON a.iAssignedTo = b.iMasterId
+),
+ManpowerInformation AS (
+    SELECT 
+        c.iMasterId,SUM(ISNULL(a.TotalManpowerValue, 0)) AS TotalManpowerValue,SUM(ISNULL(a.OHandContingencyCost, 0)) AS OHandContingencyCost,
+        SUM(ISNULL(a.ProfitMarginValue, 0)) AS ProfitMarginValue
+    FROM vuCore_Estimations_ManpowerInformation_Details a WITH (NOLOCK)
+    LEFT JOIN vCore_ProjectActivity b WITH (NOLOCK) ON a.Milestone = b.iMasterId
+    LEFT JOIN vCore_Projects c WITH (NOLOCK) ON b.ProjectName = c.iMasterId
+    GROUP BY c.iMasterId
+),
+MachineInformation AS (
+    SELECT 
+        c.iMasterId,SUM(ISNULL(a.TotalMachineValue, 0)) AS TotalMachineValue
+    FROM vuCore_Estimations_MachineDetails_Details a WITH (NOLOCK)
+    LEFT JOIN vCore_ProjectActivity b WITH (NOLOCK) ON a.imMilestone = b.iMasterId
+    LEFT JOIN vCore_Projects c WITH (NOLOCK) ON b.ProjectName = c.iMasterId
+    GROUP BY c.iMasterId
+),
+MilestoneInformation AS (
+    SELECT 
+        c.iMasterId,SUM(ISNULL(a.TotalMilestoneValue, 0)) AS TotalMilestoneValue
+    FROM vuCore_Estimations_MilestoneInformation_Details a WITH (NOLOCK)
+    LEFT JOIN vCore_ProjectActivity b WITH (NOLOCK) ON a.iMilestones = b.iMasterId
+    LEFT JOIN vCore_Projects c WITH (NOLOCK) ON b.ProjectName = c.iMasterId
+    GROUP BY c.iMasterId
+),
+MaterialInformation AS (
+    SELECT 
+        c.iMasterId,SUM(ISNULL(a.TotalMaterialValue, 0)) AS TotalMaterialValue
+    FROM vuCore_Estimations_MaterialInformation_Details a WITH (NOLOCK)
+    LEFT JOIN vCore_ProjectActivity b WITH (NOLOCK) ON a.ipMilestone = b.iMasterId
+    LEFT JOIN vCore_Projects c WITH (NOLOCK) ON b.ProjectName = c.iMasterId
+    GROUP BY c.iMasterId
+),
+ActivityManpower AS (
+    SELECT 
+        a.ProjectName,SUM(ISNULL(a.mAmount, 0)) AS [ManPower Amt]
+    FROM vuCore_ProjectActivity_ManPowerInfo_Details a WITH (NOLOCK)
+    INNER JOIN vCore_ProjectActivity act WITH (NOLOCK) ON a.ProjectName = act.ProjectName
+    INNER JOIN vCore_Projects p WITH (NOLOCK) ON a.ProjectName = p.iMasterId
+    WHERE 
+        ((p.iProjectStartDate BETWEEN act.StartDate AND act.DueDate) OR (p.iProjectExpectedEndDate BETWEEN act.StartDate AND act.DueDate))
+    GROUP BY a.ProjectName
+),
+ActivityMachine AS (
+    SELECT 
+        a.ProjectName,SUM(ISNULL(a.Amount, 0)) AS [Machine Amt]
+    FROM vuCore_ProjectActivity_MachineDetails_Details a WITH (NOLOCK)
+    INNER JOIN vCore_ProjectActivity act WITH (NOLOCK) ON a.ProjectName = act.ProjectName
+    INNER JOIN vCore_Projects p WITH (NOLOCK) ON a.ProjectName = p.iMasterId
+    WHERE 
+        ((p.iProjectStartDate BETWEEN act.StartDate AND act.DueDate) OR (p.iProjectExpectedEndDate BETWEEN act.StartDate AND act.DueDate))
+    GROUP BY a.ProjectName
+),
+ActivityMaterial AS (
+    SELECT 
+        a.ProjectName,SUM(ISNULL(a.fppAmount, 0)) AS [Material Amt]
+    FROM vuCore_ProjectActivity_MaterialInfo_Details a WITH (NOLOCK)
+    INNER JOIN vCore_ProjectActivity act WITH (NOLOCK) ON a.ProjectName = act.ProjectName
+    INNER JOIN vCore_Projects p WITH (NOLOCK) ON a.ProjectName = p.iMasterId
+    WHERE 
+        ((p.iProjectStartDate BETWEEN act.StartDate AND act.DueDate) OR (p.iProjectExpectedEndDate BETWEEN act.StartDate AND act.DueDate))
+    GROUP BY a.ProjectName
+),
+ActivityData AS (
+    SELECT 
+        ProjectName,MIN(StartDate) AS StartDate,MAX(DueDate)  AS DueDate       
+    FROM vCore_ProjectActivity WITH (NOLOCK)
+    GROUP BY ProjectName
+)
+SELECT 
+    a.iMasterId,
+    a.[Project Name],
+    a.[Project Code],
+    ISNULL(a.[Prepared By], 'Unknown') AS [Prepared By],
+    a.[Date],
+    a.iProjectStartDate,
+    a.iProjectExpectedEndDate,
+    ISNULL(b.OHandContingencyCost, 0.00) AS OHandContingencyCost,
+    ISNULL(b.ProfitMarginValue, 0.00) AS ProfitMarginValue,
+    ISNULL(b.TotalManpowerValue, 0.00) AS TotalManpowerValue,
+    ISNULL(c.TotalMachineValue, 0.00) AS TotalMachineValue,
+    ISNULL(i.TotalMaterialValue, 0.00) AS TotalMaterialValue,
+    ISNULL(d.TotalMilestoneValue, 0.00) AS TotalMilestoneValue,
+    ISNULL(e.[ManPower Amt], 0.00) AS [ManPower Amt],
+    ISNULL(f.[Machine Amt], 0.00) AS [Machine Amt],
+    ISNULL(g.[Material Amt], 0.00) AS [Material Amt],
+    ISNULL(h.StartDate,0) AS StartDate,
+    ISNULL(h.DueDate,0) AS DueDate,
+    ISNULL(e.[ManPower Amt], 0.00)-ISNULL(b.TotalManpowerValue, 0.00) [Manpower Variance],
+    ISNULL(f.[Machine Amt], 0.00)-ISNULL(c.TotalMachineValue, 0.00) [Machine variance],
+    ISNULL(g.[Material Amt], 0.00)-ISNULL(i.TotalMaterialValue, 0.00) [Material variance]
+FROM ProjectDetails a WITH (NOLOCK)
+LEFT JOIN ManpowerInformation b ON a.iMasterId = b.iMasterId
+LEFT JOIN MachineInformation c ON a.iMasterId = c.iMasterId
+LEFT JOIN MilestoneInformation d ON a.iMasterId = d.iMasterId
+LEFT JOIN ActivityManpower e ON a.iMasterId = e.ProjectName
+LEFT JOIN ActivityMachine f ON a.iMasterId = f.ProjectName
+LEFT JOIN ActivityMaterial g ON a.iMasterId = g.ProjectName
+LEFT JOIN ActivityData h ON a.iMasterId = h.ProjectName
+LEFT JOIN MaterialInformation i ON a.iMasterId = i.iMasterId
+WHERE a.iMasterId > 0;

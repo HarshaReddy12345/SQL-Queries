@@ -1,0 +1,21 @@
+CREATE OR ALTER FUNCTION [dbo].[fCore_Var2024](@s xml)
+returns int
+AS
+BEGIN
+DECLARE @Designation int,@Place int,@Lodgeing int
+
+select @Designation=@s.value('(/Fields/Header/Designation)[1]', 'INT') 
+select @Place=@s.value('(/Fields/BodyData/BodyRow/Place)[1]','int')
+
+IF(@Place in (3,5))
+BEGIN
+select @Lodgeing=Lodgeing from vuCore_ExpenseTest_Expense_Details  WHERE Designation=@Designation and Place=@Place
+END
+RETURN @Lodgeing
+END
+
+
+
+
+
+

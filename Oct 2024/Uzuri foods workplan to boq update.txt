@@ -1,0 +1,28 @@
+CREATE OR ALTER PROC udp_BOQBodyInsertion(@iTransId bigint, @iUserId int = 0)
+AS
+BEGIN
+    -- Convert transaction ID using a helper function
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+    
+    DECLARE @BOQ int, @CLientReq int, @iMaxBodyid int;
+
+    -- Get Bill of Quantities and Client Request
+    SELECT @BOQ = BillofQuantities FROM vCore_Workplan WHERE iMasterId = @iTransId and iApprovalStatus=114
+    SELECT @CLientReq = ClientRequest FROM vCrm_Opportunities WHERE BOQ = @BOQ
+
+    -- Get the maximum body ID
+    SELECT @iMaxBodyid = MAX(iBodyId) FROM vuCrm_Opportunities_Consumables_Details WITH (NOLOCK) WHERE iTransId > 0
+    SET IDENTITY_INSERT tuCrm_Opportunities_Consumables_Details ON
+    -- Insert data into vuCrm_Opportunities_Consumables_Details
+    INSERT INTO tuCrm_Opportunities_Consumables_Details(iTransId, iBodyId, iSequence, cActivity, cSubActivity, Product, Unitc, Quantityc, ProductRate, Gross, RemarksC, WorkplanNo, ProductDesriptionc)
+    SELECT 
+        @BOQ AS Id,
+        ROW_NUMBER() OVER (ORDER BY [iGrid], iRowIndex) + @iMaxBodyId AS iBodyId,
+        (ROW_NUMBER() OVER (ORDER BY [iGrid], iRowIndex)-1) AS iSequence,Activity,SubActivity,Product,Units,Quantity,PurchaseRate,Gross,Remarks,iMasterId AS WorkplanNo,ItemDescription AS ProductDesriptionc
+    FROM (
+        SELECT  @BOQ AS [BOQ],1 AS [iGrid],iRowIndex,Activity,SubActivity,Product,Units,Quantity,PurchaseRate,Gross,Remarks,iMasterId,ItemDescription
+        FROM vuCore_Workplan_Consumables_Details 
+        WHERE iMasterId = @iTransId and iApprovalStatus=114 and BillofQuantities=@BOQ 
+    ) AS a
+    SET IDENTITY_INSERT tuCrm_Opportunities_Consumables_Details OFF 
+END

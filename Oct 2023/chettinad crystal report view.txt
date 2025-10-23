@@ -1,0 +1,56 @@
+USE FOCUS8011E8
+Go
+ALTER  View nCore_EDUPaymentreceived as  
+SELECT  
+  a.iTransId,  
+  a.sName [Receipt No],  
+  FORMAT(dbo.fCore_IntToDate(iDate), 'dd/MM/yyyy') [Date],  
+  b.sName [Student],  
+  c.sName [Acedemic Year],  
+  d.sName [Grade],  
+  e.sName [Section],  
+  b.sCode,  
+  f.sName [School Name],  
+  f.sAddress [School Address],  
+  f.sEmail [School Mail],  
+  f.sPhone1,  
+  CONCAT('C:\apache-tomcat-9.0.12_J8_EDU_CRM\webapps\streamline\WEB-INF\user-resource\Documents\011E8\',iModuleTypeId,'_',iDocumentId,'_',sFileName) sImageUrl,  
+  iPaymentMode, g.sName ModeOfPayment,  
+  CASE  
+    WHEN iPaymentMode = 147 THEN '-'  
+    ELSE sChequeNo  
+  END ChequeNo,  
+  CASE  
+    WHEN sClientBank IS NULL THEN '-'  
+    ELSE sClientBank  
+  END sClientBank,  
+  CASE  
+    WHEN iChequeDate IS NULL THEN '-'  
+    WHEN iPaymentMode = 147 THEN FORMAT(dbo.fCore_IntToDate(iChequeDate), 'dd/MM/yyyy')  
+    ELSE FORMAT(dbo.fCore_IntToDateTime(iChequeDate), 'dd/MM/yyyy hh:mm:ss')  
+  END ChequeDate,  
+  fAmount,h.sName FeeName,i.sName TermName,a.fInvoiceAmount [FeesAmount]   
+FROM vuCrm_EduPaymentsReceived_General_Details a WITH (NOLOCK)  
+LEFT JOIN tCrm_Students b WITH (NOLOCK)  
+  ON a.iStudentId = b.iTransId  
+LEFT JOIN vCrm_AcademicYear c WITH (NOLOCK)  
+  ON a.iAcademicYearId = c.iMasterId  
+LEFT JOIN vCrm_ProgramType d WITH (NOLOCK)  
+  ON b.iProgramType = d.iMasterId  
+LEFT JOIN vCrm_Section e WITH (NOLOCK)  
+  ON b.iSection = e.iMasterId  
+LEFT JOIN vCrm_Institution f  
+  ON a.iInstituteId = f.iMasterId  
+  JOIN vCrm_PaymentMode g WITH (NOLOCK)  
+  ON a.iPaymentMode = g.iTransId  
+left join vCrm_Fee h with(nolock) on a.iFeeId=h.iMasterId  
+left join vCrm_TermIntervals i with(nolock) on  a.iSemesterId=i.iMasterId  
+LEFT JOIN (SELECT  
+  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,iModuleTypeId,  iDocumentId,sFileName,
+  iRelatedTo,  
+  iIndex  
+FROM vCrm_Documents WITH (NOLOCK)  
+WHERE iModuleTypeId = 2345  
+AND iFieldId = 31746) Docs  
+  ON Docs.iRelatedTo = f.iMasterId  
+WHERE a.iTransId > 0

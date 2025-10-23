@@ -1,0 +1,73 @@
+USE [FOCUS8ZX0]
+GO
+
+/****** Object:  StoredProcedure [dbo].[nsp_UpdateInventoryDetailsInSOFromSR]    Script Date: 20-11-2023 16:00:08 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+/*
+select * from vuCrm_SalesOrder_Inventory_Details where sName='SO-216'
+delete from  tuCrm_SalesOrder_Inventory_Details where iTransId=635
+exec [dbo].[nsp_UpdateInventoryDetails] 635,1*/
+ALTER procedure [dbo].[nsp_UpdateInventoryDetailsInSOFromSR]
+@iTransId bigint=0,
+@UserId int=0
+as
+begin
+	select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+    if(@iTransId>0)
+    begin
+        if exists(select * from vuCore_DCIN_ProductInformation_Details with(nolock) where iMasterId=@iTransId and SONumber>0 and UID>0 and isnull(iReturnType,0)=1)
+		Begin
+			
+			update c
+			set c.HStatus=2,c.SONumber=a.SONumber,c.SODate=a.SODate--,c.DispatchNo=a.DispatchNo,c.PDCNo=a.PDCNo,c.DeliveryOutNo=a.Deli
+			from vCore_Inventory a with(nolock)
+			inner join vuCore_DCIN_ProductInformation_Details b with(nolock) on a.iMasterId=b.[UID]
+			inner join vCore_Inventory c with(nolock) on b.ReplacementUID=c.iMasterId
+			where b.iMasterId=@iTransId and a.HStatus=6 and b.ReplacementUID>0
+
+			
+
+			update d
+			set d.[UID]=c.iMasterId,d.InvStatus=2
+			from vCore_Inventory a with(nolock)
+			inner join vuCore_DCIN_ProductInformation_Details b with(nolock) on a.iMasterId=b.[UID]
+			inner join vCore_Inventory c with(nolock) on b.ReplacementUID=c.iMasterId
+			inner join vuCore_FDSalesOrder_Inventory_Details d with(nolock) on a.iMasterId=d.[UID]  and b.SONumber=d.iMasterId
+			where b.iMasterId=@iTransId and a.HStatus=6 and b.ReplacementUID>0
+
+			update a
+			set a.HStatus=1,a.SONumber=0,a.SODate=0,a.Warehouse=b.WareHouse--,c.DispatchNo=a.DispatchNo,c.PDCNo=a.PDCNo,c.DeliveryOutNo=a.Deli
+			from vCore_Inventory a with(nolock)
+			inner join vuCore_DCIN_ProductInformation_Details b with(nolock) on a.iMasterId=b.[UID]
+			where b.iMasterId=@iTransId and a.HStatus=6 and b.ReplacementUID>0
+
+			
+
+		end
+		if exists(select * from vuCore_DCIN_ProductInformation_Details with(nolock) where iMasterId=@iTransId and SONumber>0 and UID>0 and isnull(iReturnType,0)=2)
+		Begin
+			update d
+			set d.InvStatus=11
+			from vCore_Inventory a with(nolock)
+			inner join vuCore_DCIN_ProductInformation_Details b with(nolock) on a.iMasterId=b.[UID]
+			inner join vuCore_FDSalesOrder_Inventory_Details d with(nolock) on b.[UID]=d.[UID] and b.SONumber=d.iMasterId
+			where b.iMasterId=@iTransId and a.HStatus=6 
+
+			update a
+			set a.HStatus=1,a.SONumber=0,a.SODate=0,a.Warehouse=b.WareHouse--,c.DispatchNo=a.DispatchNo,c.PDCNo=a.PDCNo,c.DeliveryOutNo=a.Deli
+			from vCore_Inventory a with(nolock)
+			inner join vuCore_DCIN_ProductInformation_Details b with(nolock) on a.iMasterId=b.[UID]
+			where b.iMasterId=@iTransId and a.HStatus=6 
+		end
+    End
+END
+
+--select * from sys.tables where name like '%DCIN%'
+GO
+
+

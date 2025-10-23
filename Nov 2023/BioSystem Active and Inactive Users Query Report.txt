@@ -1,0 +1,19 @@
+select * from
+(
+ SELECT DISTINCT 
+  rank() OVER (PARTITION BY b.iMasterId  ORDER BY a.iLoginTime DESC) rn,
+  b.iMasterId,
+  (b.sUserName + '-' + sCode) AS [UserName],
+  CASE WHEN a.iLoginDate = dbo.fCore_DateToInt(GETDATE())  THEN 'Active'
+  else 'In Active' end AS [Active or Inactive],
+  dbo.fCore_IntToTime(a.iLoginTime) AS [Login Time],
+  dbo.fCore_IntToTime(a.iLogoutTime) AS [LogOut Time],
+  a.iLoginDate [$Date$iLoginDate],a.iLoginTime ,a.iLogoutDate [$Date$iLogoutDate]
+  FROM 
+  vCrm_Users b 
+  left join (Select * from  tSec_UserLog where iLoginDate=dbo.fCore_DateToInt(GETDATE())) a 
+  ON b.iMasterId = a.iUserId
+  WHERE b.iMasterId > 0   AND b.bAccountDisabled <> 1
+   
+) aa where rn=1
+Order by [Active or Inactive]

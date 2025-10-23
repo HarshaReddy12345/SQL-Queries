@@ -1,0 +1,108 @@
+Report Query
+--------------------------------------------------------
+ 
+SELECT monthweek,MonthYear,OrderYear,OrderMonth,iOrderMonth,a.[Schedule Month], a.* FROM
+GetContractDataByDateRange(17377773355009,17377844494075) GCD  
+LEFT JOIN 
+ (
+    SELECT 
+	    CASE WHEN COUNT(vC.iTransId)>0 then 1 else 0 end [Cnt],
+		CGD.fDuration,
+        vC.sCode  [Contract],
+        FORMAT(dbo.fCore_IntToDate(vC.iStartDate),'dd/MM/yyyy')  [Start Date],
+        FORMAT(dbo.fCore_IntToDate(vC.iEndDate),'dd/MM/yyyy')  [End Date],
+        FORMAT(dbo.fCore_IntToDate(vCS.iScheduleDate),'dd/MM/yyyy')  [Schedule Date],
+        vCA.sName  [Asset],
+        vCFT.sName [Frequency],
+        vCAcc.sName  [Account],
+        DATEPART(WEEK, dbo.fCore_IntToDate(vCS.iScheduleDate))  [Schedule Week],
+		DATEPART(MONTH, dbo.fCore_IntToDate(vCS.iScheduleDate))  [Schedule Month]
+    FROM 
+        vCrm_Contract vC WITH (NOLOCK)
+	INNER JOIN 
+		tuCrm_Contract_General_Details CGD WITH(NOLOCK) ON CGD.iTransId=vC.iTransId
+    INNER JOIN 
+        tCrm_ContractSchedule vCS WITH (NOLOCK) ON vC.iTransId = vCS.iContractId
+    INNER JOIN 
+        vCrm_CustAssets vCA WITH (NOLOCK) ON vCS.iCustAsset = vCA.iTransId
+    INNER JOIN 
+        vCrm_FrequencyTemplate vCFT WITH (NOLOCK) ON vCFT.iFrequencyId = CGD.iFrequencyId
+    INNER JOIN 
+        vCore_Account vCAcc WITH (NOLOCK) ON vC.iCustomerId = vCAcc.iMasterId
+	
+    WHERE 
+        vC.iTransId >0
+		group by vC.sCode,vC.iStartDate,vC.iEndDate,vCS.iScheduleDate,vCA.sName, vCFT.sName,vCAcc.sName,CGD.fDuration
+ )a
+ on a.[Schedule Week]=GCD.[Week] and a.[Schedule Month]=GCD.iOrderMonth
+
+
+ select * from GetContractDataByDateRange(17377773355009,17377844494075)
+
+
+-------------------------------------------------------------------------------------------
+Funtion to get weeks from calander date
+
+
+
+ALTER FUNCTION GetContractDataByDateRange
+(
+    @StartDate int,
+    @EndDate int
+)
+ RETURNS @weeklist TABLE (
+        monthweek int,
+        [Week] int,
+        MonthYear VARCHAR(255),
+        OrderYear int,
+        OrderMonth int
+		
+    )
+AS
+begin
+   
+WITH numbers AS (
+  SELECT ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS num
+  FROM sys.columns AS c1
+  CROSS JOIN sys.columns AS c2
+)
+,date_sequence AS (
+  SELECT DATEADD(day, num - 1, dbo.fCore_IntToDate(132579585)) AS date
+  FROM numbers
+  WHERE num <= DATEDIFF(day, dbo.fCore_IntToDate(132579585), dbo.fCore_IntToDate(132582431))
+),date_week_sequence as (
+ SELECT distinct DATEPART(WEEK, date) AS Week,
+            CONCAT(
+                DATENAME(MONTH, date), 
+                '-', 
+                DATEPART(YEAR, date)
+            ) AS MonthYear,
+            DATEPART(YEAR, date) AS OrderYear,
+            CASE DATEPART(MONTH, date) when 1 then 'January'
+			when 2 then 'February'
+			when 3 then 'March'
+			when 4 then 'April'
+			when 5 then 'May'
+			when 6 then 'June'
+			when 7 then 'July'
+			when 8 then 'August'
+			when 9 then 'September'
+			when 10 then 'October'
+			when 11 then 'November'
+			when 12 then 'Dece'
+			AS OrderMonth
+		
+FROM date_sequence
+)
+select ROW_NUMBER() over(PARTITION by OrderMonth,OrderYear order by OrderYear) monthweek,* from date_week_sequence
+insert into @weeklist select ROW_NUMBER() over(PARTITION by OrderMonth,OrderYear order by OrderYear) monthweek,* from date_week_sequence
+
+RETURN
+end
+
+
+select * from GetContractDataByDateRange(132579585,132582431)
+
+
+
+

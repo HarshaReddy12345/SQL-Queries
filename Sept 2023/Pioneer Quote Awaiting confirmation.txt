@@ -1,0 +1,125 @@
+ALTER    VIEW nCore_QuoteSentPRT as      
+SELECT   'Quote Sent' [Type],   
+  CONCAT(DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date)), '-', DATENAME(YEAR, dbo.fCore_IntToDate(bb.Date))) MonthYear,COUNT(a.iMasterId) [Count],      
+  (d.sName) [Account],      
+  (a.sName) [Enquiry RepairNo],      
+  (a.Date) [$Date$Enq Date],      
+  (e.sName) [Enquiry Stage],  bb.CustomerApproval,bb.QuotationStatus,a.EnquiryStage,    
+  (bb.sName) [Quotation No.],      
+  (bb.Date) [$Date$Q Date],      
+  SUBSTRING(f.sName, CHARINDEX('- ', f.sName) + 1, LEN(f.sName)) [Department],      
+  (g.sName) [Customer Approval],      
+  (bb.sDescription) [Description],      
+  (bb.CustApp) [$Date$ Customer Approval Date],      
+  (bb.CustomerDeliveryDate) [$Date$Customer Delivery Date],      
+  CASE      
+    WHEN LEN(PioneerDeliveryDate) <> 9 THEN NULL      
+    ELSE (bb.PioneerDeliveryDate)      
+  END [$Date$PioneerDeliveryDate],      
+  (bb.QuotationRemarks) [QuotationRemarks],      
+  (bb.TotalAmountFooter) [Total Amount],      
+  (h.sName) [Job Status],      
+        
+  (i.sName) [Quotation Status],      
+  (bb.Jobstatusremarks) [Job Status remarks],      
+  (a.StatusRemarks) [Status Remarks],      
+  (a.Currency) Currency,      
+  IIF(a.Currency= 2, (bb.TotalAmountFooter), (bb.TotalAmountFooter / 1.7)) USD,      
+  IIF(a.Currency = 2, 'USD', 'AZN') CurrencyCode      
+FROM vCore_EnquiryRepair a WITH (NOLOCK)      
+LEFT JOIN (SELECT      
+  b.*      
+FROM vCore_EstimationQuotation b WITH (NOLOCK)      
+INNER JOIN vExt_EstQuote c WITH (NOLOCK)      
+  ON b.iMasterId = c.iMasterId      
+WHERE b.iMasterId > 0) bb ON bb.EnquiryRepairNo = a.iMasterId      
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.Customer = d.iMasterId      
+LEFT JOIN vCore_CommonMaster e WITH (NOLOCK)ON a.EnquiryStage = e.iMasterId      
+LEFT JOIN vCore_Department f WITH (NOLOCK) ON a.Department = f.iMasterId      
+LEFT JOIN vCore_CommonMaster g WITH (NOLOCK) ON bb.CustomerApproval = g.iMasterId      
+LEFT JOIN vCore_CommonMaster h WITH (NOLOCK) ON bb.JobStatus = h.iMasterId      
+LEFT JOIN vCore_CommonMaster i WITH (NOLOCK) ON bb.QuotationStatus = i.iMasterId      
+WHERE a.iMasterId > 0      
+GROUP BY CustApp,CustomerDeliveryDate,PioneerDeliveryDate,d.sName,a.sName,a.Date,e.sName,bb.sName,bb.Date,f.sName,g.sName,bb.sDescription,bb.QuotationRemarks,h.sName,i.sName,      
+bb.Jobstatusremarks,a.StatusRemarks,a.Currency,bb.TotalAmountFooter,bb.CustomerApproval,bb.QuotationStatus,a.EnquiryStage      
+      
+UNION ALL      
+      
+SELECT    'Quote Confirmed' [Type],  
+  CONCAT(DATENAME(MONTH, dbo.fCore_IntToDate(b.Date)), '-', DATENAME(YEAR, dbo.fCore_IntToDate(b.Date))) MonthYear,  COUNT(a.iMasterId) [Count],      
+  (d.sName) [Account],      
+  (a.sName) [Enquiry No.],      
+  (a.Date) [$Date$Enq Manf. Date],      
+  (i.sName) [Quotation Stage], b.CustomerApproval,b.QuotationStatus,a.EnquiryStage,     
+  (b.sName) [Quotation No],      
+  (b.Date) [$Date$Q Date],      
+  SUBSTRING(f.sName, CHARINDEX('- ', f.sName) + 1, LEN(f.sName)) [Department],      
+  (g.sName) [Customer Approval],      
+  (b.Description) [Description],      
+  (b.CustomerApprovalDate) [$Date$ Customer Approval      
+  Date],      
+  (b.CustomerDeliveryDate) [$Date$ Customer Delivery Date],      
+  CASE      
+    WHEN       
+      LEN(PioneerDeliveryDate) <> 9 THEN NULL      
+    ELSE ISNULL      
+      (b.PioneerDeliveryDate, 0)      
+  END [$Date$PioneerDeliveryDate],      
+  (b.Quotatoinremarks) [Quotation Remarks],      
+  (b.STotalAmount) [Total Amount],      
+  (h.sName) [Job      
+ Status],      
+  (i.sName) [Quotation Status],      
+  (b.Jobstatusremarks) [Job Status Remarks],      
+  (a.StatusRemarks) [Status Remarks],      
+  (a.Currency) Currency,      
+  IIF(a.Currency = 2, (b.STotalAmount), (b.STotalAmount / 1.7)) USD,      
+  IIF(a.Currency = 2, 'USD', 'AZN') CurrencyCode      
+FROM vCore_EnquiryManufacturing a   WITH (NOLOCK)   
+LEFT JOIN (SELECT      
+  AA.*      
+FROM vCore_QuotationMF AA   WITH (NOLOCK)   
+INNER JOIN vExt_EstQuoteMF BB WITH (NOLOCK) ON AA.iMasterId = BB.iMasterId      
+WHERE AA.iMasterId > 0) b ON b.EnquiryNo = a.iMasterId      
+LEFT JOIN vCrm_Users c WITH (NOLOCK) ON b.iAssignedTo = c.iMasterId      
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.Customer = d.iMasterId      
+LEFT JOIN vCore_CommonMaster e WITH (NOLOCK) ON a.EnquiryStage = e.iMasterId      
+LEFT JOIN vCore_Department f WITH (NOLOCK) ON a.Department = f.iMasterId      
+LEFT JOIN vCore_CommonMaster g WITH (NOLOCK) ON b.CustomerApproval = g.iMasterId      
+LEFT JOIN vCore_CommonMaster h WITH (NOLOCK) ON b.JobStatus = h.iMasterId      
+LEFT JOIN vCore_CommonMaster i WITH (NOLOCK) ON b.QuotationStatus = i.iMasterId      
+WHERE a.iMasterId > 0       
+GROUP BY CustomerApprovalDate,CustomerDeliveryDate,PioneerDeliveryDate,d.sName,a.sName, a.Date,e.sName,b.sName,b.Date,f.sName,g.sName,b.Description,b.Quotatoinremarks, h.sName,    
+i.sName, b.Jobstatusremarks,a.StatusRemarks,a.Currency,b.STotalAmount,b.CustomerApproval,b.QuotationStatus,a.EnquiryStage 
+-----------------------------------------------------------------------------------------------------------------
+ALTER VIEW nCore_WinningRatio as
+SELECT top 100 percent 
+    MonthYear,[Type],MonSeq,
+    CASE WHEN USDSent <> 0 THEN SUM(USDConfirmed) / SUM(USDSent) ELSE 0.00 END AS USD_Confirmed_to_Sent_Ratio,[Sent Count],[Count Confirmed],USDConfirmed,USDSent   
+FROM
+(
+    SELECT [Type],
+        CONCAT(DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date])), '-', DATENAME(YEAR, dbo.fCore_IntToDate([$Date$Q Date]))) AS MonthYear,
+		  CASE WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date])) ='January' then 1
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='February' then 2
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='March' then 3
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='April' then 4
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='May' then 5
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='June' then 6
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='July' then 7
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='August' then 8
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='September' then 9
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='October' then 10
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='November' then 11
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate([$Date$Q Date]))='December' then 12
+ end MonSeq, 
+        CASE WHEN QuotationStatus = 17 THEN 1 ELSE 0 END AS [Sent Count],
+        CASE WHEN CustomerApproval = 16 AND EnquiryStage NOT IN (9, 47) THEN 1 ELSE 0 END AS [Count Confirmed],
+		CASE WHEN QuotationStatus = 17 THEN USD ELSE 0.00 END AS USDSent,
+		CASE WHEN CustomerApproval = 16 AND EnquiryStage NOT IN (9, 47) THEN USD ELSE 0.00 END AS USDConfirmed
+    FROM nCore_QuoteSentPRT
+) aa
+group by MonthYear,USDSent,USDConfirmed,[Sent Count],[Count Confirmed],[Type],MonSeq
+order by MonSeq asc
+-------------------------------------------------------------------------------------------------------------------------
+select * from nCore_WinningRatio

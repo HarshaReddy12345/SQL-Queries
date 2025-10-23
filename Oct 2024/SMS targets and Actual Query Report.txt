@@ -1,0 +1,43 @@
+CREATE VIEW nCore_TargetActual as
+select 
+		'TARGET' [Module],b.sName [Region],c.sName [Unit],d.sName [product],a.[Value],a.Qty,a.Months,a.Finalyear,a.[Quarter]
+		from vuCore_Target_TargetValues_Details a with(nolock)
+		left join vCore_Location b with(nolock) on a.iLocation=b.iMasterId
+		left join vCore_Plants c with(nolock) on a.Unit=c.iMasterId
+		left join vCore_Product d with(nolock) on a.iProductId=d.iMasterId
+		
+		where a.iMasterId>0
+
+union all
+
+select 
+		*,CASE when aa.[Month] in(4,5,6) then 1
+		when aa.[Month] in(7,8,9) then 2
+		when aa.[Month] in(10,11,12) then 3
+		when aa.[Month] in(1,2,3) then 4 end [Quarter] from(Select
+        'ACTUAL' [Module],c.sName [Region],d.sName [Unit],e.sName [Product],a.fAmount,a.iQuantity,
+		CASE  DATENAME(MM,dbo.fcore_IntToDate(a.[Date])) WHEN 'January' then 1
+		when 'February' then 2
+		when 'March' then 3
+		when 'April' then 4
+		when 'May' then 5
+		when 'June' then 6
+		when 'July' then 7
+		when 'August' then 8
+		when 'September' then 9
+		when 'October' then 10
+		when 'November' then 11
+		when 'December' then 12 end [Month],a.Finalyear
+		from vuCrm_SalesOrder_General_Details a with(nolock)
+		left join vCore_Location c with(nolock) on a.iLocationId=c.iMasterId
+		left join vCore_Plants d with(nolock) on a.Unit=d.iMasterId
+		left join vCore_Product e with(nolock) on a.iProductId=e.iMasterId
+		where a.iTransId>0
+		)aa
+		
+=====================================================================================
+
+select * from nCore_TargetActual
+where  (( 0 in (@Month) and isnull(Months,0)  = isnull(Months,0) ) or (0 not in (@Month) and isnull(Months,0)   in ( @Month )))
+and (( 0 in (@Quarter) and isnull([Quarter],0)  = isnull([Quarter],0) ) or (0 not in (@Quarter) and isnull([Quarter],0)   in ( @Quarter )))
+and (( 0 in (@Financialyear) and isnull(Finalyear,0)  = isnull(Finalyear,0) ) or (0 not in (@Financialyear) and isnull(Finalyear,0)   in ( @Financialyear )))

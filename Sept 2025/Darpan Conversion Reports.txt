@@ -1,0 +1,374 @@
+BRANCHWISE CONVERSTION REPORT
+============================================
+CREATE OR ALTER VIEW nCore_BranchWiseConversion
+AS
+WITH Leads AS (
+    SELECT DISTINCT
+        a.iTransId, 
+        a.iLocationId,
+        a.Date AS [$Date$LeadDate],
+        sCompany
+    FROM vCrm_Leads a WITH (NOLOCK)
+    WHERE a.iTransId > 0
+),
+Opportunities AS (
+    SELECT 
+        b.iTransId,
+        b.iOpportunityId,
+        COUNT(b.iOpportunityId) OVER (PARTITION BY b.iTransId) as Cnt
+    FROM tCrm_ConvertedLeads b
+    INNER JOIN vCrm_Opportunities c ON b.iOpportunityId = c.iTransId
+    WHERE c.iTransId > 0
+),
+Quotes AS (
+    SELECT DISTINCT
+        q.iTransId, 
+        q.iOpportunityId
+    FROM tCrm_Quote q WITH (NOLOCK) 
+    WHERE bActive = 1
+),
+StageDedup AS (
+    SELECT DISTINCT 
+        h.iMasterId, 
+        h.iStage
+    FROM vCrm_StageHistory h WITH (NOLOCK)
+    WHERE h.iStage IN (14,15,18,19,16)
+),
+BaseData AS (
+    SELECT
+        l.iTransId,
+        l.iLocationId,
+        l.[$Date$LeadDate],
+        l.sCompany,
+        d.sName AS [Branch],
+        d.iMasterId,
+        o.iOpportunityId,
+        o.Cnt AS [Enquiry],
+        sd.iStage,
+        CASE WHEN q.iTransId IS NOT NULL THEN 1 ELSE 0 END AS HasQuote
+    FROM Leads l
+    LEFT JOIN Opportunities o ON l.iTransId = o.iTransId
+    LEFT JOIN vCore_Location d ON l.iLocationId = d.iMasterId
+    LEFT JOIN StageDedup sd ON o.iOpportunityId = sd.iMasterId
+    LEFT JOIN Quotes q ON o.iOpportunityId = q.iOpportunityId
+),
+AggregatedData AS (
+    SELECT
+        iLocationId,
+        [Branch],
+        [$Date$LeadDate],
+        iMasterId,
+        sCompany,
+        iTransId,
+        COUNT(DISTINCT iTransId) AS [Leads],
+        MAX([Enquiry]) AS [Enquiry],
+        COUNT(DISTINCT CASE WHEN iStage = 14 THEN iOpportunityId END) AS [Presite_Visit],
+        COUNT(DISTINCT CASE WHEN iStage = 19 THEN iOpportunityId END) AS [Tailor_Measurement],
+        COUNT(DISTINCT CASE WHEN iStage = 15 THEN iOpportunityId END) AS [Postsite_Visit],
+        MAX(HasQuote) AS [Quote],
+        COUNT(DISTINCT CASE WHEN iStage = 18 THEN iOpportunityId END) AS [SalesOrder]
+    FROM BaseData
+    GROUP BY iLocationId, [Branch], [$Date$LeadDate], iMasterId, sCompany, iTransId
+),
+LocationTotals AS (
+    SELECT
+        iLocationId,
+        SUM([SalesOrder]) AS TotalSales,
+        SUM([Leads]) AS TotalLeads
+    FROM AggregatedData
+    GROUP BY iLocationId
+)
+
+SELECT top 100 percent
+    ad.[Branch], 
+    ad.[$Date$LeadDate],
+    ad.iMasterId,
+    ad.[Leads],
+    ad.[Enquiry],
+    ad.[Presite_Visit],
+    ad.[Tailor_Measurement],
+    ad.[Postsite_Visit],
+    ad.[Quote],
+    ad.[SalesOrder],
+    ad.sCompany,
+    ad.iTransId,
+    CASE 
+        WHEN lt.TotalLeads > 0 
+        THEN ROUND((CAST(lt.TotalSales AS DECIMAL(10,2)) / CAST(lt.TotalLeads AS DECIMAL(10,2)) * 100), 2)
+        ELSE 0 
+    END AS [Conversion],CAST(ad.Leads as decimal(18,2)) [LeadDecimal],CAST(ad.[SalesOrder] as decimal(18,2)) [OrderDecimal]
+FROM AggregatedData ad
+INNER JOIN LocationTotals lt ON ad.iLocationId = lt.iLocationId
+ORDER BY ad.[Branch], ad.[$Date$LeadDate]
+===========================================
+EXECUTIVEWISE CONVERSTION REPORT
+===========================================
+CREATE OR ALTER VIEW nCore_ExecutiveWiseConversion
+AS
+WITH Leads AS (
+    SELECT DISTINCT
+        a.iTransId, 
+        a.iLocationId,
+        a.Date AS [$Date$LeadDate],
+        sCompany,ExecutiveNameNew
+    FROM vCrm_Leads a WITH (NOLOCK)
+    WHERE a.iTransId > 0
+),
+Opportunities AS (
+    SELECT 
+        b.iTransId,
+        b.iOpportunityId,
+        COUNT(b.iOpportunityId) OVER (PARTITION BY b.iTransId) as Cnt
+    FROM tCrm_ConvertedLeads b
+    INNER JOIN vCrm_Opportunities c ON b.iOpportunityId = c.iTransId
+    WHERE c.iTransId > 0
+),
+Quotes AS (
+    SELECT DISTINCT
+        q.iTransId, 
+        q.iOpportunityId
+    FROM tCrm_Quote q WITH (NOLOCK) 
+    WHERE bActive = 1
+),
+StageDedup AS (
+    SELECT DISTINCT 
+        h.iMasterId, 
+        h.iStage
+    FROM vCrm_StageHistory h WITH (NOLOCK)
+    WHERE h.iStage IN (14,15,18,19,16)
+),
+BaseData AS (
+    SELECT
+        l.iTransId,
+        l.ExecutiveNameNew,
+        l.[$Date$LeadDate],
+        l.sCompany,
+        d.sName AS [Executive],
+        d.iMasterId,
+        o.iOpportunityId,
+        o.Cnt AS [Enquiry],
+        sd.iStage,
+        CASE WHEN q.iTransId IS NOT NULL THEN 1 ELSE 0 END AS HasQuote
+    FROM Leads l
+    LEFT JOIN Opportunities o ON l.iTransId = o.iTransId
+    LEFT JOIN vCore_EmployeeMaster d WITH (NOLOCK) ON l.ExecutiveNameNew = d.iMasterId
+    LEFT JOIN StageDedup sd ON o.iOpportunityId = sd.iMasterId
+    LEFT JOIN Quotes q ON o.iOpportunityId = q.iOpportunityId
+),
+AggregatedData AS (
+    SELECT
+        ExecutiveNameNew,
+        [Executive],
+        [$Date$LeadDate],
+        iMasterId,
+        sCompany,
+        iTransId,
+        COUNT(DISTINCT iTransId) AS [Leads],
+        MAX([Enquiry]) AS [Enquiry],
+        COUNT(DISTINCT CASE WHEN iStage = 14 THEN iOpportunityId END) AS [Presite_Visit],
+        COUNT(DISTINCT CASE WHEN iStage = 19 THEN iOpportunityId END) AS [Tailor_Measurement],
+        COUNT(DISTINCT CASE WHEN iStage = 15 THEN iOpportunityId END) AS [Postsite_Visit],
+        MAX(HasQuote) AS [Quote],
+        COUNT(DISTINCT CASE WHEN iStage = 18 THEN iOpportunityId END) AS [SalesOrder]
+    FROM BaseData
+    GROUP BY ExecutiveNameNew, [Executive], [$Date$LeadDate], iMasterId, sCompany, iTransId
+),
+LocationTotals AS (
+    SELECT
+        ExecutiveNameNew,
+        SUM([SalesOrder]) AS TotalSales,
+        SUM([Leads]) AS TotalLeads
+    FROM AggregatedData
+    GROUP BY ExecutiveNameNew
+)
+
+SELECT top 100 percent
+    ad.[Executive], 
+    ad.[$Date$LeadDate],
+    ad.iMasterId,
+    ad.[Leads],
+    ad.[Enquiry],
+    ad.[Presite_Visit],
+    ad.[Tailor_Measurement],
+    ad.[Postsite_Visit],
+    ad.[Quote],
+    ad.[SalesOrder],
+    ad.sCompany,
+    ad.iTransId,
+    CASE 
+        WHEN lt.TotalLeads > 0 
+        THEN ROUND((CAST(lt.TotalSales AS DECIMAL(10,2)) / CAST(lt.TotalLeads AS DECIMAL(10,2)) * 100), 2)
+        ELSE 0 
+    END AS [Conversion],CAST(ad.Leads as decimal(18,2)) [LeadDecimal],CAST(ad.[SalesOrder] as decimal(18,2)) [OrderDecimal]
+FROM AggregatedData ad
+INNER JOIN LocationTotals lt ON ad.ExecutiveNameNew = lt.ExecutiveNameNew
+ORDER BY ad.[Executive], ad.[$Date$LeadDate]
+
+================================================
+CAMPAIGN WISE CONVERSION REPORT
+================================================
+CREATE OR ALTER VIEW nCore_CampaignWiseConversion
+AS
+WITH Leads AS (
+    SELECT 
+        a.iTransId, 
+        a.iLocationId,
+        a.Date AS [$Date$LeadDate],
+        sCompany,b.iCampaignId
+    FROM vCrm_Leads a WITH (NOLOCK)
+    left join tCrm_CampaignLeads b with(NOLOCK) on a.iTransId=b.iLeadId
+    WHERE a.iTransId > 0
+),
+Opportunities AS (
+    SELECT 
+        b.iTransId,
+        b.iOpportunityId,
+        COUNT(b.iOpportunityId) OVER (PARTITION BY b.iTransId) as Cnt
+    FROM tCrm_ConvertedLeads b
+    INNER JOIN vCrm_Opportunities c ON b.iOpportunityId = c.iTransId
+    WHERE c.iTransId > 0
+),
+Quotes AS (
+    SELECT DISTINCT
+        q.iTransId, 
+        q.iOpportunityId
+    FROM tCrm_Quote q WITH (NOLOCK) 
+    WHERE bActive = 1
+),
+StageDedup AS (
+    SELECT DISTINCT 
+        h.iMasterId, 
+        h.iStage
+    FROM vCrm_StageHistory h WITH (NOLOCK)
+    WHERE h.iStage IN (14,15,18,19,16)
+),
+BaseData AS (
+    SELECT
+        l.iTransId,
+        l.iCampaignId,
+        l.[$Date$LeadDate],
+        l.sCompany,
+        d.sName AS [Campaign],
+        d.iMasterId,
+        o.iOpportunityId,
+        o.Cnt AS [Enquiry],
+        sd.iStage,
+        CASE WHEN q.iTransId IS NOT NULL THEN 1 ELSE 0 END AS HasQuote
+    FROM Leads l
+    LEFT JOIN Opportunities o ON l.iTransId = o.iTransId
+    LEFT JOIN vCrm_Campaigns d WITH (NOLOCK) ON l.iCampaignId = d.iMasterId
+    LEFT JOIN StageDedup sd ON o.iOpportunityId = sd.iMasterId
+    LEFT JOIN Quotes q ON o.iOpportunityId = q.iOpportunityId
+),
+AggregatedData AS (
+    SELECT
+        iCampaignId,
+        [Campaign],
+        [$Date$LeadDate],
+        iMasterId,
+        sCompany,
+        iTransId,
+        COUNT(DISTINCT iTransId) AS [Leads],
+        MAX([Enquiry]) AS [Enquiry],
+        COUNT(DISTINCT CASE WHEN iStage = 14 THEN iOpportunityId END) AS [Presite_Visit],
+        COUNT(DISTINCT CASE WHEN iStage = 19 THEN iOpportunityId END) AS [Tailor_Measurement],
+        COUNT(DISTINCT CASE WHEN iStage = 15 THEN iOpportunityId END) AS [Postsite_Visit],
+        MAX(HasQuote) AS [Quote],
+        COUNT(DISTINCT CASE WHEN iStage = 18 THEN iOpportunityId END) AS [SalesOrder]
+    FROM BaseData
+    GROUP BY iCampaignId, [Campaign], [$Date$LeadDate], iMasterId, sCompany, iTransId
+),
+LocationTotals AS (
+    SELECT
+        iCampaignId,
+        SUM([SalesOrder]) AS TotalSales,
+        SUM([Leads]) AS TotalLeads
+    FROM AggregatedData
+    GROUP BY iCampaignId
+)
+
+SELECT top 100 percent
+    ad.[Campaign], 
+    ad.[$Date$LeadDate],
+    ad.iMasterId,
+    ad.[Leads],
+    ad.[Enquiry],
+    ad.[Presite_Visit],
+    ad.[Tailor_Measurement],
+    ad.[Postsite_Visit],
+    ad.[Quote],
+    ad.[SalesOrder],
+    ad.sCompany,
+    ad.iTransId,
+    CASE 
+        WHEN lt.TotalLeads > 0 
+        THEN ROUND((CAST(lt.TotalSales AS DECIMAL(10,2)) / CAST(lt.TotalLeads AS DECIMAL(10,2)) * 100), 2)
+        ELSE 0 
+    END AS [Conversion],CAST(ad.Leads as decimal(18,2)) [LeadDecimal],CAST(ad.[SalesOrder] as decimal(18,2)) [OrderDecimal]
+FROM AggregatedData ad
+INNER JOIN LocationTotals lt ON ad.iCampaignId = lt.iCampaignId
+ORDER BY ad.[Campaign], ad.[$Date$LeadDate]
+
+==============================================
+Sales Order Category Wise Conversion Report
+===============================================
+CREATE OR ALTER VIEW nCore_SalesOrderCategoryWiseConversionReport
+as
+WITH SalesOrderDetails AS (
+    SELECT 
+        a.iTransId,
+        b.sName AS [Type of Curtain],
+        SUM(a.fAmount) AS [Amount]
+    FROM vuCrm_SalesOrder_General_Details a WITH(NOLOCK)
+    JOIN vCore_TypeofCurtain b WITH(NOLOCK) ON a.TypeofCurtain = b.iMasterId
+    WHERE a.iTransId > 0
+    GROUP BY b.sName, a.iTransId
+),
+LocationTotals AS (
+    SELECT 
+        a.iTransId,
+        b.sName AS [Location],
+        SUM(a.fAmount) AS [Total],
+        b.iMasterId
+    FROM vuCrm_SalesOrder_General_Details a WITH(NOLOCK)
+    JOIN vCore_Location b WITH(NOLOCK) ON a.iLocationId = b.iMasterId
+    WHERE a.iTransId > 0
+    GROUP BY b.sName, a.iTransId, b.iMasterId
+),
+MainData AS (
+    SELECT 
+        c.[Location],
+        b.[Type of Curtain],
+        b.Amount,
+        c.Total,
+        a.SalesOrderDate AS [$Date$Date],
+        IIF(c.Total = 0 OR c.Total IS NULL, 0, 
+            CAST(ROUND((b.Amount / c.Total) * 100.0, 2) AS DECIMAL(18,2))) AS [Percentage],c.iMasterId
+    FROM vCrm_SalesOrder a WITH(NOLOCK)
+    JOIN SalesOrderDetails b ON a.iTransId = b.iTransId
+    JOIN LocationTotals c ON a.iTransId = c.iTransId
+    WHERE a.iTransId > 0 
+    
+),
+GroupedData AS (
+    SELECT 
+        [Location],
+        [Type of Curtain],
+        SUM(Amount) AS [Total Amount],
+        MAX(Total) AS [Location Total], -- Assuming Total is the same for each location
+        MAX([$Date$Date]) AS [Last Order Date], -- Or use MIN() for first order date
+        IIF(SUM(Total) = 0 OR SUM(Total) IS NULL, 0, 
+            CAST(ROUND((SUM(Amount) / SUM(Total)) * 100.0, 2) AS DECIMAL(18,2))) AS [Percentage],iMasterId
+    FROM MainData
+    GROUP BY [Location], [Type of Curtain],iMasterId
+)
+SELECT top 100 percent
+    [Location],
+    [Type of Curtain],
+    CAST([Total Amount] as decimal(18,2)) [Total Amount],
+    CAST([Location Total] as decimal(18,2)) [Location Total],
+    [Last Order Date] [$Date$Last Order Date],iMasterId,[Percentage]
+FROM GroupedData
+where iMasterId>0
+ORDER BY [Location], [Type of Curtain]
+

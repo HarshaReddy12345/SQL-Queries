@@ -1,0 +1,28 @@
+SELECT
+    a.sName AS [Location],
+    CASE
+        WHEN a.sName IS NOT NULL AND COUNT(b.iMasterId) = 0 THEN 0
+        ELSE COUNT(b.iMasterId)
+    END AS [Count],
+    FORMAT(dbo.fCore_IntToDate(b.StockReconciliationDate), 'dd/MM/yyyy') AS [StockReconciliationDate]
+FROM
+    vCore_Location a
+FULL OUTER JOIN
+    vCore_StockReconciliation b ON a.iMasterId = b.iLocation
+WHERE
+    a.iMasterId > 0
+	AND dbo.fCrm_DateFromBigInt(b.iApprovalDate) BETWEEN @STARTDATE AND @ENDDATE
+	and (( 0 in (@Location) and isnull(a.iMasterId,0)  = isnull(a.iMasterId,0) ) or (0 not in (@Location) and isnull(a.iMasterId,0)   in ( @Location )))
+GROUP BY
+    a.sName, b.StockReconciliationDate
+
+UNION ALL
+
+SELECT
+    sName AS [Location],
+    0 AS [Count],
+    '' AS [StockReconciliationDate]
+FROM
+    vCore_Location
+	where iMasterId>0
+	and (( 0 in (@Location) and isnull(iMasterId,0)  = isnull(iMasterId,0) ) or (0 not in (@Location) and isnull(iMasterId,0)   in ( @Location )))

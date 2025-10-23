@@ -1,0 +1,288 @@
+
+Create or alter function fCore_Var19 (@s xml)
+returns decimal(18,2)
+as
+Begin
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate bigint,@AccountCode varchar(max),@ProductCode varchar(Max)  
+
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')
+select @iDate=dbo.fCore_DateToInt(GETDATE())
+
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer  
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product 
+
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int ,@value decimal(18,2)
+
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock) 
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId 
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode
+
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode 
+
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock) 
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId 
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId 
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId 
+where  p.iMasterId=@ProdId
+
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock) 
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId 
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup 
+where ma.iMasterId=@AccId 
+
+select top 1 @value=b.fVal4 from Focus8020..vCore_Product a with(nolock) 
+join Focus8020..mCore_SellingPriceBookDetails b with(nolock) on a.iMasterId=b.iProductId 
+join Focus8020..mCore_SellingPriceBookHeader c with(nolock) on b.iPriceBookId=c.iPriceBookId
+where  a.iMasterId=@ProdId
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+	set @fRet=0
+		set @fRet=Focus8020.dbo.fn_GetSellingRate(0,@Prodgroup,@CustPriceGroup,@iDate,0,0,0,4,0)---Customer Price Group and ITem Group
+		--ERPCustomer
+		--ERPPriceGroup
+		--ERPItemGroup
+		--ERPItem
+	if(@fRet=0)--Customer Price Group and ITem
+		Begin
+			set @fRet=Focus8020.dbo.fn_GetSellingDiscount(@AccId,@ProdId,@CustPriceGroup,@iDate,0,0,0,4,0)
+	End
+		if(@fRet=0)--Customer and ITem Group
+			Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingDiscount(@AccId,@Prodgroup,@CustomerPriceGroup,@iDate,0,0,0,4,0)
+	End
+		if(@fRet=0)--Customer and Item
+			Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingDiscount(@AccId,@ProdId,0,@iDate,0,0,0,4,0)
+	End
+		if(@fRet=0)--ITem Group
+	Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingDiscount(0,@Prodgroup,@CustomerPriceGroup,@iDate,0,0,0,4,0)
+	End
+		if(@fRet=0)--ITem
+	Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingDiscount(0,@ProdId,0,@iDate,0,0,0,4,0)
+	End
+		return @fRet
+End
+-------------------------------------------------------
+
+Create or alter function fCore_Var18 (@s xml)
+returns decimal(18,2)
+as
+Begin
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate bigint,@AccountCode varchar(max),@ProductCode varchar(Max)  
+
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')
+select @iDate=dbo.fCore_DateToInt(GETDATE())
+
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer  
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product 
+
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)
+
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock) 
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId 
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode
+
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode 
+
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock) 
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId 
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId 
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId 
+where  p.iMasterId=@ProdId
+
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock) 
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId 
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup 
+where ma.iMasterId=@AccId 
+
+select top 1 @value=b.fVal0 from Focus8020..vCore_Product a with(nolock) 
+join Focus8020..mCore_SellingPriceBookDetails b with(nolock) on a.iMasterId=b.iProductId 
+join Focus8020..mCore_SellingPriceBookHeader c with(nolock) on b.iPriceBookId=c.iPriceBookId
+where  a.iMasterId=@ProdId
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc
+
+	set @fRet=0
+	set @fRet=Focus8020.dbo.fn_GetSellingRate(0,@Prodgroup,@CustPriceGroup,@iDate,0,0,0,0,0)---Customer Price Group and ITem Group
+	--ERPCustomer
+	--ERPPriceGroup
+	--ERPItemGroup
+	--ERPItem
+	if(@fRet=0)--Customer Price Group and ITem
+	Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingRate(@AccId,@ProdId,@CustPriceGroup,@iDate,0,0,0,0,0)
+	End
+	if(@fRet=0)--Customer and ITem Group
+	Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingRate(@AccId,@Prodgroup,@CustomerPriceGroup,@iDate,0,0,0,0,0)
+	End
+	if(@fRet=0)--Customer and Item
+	Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingRate(@AccId,@ProdId,0,@iDate,0,0,0,0,0)
+	End
+	if(@fRet=0)--ITem Group
+	Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingRate(0,@Prodgroup,@CustomerPriceGroup,@iDate,0,0,0,0,0)
+	End
+	if(@fRet=0)--ITem
+	Begin
+		set @fRet=Focus8020.dbo.fn_GetSellingRate(0,@ProdId,0,@iDate,0,0,0,0,0)
+	End
+	return @fRet
+End
+-----------------------------------------------------------------------------------
+USE [Focus8020]
+GO
+/****** Object:  UserDefinedFunction [dbo].[fn_GetSellingRate]    Script Date: 15-11-2024 15:52:00 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+                    -- Author:  Harsha
+                    -- Create date: 21 Nov 2024
+                    -- Description: This function gives Price book vale for a  product based on input parameter                    
+                    -- Returns: decimal as Discount
+                    -- =============================================
+                    ALTER Function [dbo].[fn_GetSellingDiscount]
+        (
+        @iAccountId int,
+        @iProductId int,
+        @iTag int,
+        @iDate int,
+        @iCurrency int,
+        @iUnit int,
+        @dQty decimal(18,7),
+        @iIndex int,
+        @iPriceBookId int
+        )
+         RETURNS decimal(18,7)
+        As
+        Begin
+        Declare  @value decimal (18,7)
+        set @value=0
+        if (@iCurrency=0)
+        Begin
+            Select @iCurrency=iValue from cCore_PreferenceVal_0  with (ReadUncommitted) where iCategory=4 and iFieldId=10
+        End
+        if(@iDate <=0)
+	        select @iDate=dbo.DateToInt(getdate())
+        Select Top 1 @value=
+            Case @iIndex
+                When 0 Then IsNull(fVal0, 0)
+                When 1 Then IsNull(fVal1, 0)
+                When 2 Then IsNull(fVal2, 0)
+                When 3 Then IsNull(fVal3, 0)
+                When 4 Then IsNull(fVal4, 0)
+                When 5 Then IsNull(fVal5, 0)
+                When 6 Then IsNull(fVal6, 0)
+                When 7 Then IsNull(fVal7, 0)
+                When 8 Then IsNull(fVal8, 0)
+                When 9 Then IsNull(fVal9, 0)
+                When 10 Then IsNull(fVal10, 0)
+                When 11 Then IsNull(fVal11, 0)
+                When 12 Then IsNull(fVal12, 0)
+                When 13 Then IsNull(fVal13, 0) End
+        FROM mCore_SellingPriceBookDetails Det inner Join mCore_SellingPriceBookHeader Hea ON Hea.iPriceBookId = Det.iPriceBookId
+                                                        AND Hea.bActive = 1  AND Hea.bMarkDeleted = 0
+                                                        WHERE (Det.iProductId = @iProductId or Det.iProductId = 0 or Det.iProductId = -1)
+                                                        AND (Det.iAccountId = @iAccountId or Det.iAccountId = 0 or Det.iAccountId = -1)
+                                                        AND (Det.iTagId = @iTag or Det.iTagId = 0)
+                                                        AND (Det.iLocationId = @iTag or Det.iLocationId = 0 or Det.iLocationId = -1)
+                                                        AND (Det.iStartDate <= @iDate)
+                                                        AND (Det.iEndDate >= @iDate OR Det.iEndDate = 0)
+                                                        AND (Det.iCurrency = @iCurrency or Det.iCurrency = 0 or Det.iCurrency = -1)
+                                                        AND (Det.iUnit <= @iUnit or Det.iUnit = 0 or Det.iUnit = -1)
+                                                        AND (Det.fMinQty <= @dQty or Det.fMinQty = 0 or Det.fMinQty = -1)
+                                                        AND (Det.fMaxQty >= @dQty or Det.fMaxQty = 0 or Det.fMaxQty = -1) AND Det.bMarkDeleted = 0
+                                                        AND (Det.iPriceBookId = @iPriceBookId or @iPriceBookId = 0 or @iPriceBookId = -1)
+														and Hea.sPriceBookName like '%-Discount%'
+        order by isnull(Det.iAccountId,0) desc,Det.iCurrency Desc, iStartDate desc, Hea.iModifiedDate DESC
+
+        return @value
+
+        End
+
+
+
+
+		select * from mCore_SellingPriceBookDetails where fVal4=50.00  and iProductId=100354
+		select * from mCore_SellingPriceBookHeader where sPriceBookName like '%-Discount%'   and iPriceBookId=1174
+
+		select * from mCore_Product where sName like '%3VA1 Group%'
+		------------------------------------------
+		USE [Focus8020]
+GO
+/****** Object:  UserDefinedFunction [dbo].[fn_GetSellingRate]    Script Date: 21-11-2024 15:44:45 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+-- =============================================
+                    -- Author:  Vinay Kumar
+                    -- Create date: 19 Sep 2011
+                    -- Description: This function gives Price book vale for a  product based on input parameter                    
+                    -- Returns: decimal as Rate
+                    -- =============================================
+                    ALTER Function [dbo].[fn_GetSellingRate]
+        (
+        @iAccountId int,
+        @iProductId int,
+        @iTag int,
+        @iDate int,
+        @iCurrency int,
+        @iUnit int,
+        @dQty decimal(18,7),
+        @iIndex int,
+        @iPriceBookId int
+        )
+         RETURNS decimal(18,7)
+        As
+        Begin
+        Declare  @value decimal (18,7)
+        set @value=0
+        if (@iCurrency=0)
+        Begin
+            Select @iCurrency=iValue from cCore_PreferenceVal_0  with (ReadUncommitted) where iCategory=4 and iFieldId=10
+        End
+        if(@iDate <=0)
+	        select @iDate=dbo.DateToInt(getdate())
+        Select Top 1 @value=
+            Case @iIndex
+                When 0 Then IsNull(fVal0, 0)
+                When 1 Then IsNull(fVal1, 0)
+                When 2 Then IsNull(fVal2, 0)
+                When 3 Then IsNull(fVal3, 0)
+                When 4 Then IsNull(fVal4, 0)
+                When 5 Then IsNull(fVal5, 0)
+                When 6 Then IsNull(fVal6, 0)
+                When 7 Then IsNull(fVal7, 0)
+                When 8 Then IsNull(fVal8, 0)
+                When 9 Then IsNull(fVal9, 0)
+                When 10 Then IsNull(fVal10, 0)
+                When 11 Then IsNull(fVal11, 0)
+                When 12 Then IsNull(fVal12, 0)
+                When 13 Then IsNull(fVal13, 0) End
+        FROM mCore_SellingPriceBookDetails Det inner Join mCore_SellingPriceBookHeader Hea ON Hea.iPriceBookId = Det.iPriceBookId
+                                                        AND Hea.bActive = 1  AND Hea.bMarkDeleted = 0
+                                                        WHERE (Det.iProductId = @iProductId or Det.iProductId = 0 or Det.iProductId = -1)
+                                                        AND (Det.iAccountId = @iAccountId or Det.iAccountId = 0 or Det.iAccountId = -1)
+                                                        AND (Det.iTagId = @iTag or Det.iTagId = 0)
+                                                        AND (Det.iLocationId = @iTag or Det.iLocationId = 0 or Det.iLocationId = -1)
+                                                        AND (Det.iStartDate <= @iDate)
+                                                        AND (Det.iEndDate >= @iDate OR Det.iEndDate = 0)
+                                                        AND (Det.iCurrency = @iCurrency or Det.iCurrency = 0 or Det.iCurrency = -1)
+                                                        AND (Det.iUnit <= @iUnit or Det.iUnit = 0 or Det.iUnit = -1)
+                                                        AND (Det.fMinQty <= @dQty or Det.fMinQty = 0 or Det.fMinQty = -1)
+                                                        AND (Det.fMaxQty >= @dQty or Det.fMaxQty = 0 or Det.fMaxQty = -1) AND Det.bMarkDeleted = 0
+                                                        AND (Det.iPriceBookId = @iPriceBookId or @iPriceBookId = 0 or @iPriceBookId = -1)
+														and Hea.sPriceBookName like '%-Rate%'
+        order by isnull(Det.iAccountId,0) desc,Det.iCurrency Desc, iStartDate desc, Hea.iModifiedDate DESC
+
+        return @value
+
+        End

@@ -1,0 +1,13 @@
+CREATE or ALTER  FUNCTION dbo.fCore_Var001(@s xml)
+returns varchar(max)
+as
+begin
+DECLARE @Jobcard int,@sRet varchar(max)
+SET @Jobcard=@s.value('(/Fields/Header/iCallId)[1]','int')
+select @sRet = coalesce(@sRet+',','')+CONCAT(b.sName,'|',b.iMasterId)
+     from vuCrm_Calls_Service_List_Details a with(nolock)
+	 inner join vCrm_Services b on a.[Services]=b.iMasterId
+	 where a.iTransId=@Jobcard
+	 
+return @sRet
+end

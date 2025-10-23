@@ -1,0 +1,124 @@
+CREATE OR ALTER VIEW nCore_QuoteNotSent as    
+SELECT * FROM  
+(  
+SELECT    
+  CONCAT(DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date)), '-', DATENAME(YEAR, dbo.fCore_IntToDate(bb.Date))) MonthYear,COUNT(a.iMasterId) [Count],    
+  (d.sName) [Account],
+  CASE WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date)) ='January' then 1
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='February' then 2
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='March' then 3
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='April' then 4
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='May' then 5
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='June' then 6
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='July' then 7
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='August' then 8
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='September' then 9
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='October' then 10
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='November' then 11
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(bb.Date))='December' then 12
+ end MonSeq,    
+  (a.sName) [Enquiry RepairNo],    
+  (a.Date) [$Date$Enq Date],    
+  (e.sName) [Enquiry Stage],    
+  (bb.sName) [Quotation No.],    
+  (bb.Date) [$Date$Q Date],    
+  SUBSTRING(f.sName, CHARINDEX('- ', f.sName) + 1, LEN(f.sName)) [Department],    
+  (g.sName) [Customer Approval],    
+  (bb.sDescription) [Description],    
+  (bb.CustApp) [$Date$ Customer Approval Date],    
+  (bb.CustomerDeliveryDate) [$Date$Customer Delivery Date],    
+  CASE    
+    WHEN LEN(PioneerDeliveryDate) <> 9 THEN NULL    
+    ELSE (bb.PioneerDeliveryDate)    
+  END [$Date$PioneerDeliveryDate],    
+  (bb.QuotationRemarks) [QuotationRemarks],    
+  (bb.TotalAmountFooter) [Total Amount],    
+  (h.sName) [Job Status],    
+      
+  (i.sName) [Quotation Status],    
+  (bb.Jobstatusremarks) [Job Status remarks],    
+  (a.StatusRemarks) [Status Remarks],    
+  (a.Currency) Currency,    
+  IIF(a.Currency= 2, (bb.TotalAmountFooter), (bb.TotalAmountFooter / 1.7)) USD,    
+  IIF(a.Currency = 2, 'USD', 'AZN') CurrencyCode,'' [InwardNo]    
+FROM vCore_EnquiryRepair a WITH (NOLOCK)    
+LEFT JOIN (SELECT    
+  b.*    
+FROM vCore_EstimationQuotation b WITH (NOLOCK)    
+INNER JOIN vExt_EstQuote c WITH (NOLOCK)    
+  ON b.iMasterId = c.iMasterId    
+WHERE b.iMasterId > 0) bb ON bb.EnquiryRepairNo = a.iMasterId    
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.Customer = d.iMasterId    
+LEFT JOIN vCore_CommonMaster e WITH (NOLOCK)ON a.EnquiryStage = e.iMasterId    
+LEFT JOIN vCore_Department f WITH (NOLOCK) ON a.Department = f.iMasterId    
+LEFT JOIN vCore_CommonMaster g WITH (NOLOCK) ON bb.CustomerApproval = g.iMasterId    
+LEFT JOIN vCore_CommonMaster h WITH (NOLOCK) ON bb.JobStatus = h.iMasterId    
+LEFT JOIN vCore_CommonMaster i WITH (NOLOCK) ON bb.QuotationStatus = i.iMasterId    
+WHERE a.iMasterId > 0 and a.EnquiryStage not in (9,47)  and bb.sName <>''  
+GROUP BY CustApp,CustomerDeliveryDate,PioneerDeliveryDate,d.sName,a.sName,a.Date,e.sName,bb.sName,bb.Date,f.sName,g.sName,bb.sDescription,bb.QuotationRemarks,h.sName,i.sName,    
+bb.Jobstatusremarks,a.StatusRemarks,a.Currency,bb.TotalAmountFooter    
+    
+UNION ALL    
+    
+SELECT    
+  CONCAT(DATENAME(MONTH, dbo.fCore_IntToDate(b.Date)), '-', DATENAME(YEAR, dbo.fCore_IntToDate(b.Date))) MonthYear,  COUNT(a.iMasterId) [Count],    
+  (d.sName) [Account],
+  CASE WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date)) ='January' then 1
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='February' then 2
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='March' then 3
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='April' then 4
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='May' then 5
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='June' then 6
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='July' then 7
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='August' then 8
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='September' then 9
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='October' then 10
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='November' then 11
+  WHEN DATENAME(MONTH, dbo.fCore_IntToDate(b.Date))='December' then 12
+ end MonSeq,    
+  (a.sName) [Enquiry No.],    
+  (a.Date) [$Date$Enq Manf. Date],    
+  (i.sName) [Quotation Stage],    
+  (b.sName) [Quotation No],    
+  (b.Date) [$Date$Q Date],    
+  SUBSTRING(f.sName, CHARINDEX('- ', f.sName) + 1, LEN(f.sName)) [Department],    
+  (g.sName) [Customer Approval],    
+  (b.Description) [Description],    
+  (b.CustomerApprovalDate) [$Date$ Customer Approval    
+  Date],    
+  (b.CustomerDeliveryDate) [$Date$ Customer Delivery Date],    
+  CASE    
+    WHEN     
+      LEN(PioneerDeliveryDate) <> 9 THEN NULL    
+    ELSE ISNULL    
+      (b.PioneerDeliveryDate, 0)    
+  END [$Date$PioneerDeliveryDate],    
+  (b.Quotatoinremarks) [Quotation Remarks],    
+  (b.STotalAmount) [Total Amount],    
+  (h.sName) [Job    
+ Status],    
+  (i.sName) [Quotation Status],    
+  (b.Jobstatusremarks) [Job Status Remarks],    
+  (a.StatusRemarks) [Status Remarks],    
+  (a.Currency) Currency,    
+  IIF(a.Currency = 2, (b.STotalAmount), (b.STotalAmount / 1.7)) USD,    
+  IIF(a.Currency = 2, 'USD', 'AZN') CurrencyCode,vinv.InwardDocket [InwardNo]    
+FROM vCore_EnquiryManufacturing a    
+LEFT JOIN (SELECT    
+  AA.*    
+FROM vCore_QuotationMF AA    
+INNER JOIN vExt_EstQuoteMF BB ON AA.iMasterId = BB.iMasterId    
+WHERE AA.iMasterId > 0) b ON b.EnquiryNo = a.iMasterId    
+LEFT JOIN vCrm_Users c ON b.iAssignedTo = c.iMasterId    
+LEFT JOIN vCore_Account d ON a.Customer = d.iMasterId    
+LEFT JOIN vCore_CommonMaster e ON a.EnquiryStage = e.iMasterId    
+LEFT JOIN vCore_Department f ON a.Department = f.iMasterId    
+LEFT JOIN vCore_CommonMaster g ON b.CustomerApproval = g.iMasterId    
+LEFT JOIN vCore_CommonMaster h ON b.JobStatus = h.iMasterId    
+LEFT JOIN vCore_CommonMaster i ON b.QuotationStatus = i.iMasterId    
+LEFT JOIN vRpt_Inward vinv on vinv.iMasterId=a.iMasterId  
+WHERE a.iMasterId > 0 and a.EnquiryStage not in (9,47) and b.sName <>''    
+GROUP BY CustomerApprovalDate,CustomerDeliveryDate,PioneerDeliveryDate,d.sName,a.sName, a.Date,e.sName,b.sName,b.Date,f.sName,g.sName,b.Description,b.Quotatoinremarks, h.sName,    
+i.sName, b.Jobstatusremarks,a.StatusRemarks,a.Currency,b.STotalAmount ,vinv.InwardDocket   
+)aa  
+where InwardNo <>''

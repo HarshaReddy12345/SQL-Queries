@@ -1,0 +1,24 @@
+
+SELECT
+  vCrm_Users_iAssignedTo.sName [User Name],
+  vCrm_Users_iAssignedTo.iMasterId [UserId],
+  CASE WHEN (vuCrm_CallWorkLog_Local_Conveyance_Details.iStartDate >= 132252417 OR  vuCrm_CallWorkLog_Local_Conveyance_Details.iStartDate < 132252673) THEN vuCrm_CallWorkLog_Local_Conveyance_Details.iStartDate END [$Date$Start Date],(vuCrm_CallWorkLog_Local_Conveyance_Details.iCreatedDate & CAST(281474976579584 AS bigint)) [$Datetime$Created Date],vCrm_Calls_iCallId.sName [Request Name],vCrm_Calls_iCallId.iTransId [RequestId],CASE vuCrm_CallWorkLog_Local_Conveyance_Details.WorklogType
+    WHEN 1 THEN 'Breakdown' WHEN 2 THEN 'Site Inspection' WHEN 3 THEN 'Software Issue' WHEN 4 THEN 'Preventive Maintenance' WHEN 5 THEN 'Installation' WHEN 6 THEN 'Training'
+    WHEN 7 THEN 'Remote support' WHEN 8 THEN 'Demo' WHEN 9 THEN 'Sales support' WHEN 10 THEN 'Collection Followup' WHEN 11 THEN 'Production related' WHEN 12 THEN 'Purchase'
+    WHEN 13 THEN 'Dispatch & Collection of Material' WHEN 14 THEN 'Desk work' WHEN 15 THEN 'Courtesy Call' WHEN 16 THEN 'Cannibalization' WHEN 17 THEN 'Invoice Submission'
+    WHEN 18 THEN 'Observation calls ' WHEN 19 THEN 'Intermediate Calls ' WHEN 20 THEN 'Quality Issue ' WHEN 21 THEN 'Testing' WHEN 22 THEN 'Travel' WHEN 23 THEN 'Loading&unloading (Machine)' WHEN 24 THEN 'Revenue call' WHEN 25 THEN 'Re installation' END [Worklog Type], vCrm_Calls_vCore_Vertical_Vertical.sName [Vertical Name], vCrm_Calls_iCallId.Vertical [VerticaId],CASE  vCrm_Calls_iCallId.CallRequest WHEN 1 then 'Service Call' WHEN 2 then 'PM Call' WHEN 3 then 'Toner Call' WHEN 4 then 'Installation Call' WHEN 5 then 'Site Inspection' WHEN 6 then 'Demo' WHEN 7 then 'Consumables' WHEN 8 then 'Spare Parts' WHEN 9 then 'Desk Work' WHEN 10 then 'Online Support'
+  WHEN 11 then 'Courtesy Call' end [CallRequest], vCrm_Calls_vCore_Account_iAccountId.sName [Account Name], vCrm_Calls_iCallId.iAccountId [AccountId],vCrm_Calls_vCore_Account_iAccountId.sBillingAddress [Customer Address],vuCrm_CallWorkLog_Local_Conveyance_Details.sRemarks [Remarks],CASE vuCrm_CallWorkLog_Local_Conveyance_Details.ModeofTravel WHEN 1 THEN 'Bike' WHEN 2 THEN 'Car' WHEN 3 THEN 'Taxi/Cab' WHEN 4 THEN 'Auto' WHEN 5 THEN 'Bus' WHEN 6 THEN 'Train'
+  END [Mode of Travel],
+  CASE WHEN (vuCrm_CallWorkLog_Local_Conveyance_Details.TotalRunKM >= 0) THEN vuCrm_CallWorkLog_Local_Conveyance_Details.TotalRunKM END [Total Run KM], vuCrm_CallWorkLog_Local_Conveyance_Details.RateKm [Rate Km], vuCrm_CallWorkLog_Local_Conveyance_Details.TotalCost [Total cost], vuCrm_CallWorkLog_Local_Conveyance_Details.TotalOtherCharges [total Other Charges],vuCrm_CallWorkLog_Local_Conveyance_Details.FromToRemarks [From To Remarks],vuCrm_CallWorkLog_Local_Conveyance_Details.iEndDate [$Date$End Date],tuCrm_CallWorkLog.ActivityAddress
+FROM vuCrm_CallWorkLog_Local_Conveyance_Details
+INNER JOIN tuCrm_CallWorkLog ON vuCrm_CallWorkLog_Local_Conveyance_Details.iTransId = tuCrm_CallWorkLog.iTransId
+INNER JOIN vCrm_Users vCrm_Users_iAssignedTo ON vuCrm_CallWorkLog_Local_Conveyance_Details.iAssignedTo = vCrm_Users_iAssignedTo.iMasterId
+INNER JOIN vCrm_Calls vCrm_Calls_iCallId ON vuCrm_CallWorkLog_Local_Conveyance_Details.iCallId = vCrm_Calls_iCallId.iTransId
+INNER JOIN vCore_Vertical vCrm_Calls_vCore_Vertical_Vertical ON vCrm_Calls_iCallId.Vertical = vCrm_Calls_vCore_Vertical_Vertical.iMasterId
+INNER JOIN vCore_Account vCrm_Calls_vCore_Account_iAccountId ON vCrm_Calls_iCallId.iAccountId = vCrm_Calls_vCore_Account_iAccountId.iMasterId
+inner join dbo.fCrm_GetTokens('@USERACCESS',',') emphir on emphir.sToken=vCrm_Users_iAssignedTo.iMasterId
+WHERE vuCrm_CallWorkLog_Local_Conveyance_Details.iTransId > 0 AND (vuCrm_CallWorkLog_Local_Conveyance_Details.iStartDate IS NOT NULL AND vuCrm_CallWorkLog_Local_Conveyance_Details.iStartDate > 0 AND vuCrm_CallWorkLog_Local_Conveyance_Details.TotalRunKM IS NOT NULL AND vuCrm_CallWorkLog_Local_Conveyance_Details.TotalRunKM > 0) AND NOT (vuCrm_CallWorkLog_Local_Conveyance_Details.ModeofTravel IS NULL OR vuCrm_CallWorkLog_Local_Conveyance_Details.ModeofTravel = '')
+
+and   vuCrm_CallWorkLog_Local_Conveyance_Details.iStartDate between @STARTDATE and @ENDDATE
+and (( 0 in (@User) and vCrm_Users_iAssignedTo.iMasterId  = vCrm_Users_iAssignedTo.iMasterId) or (0 not in (@User) and vCrm_Users_iAssignedTo.iMasterId  in ( @User )))
+and (( 0 in (@RequestNo) and vCrm_Calls_iCallId.iTransId  = vCrm_Calls_iCallId.iTransId) or (0 not in (@RequestNo) and vCrm_Calls_iCallId.iTransId  in ( @RequestNo )))

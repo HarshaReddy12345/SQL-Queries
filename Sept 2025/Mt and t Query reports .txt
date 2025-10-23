@@ -1,0 +1,184 @@
+select SUM(fLocalNetAmountNew) [OverAll Amount],SUM(MonthlyValue) [MonthlyValue],SUM(WeeklyValue) WeeklyValue,[Sales Person] from
+(
+select b.fLocalNetAmountNew fLocalNetAmountNew,
+    CASE WHEN YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE()) AND MONTH(dbo.fCore_IntToDate(a.Date)) = MONTH(GETDATE())
+    THEN b.fLocalNetAmountNew  ELSE 0  END AS [MonthlyValue],
+
+    -- Current Week
+    CASE WHEN DATEPART(WEEK, dbo.fCore_IntToDate(a.Date)) = DATEPART(WEEK, GETDATE()) AND YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE())
+    THEN b.fLocalNetAmountNew  ELSE 0 END AS [WeeklyValue],
+
+    -- Current Date
+    CASE WHEN dbo.fCore_IntToDate(a.Date) = CAST(GETDATE() AS DATE) THEN b.fLocalNetAmountNew  ELSE 0 END AS [DailyValue],
+    c.sName [Sales Person],c.iMasterId
+FROM vCrm_Opportunities a WITH (NOLOCK)
+LEFT JOIN vCrm_Quote b WITH (NOLOCK) ON a.iTransId = b.iOpportunityId
+LEFT JOIN vCore_Operators c WITH (NOLOCK) on b.PrimarySalesPerson=c.iMasterId
+WHERE a.iTransId > 0 AND a.iStage = 3
+
+
+union all
+
+select b.TotalComponentCost fLocalNetAmountNew,
+    CASE WHEN YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE()) AND MONTH(dbo.fCore_IntToDate(a.Date)) = MONTH(GETDATE())
+    THEN b.TotalComponentCost  ELSE 0  END AS [MonthlyValue],
+
+    -- Current Week
+    CASE WHEN DATEPART(WEEK, dbo.fCore_IntToDate(a.Date)) = DATEPART(WEEK, GETDATE()) AND YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE())
+    THEN b.TotalComponentCost  ELSE 0 END AS [WeeklyValue],
+
+    -- Current Date
+    CASE WHEN dbo.fCore_IntToDate(a.Date) = CAST(GETDATE() AS DATE) THEN b.TotalComponentCost  ELSE 0 END AS [DailyValue],
+    c.sName [Sales Person],c.iMasterId
+FROM vCrm_Opportunities a WITH (NOLOCK)
+LEFT JOIN vCore_TSAFQuote b WITH (NOLOCK) ON a.iTransId = b.OpportunityNo
+LEFT JOIN vCore_Operators c WITH (NOLOCK) on b.iEmployee=c.iMasterId
+WHERE a.iTransId > 0 AND a.iStage = 3
+
+)a
+where
+(( 0 in (@SalesPerson) and isnull(iMasterId,0)  = isnull(iMasterId,0) ) or (0 not in (@SalesPerson) and isnull(iMasterId,0)   in ( @SalesPerson )))
+group by [Sales Person]
+
+go
+
+SELECT 
+    SUM(fLocalNetAmountNew) AS [OverAll Amount],SUM(MonthlyValue) AS [MonthlyValue],SUM(WeeklyValue) AS [WeeklyValue],
+    ISNULL([Divisions],'') AS [Divisions],ISNULL(iMasterId,0) AS iMasterId
+FROM
+(
+    -- vCrm_Quote part
+    SELECT 
+        b.fLocalNetAmountNew AS fLocalNetAmountNew,
+        CASE WHEN YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE()) AND MONTH(dbo.fCore_IntToDate(a.Date)) = MONTH(GETDATE())
+        THEN b.fLocalNetAmountNew ELSE 0 END AS [MonthlyValue],
+
+        CASE WHEN DATEPART(WEEK, dbo.fCore_IntToDate(a.Date)) = DATEPART(WEEK, GETDATE()) AND YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE())
+        THEN b.fLocalNetAmountNew ELSE 0 END AS [WeeklyValue],
+
+        CASE WHEN dbo.fCore_IntToDate(a.Date) = CAST(GETDATE() AS DATE) THEN b.fLocalNetAmountNew ELSE 0 END AS [DailyValue],
+        ISNULL(c.sName,'') AS [Divisions],
+        ISNULL(c.iMasterId,0) AS iMasterId
+    FROM vCrm_Opportunities a WITH (NOLOCK)
+    LEFT JOIN vCrm_Quote b WITH (NOLOCK) ON a.iTransId = b.iOpportunityId
+    LEFT JOIN vCore_Divisions c WITH (NOLOCK) ON b.Divisions = c.iMasterId
+    WHERE a.iTransId > 0 AND a.iStage = 3
+
+    UNION ALL
+
+    -- vCore_TSAFQuote part
+    SELECT 
+        b.TotalComponentCost AS fLocalNetAmountNew,
+        CASE WHEN YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE()) AND MONTH(dbo.fCore_IntToDate(a.Date)) = MONTH(GETDATE())
+        THEN b.TotalComponentCost ELSE 0 END AS [MonthlyValue],
+
+        CASE WHEN DATEPART(WEEK, dbo.fCore_IntToDate(a.Date)) = DATEPART(WEEK, GETDATE()) AND YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE())
+        THEN b.TotalComponentCost ELSE 0 END AS [WeeklyValue],
+
+        CASE WHEN dbo.fCore_IntToDate(a.Date) = CAST(GETDATE() AS DATE) THEN b.TotalComponentCost ELSE 0 END AS [DailyValue],
+        ISNULL(c.sName,'') AS [Divisions],
+        ISNULL(c.iMasterId,0) AS iMasterId
+    FROM vCrm_Opportunities a WITH (NOLOCK)
+    LEFT JOIN vCore_TSAFQuote b WITH (NOLOCK) ON a.iTransId = b.OpportunityNo
+    LEFT JOIN vCore_Divisions c WITH (NOLOCK) ON b.Divisions = c.iMasterId
+    WHERE a.iTransId > 0 AND a.iStage = 3
+) a
+WHERE 
+(( 0 in (@Divisions) and isnull(iMasterId,0)  = isnull(iMasterId,0) ) or (0 not in (@Divisions) and isnull(iMasterId,0)   in ( @Divisions )))
+GROUP BY ISNULL([Divisions],''), ISNULL(iMasterId,0);
+
+go
+
+SELECT 
+    SUM(fLocalNetAmountNew) AS [OverAll Amount],SUM(MonthlyValue) AS [MonthlyValue],SUM(WeeklyValue) AS [WeeklyValue],
+    ISNULL([Branch],'') AS [Branch],ISNULL(iMasterId,0) AS iMasterId
+FROM
+(
+    -- vCrm_Quote part
+    SELECT 
+        b.fLocalNetAmountNew AS fLocalNetAmountNew,
+        CASE WHEN YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE()) AND MONTH(dbo.fCore_IntToDate(a.Date)) = MONTH(GETDATE())
+        THEN b.fLocalNetAmountNew ELSE 0 END AS [MonthlyValue],
+
+        CASE WHEN DATEPART(WEEK, dbo.fCore_IntToDate(a.Date)) = DATEPART(WEEK, GETDATE()) AND YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE())
+        THEN b.fLocalNetAmountNew ELSE 0 END AS [WeeklyValue],
+
+        CASE WHEN dbo.fCore_IntToDate(a.Date) = CAST(GETDATE() AS DATE) THEN b.fLocalNetAmountNew ELSE 0 END AS [DailyValue],
+        ISNULL(c.sName,'') AS [Branch],
+        ISNULL(c.iMasterId,0) AS iMasterId
+    FROM vCrm_Opportunities a WITH (NOLOCK)
+    LEFT JOIN vCrm_Quote b WITH (NOLOCK) ON a.iTransId = b.iOpportunityId
+    LEFT JOIN vCore_BRANCH c WITH (NOLOCK) ON b.Branch = c.iMasterId
+    WHERE a.iTransId > 0 AND a.iStage = 3
+
+    UNION ALL
+
+    -- vCore_TSAFQuote part
+    SELECT 
+        b.TotalComponentCost AS fLocalNetAmountNew,
+        CASE WHEN YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE()) AND MONTH(dbo.fCore_IntToDate(a.Date)) = MONTH(GETDATE())
+        THEN b.TotalComponentCost ELSE 0 END AS [MonthlyValue],
+
+        CASE WHEN DATEPART(WEEK, dbo.fCore_IntToDate(a.Date)) = DATEPART(WEEK, GETDATE()) AND YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE())
+        THEN b.TotalComponentCost ELSE 0 END AS [WeeklyValue],
+
+        CASE WHEN dbo.fCore_IntToDate(a.Date) = CAST(GETDATE() AS DATE) THEN b.TotalComponentCost ELSE 0 END AS [DailyValue],
+        ISNULL(c.sName,'') AS [Branch],
+        ISNULL(c.iMasterId,0) AS iMasterId
+    FROM vCrm_Opportunities a WITH (NOLOCK)
+    LEFT JOIN vCore_TSAFQuote b WITH (NOLOCK) ON a.iTransId = b.OpportunityNo
+    LEFT JOIN vCore_BRANCH c WITH (NOLOCK) ON b.IBranch = c.iMasterId
+    WHERE a.iTransId > 0 AND a.iStage = 3
+) a
+WHERE
+(( 0 in (@Branch) and isnull(iMasterId,0)  = isnull(iMasterId,0) ) or (0 not in (@Branch) and isnull(iMasterId,0)   in ( @Branch )))
+GROUP BY ISNULL([Branch],''), ISNULL(iMasterId,0);
+
+go
+
+SELECT 
+    SUM(fLocalNetAmountNew) AS [OverAll Amount],SUM(MonthlyValue) AS [MonthlyValue],SUM(WeeklyValue) AS [WeeklyValue],
+    ISNULL([Group Companies],'') AS [Branch],ISNULL(iMasterId,0) AS iMasterId
+FROM
+(
+    -- vCrm_Quote part
+    SELECT 
+        b.fLocalNetAmountNew AS fLocalNetAmountNew,
+        CASE WHEN YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE()) AND MONTH(dbo.fCore_IntToDate(a.Date)) = MONTH(GETDATE())
+        THEN b.fLocalNetAmountNew ELSE 0 END AS [MonthlyValue],
+
+        CASE WHEN DATEPART(WEEK, dbo.fCore_IntToDate(a.Date)) = DATEPART(WEEK, GETDATE()) AND YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE())
+        THEN b.fLocalNetAmountNew ELSE 0 END AS [WeeklyValue],
+
+        CASE WHEN dbo.fCore_IntToDate(a.Date) = CAST(GETDATE() AS DATE) THEN b.fLocalNetAmountNew ELSE 0 END AS [DailyValue],
+        ISNULL(c.sName,'') AS [Group Companies],
+        ISNULL(c.iMasterId,0) AS iMasterId
+    FROM vCrm_Opportunities a WITH (NOLOCK)
+    LEFT JOIN vCrm_Quote b WITH (NOLOCK) ON a.iTransId = b.iOpportunityId
+    LEFT JOIN vCore_GroupCompanies c WITH (NOLOCK) ON b.GroupCompanies = c.iMasterId
+    WHERE a.iTransId > 0 AND a.iStage = 3
+
+    UNION ALL
+
+    -- vCore_TSAFQuote part
+    SELECT 
+        b.TotalComponentCost AS fLocalNetAmountNew,
+        CASE WHEN YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE()) AND MONTH(dbo.fCore_IntToDate(a.Date)) = MONTH(GETDATE())
+        THEN b.TotalComponentCost ELSE 0 END AS [MonthlyValue],
+
+        CASE WHEN DATEPART(WEEK, dbo.fCore_IntToDate(a.Date)) = DATEPART(WEEK, GETDATE()) AND YEAR(dbo.fCore_IntToDate(a.Date)) = YEAR(GETDATE())
+        THEN b.TotalComponentCost ELSE 0 END AS [WeeklyValue],
+
+        CASE WHEN dbo.fCore_IntToDate(a.Date) = CAST(GETDATE() AS DATE) THEN b.TotalComponentCost ELSE 0 END AS [DailyValue],
+        ISNULL(c.sName,'') AS [Group Companies],
+        ISNULL(c.iMasterId,0) AS iMasterId
+    FROM vCrm_Opportunities a WITH (NOLOCK)
+    LEFT JOIN vCore_TSAFQuote b WITH (NOLOCK) ON a.iTransId = b.OpportunityNo
+    LEFT JOIN vCore_GroupCompanies c WITH (NOLOCK) ON b.GroupCompanies = c.iMasterId
+    WHERE a.iTransId > 0 AND a.iStage = 3
+) a
+where
+((0 in (@GroupCompanies) and isnull(iMasterId,0)=isnull(iMasterId,0)) or (0 not in (@GroupCompanies) and isnull(iMasterId,0) in ( @GroupCompanies)))
+GROUP BY ISNULL([Group Companies],''), ISNULL(iMasterId,0);
+
+

@@ -1,0 +1,134 @@
+CREATE OR ALTER VIEW nCore_EquipmentHistoryReport AS
+WITH BaseAssets AS (
+    SELECT 
+        a.iTransId AS AssetId,
+        a.sName AS SerialNo,
+        a.AssetsStatus,
+        b.sCode AS [Equipment Code],
+        b.sName AS [Equipment Name],
+        b.iMasterId AS ProductId,
+        u.iMasterId AS CLocationId,
+        u.sName AS [Current Location],
+        v.iMasterId AS LocationId,
+        v.sName AS [Location Name]
+    FROM vCrm_CustAssets a WITH(NOLOCK)
+    INNER JOIN vCore_Product b WITH(NOLOCK) ON a.iProductId = b.iMasterId
+    LEFT JOIN vCore_RentalLocation u WITH(NOLOCK) ON a.YardsandWarehouses = u.iMasterId
+    LEFT JOIN vCore_RentalSitesandTradingShipping v WITH(NOLOCK) ON a.RentalSite = v.iMasterId
+    WHERE a.iTransId > 0
+),
+AssetHistory AS (
+    -- Equipment Allocation
+    SELECT 
+        ba.AssetId, ba.[Equipment Code], ba.[Equipment Name], ISNULL(ba.SerialNo,'') AS [Serial No],
+        'Ready For Rent' AS PreviousStatus, 'Pending PDI' AS CurrentStatus, 1 AS StatusOrder,
+        d.AllotmentDate AS StatusDate, m.sName AS [Previous Location], ba.[Current Location],
+        ba.[Location Name], w.sName AS [User Id], d.AllotmentDate AS [Effective Date],
+        e.HourMeterReading AS [Starting HMR], ba.ProductId, ba.AssetsStatus,
+        ba.CLocationId, ba.LocationId
+    FROM BaseAssets ba WITH(NOLOCK)
+    INNER JOIN vuCore_EquipmentAllocation_EquipmentInfo_Details d WITH(NOLOCK) ON ba.AssetId = d.AssetNo AND d.iMasterId > 0
+    LEFT JOIN vuCore_PDI_EquipmentInfo_Details e WITH(NOLOCK) ON ba.AssetId = e.AssetNo
+    LEFT JOIN vCore_RentalLocation m WITH(NOLOCK) ON d.YardandWarehouse = m.iMasterId
+    LEFT JOIN vCrm_Users w WITH(NOLOCK) ON d.iAssignedTo = w.iMasterId
+
+    UNION ALL
+    -- PDI
+    SELECT 
+        ba.AssetId, ba.[Equipment Code], ba.[Equipment Name], ISNULL(ba.SerialNo,''),
+        'Pending PDI','In-transit - Delivery',2,
+        e.PDIDate, n.sName, ba.[Current Location], ba.[Location Name], x.sName,
+        e.PDIDate, e.HourMeterReading, ba.ProductId, ba.AssetsStatus,
+        ba.CLocationId, ba.LocationId
+    FROM BaseAssets ba WITH(NOLOCK)
+    INNER JOIN vuCore_PDI_EquipmentInfo_Details e WITH(NOLOCK) ON ba.AssetId = e.AssetNo AND e.iMasterId > 0
+    LEFT JOIN vCore_RentalLocation n WITH(NOLOCK) ON e.YardandWarehouse = n.iMasterId
+    LEFT JOIN vCrm_Users x WITH(NOLOCK) ON e.iAssignedTo = x.iMasterId
+
+    UNION ALL
+    -- Rental DC
+    SELECT 
+        ba.AssetId, ba.[Equipment Code], ba.[Equipment Name], ISNULL(ba.SerialNo,''),
+        'In-transit - Delivery','Pending Commissioning',3,
+        f.[Date], o.sName, ba.[Current Location], ba.[Location Name], y.sName,
+        f.[Date], e.HourMeterReading, ba.ProductId, ba.AssetsStatus,
+        ba.CLocationId, ba.LocationId
+    FROM BaseAssets ba WITH(NOLOCK)
+    INNER JOIN vuCore_DeliveryNote_Product_Info_Details f WITH(NOLOCK) ON ba.AssetId = f.AssetNo AND f.iMasterId > 0
+    LEFT JOIN vuCore_PDI_EquipmentInfo_Details e WITH(NOLOCK) ON ba.AssetId = e.AssetNo
+    LEFT JOIN vCore_RentalLocation o WITH(NOLOCK) ON f.RentalLocation = o.iMasterId
+    LEFT JOIN vCrm_Users y WITH(NOLOCK) ON f.iAssignedTo = y.iMasterId
+
+    UNION ALL
+    -- Equipment Receipt
+    SELECT 
+        ba.AssetId, ba.[Equipment Code], ba.[Equipment Name], ISNULL(ba.SerialNo,''),
+        'Pending Commissioning','Pending Commencement',4,
+        g.ReceiptDate, p.sName, ba.[Current Location], ba.[Location Name], z.sName,
+        g.ReceiptDate, e.HourMeterReading, ba.ProductId, ba.AssetsStatus,
+        ba.CLocationId, ba.LocationId
+    FROM BaseAssets ba WITH(NOLOCK)
+    INNER JOIN vuCore_EquipmentReceipt_EquipmentInfo_Details g WITH(NOLOCK) ON ba.AssetId = g.AssetNo AND g.iMasterId > 0
+    LEFT JOIN vuCore_PDI_EquipmentInfo_Details e WITH(NOLOCK) ON ba.AssetId = e.AssetNo
+    LEFT JOIN vCore_RentalLocation p WITH(NOLOCK) ON g.YardsandWarehouses = p.iMasterId
+    LEFT JOIN vCrm_Users z WITH(NOLOCK) ON g.iAssignedTo = z.iMasterId
+
+    UNION ALL
+    -- Commencement Entry
+    SELECT 
+        ba.AssetId, ba.[Equipment Code], ba.[Equipment Name], ISNULL(ba.SerialNo,''),
+        'Pending Commencement','On Rent',5,
+        h.CommencedDate, q.sName, ba.[Current Location], ba.[Location Name], aa.sName,
+        h.CommencedDate, e.HourMeterReading, ba.ProductId, ba.AssetsStatus,
+        ba.CLocationId, ba.LocationId
+    FROM BaseAssets ba WITH(NOLOCK)
+    INNER JOIN vuCore_CommencementEntry_EquipmentInfo_Details h WITH(NOLOCK) ON ba.AssetId = h.Ass AND h.iMasterId > 0
+    LEFT JOIN vuCore_PDI_EquipmentInfo_Details e WITH(NOLOCK) ON ba.AssetId = e.AssetNo
+    LEFT JOIN vCore_RentalLocation q WITH(NOLOCK) ON h.YardandWarehouse = q.iMasterId
+    LEFT JOIN vCrm_Users aa WITH(NOLOCK) ON h.iAssignedTo = aa.iMasterId
+
+    UNION ALL
+    -- De-Commencement Entry
+    SELECT 
+        ba.AssetId, ba.[Equipment Code], ba.[Equipment Name], ISNULL(ba.SerialNo,''),
+        'On Rent','In-transit - Return',6,
+        i.DecommencementDate, r.sName, ba.[Current Location], ba.[Location Name], ab.sName,
+        i.DecommencementDate, e.HourMeterReading, ba.ProductId, ba.AssetsStatus,
+        ba.CLocationId, ba.LocationId
+    FROM BaseAssets ba WITH(NOLOCK)
+    INNER JOIN vuCore_DeCommencementEntry_EquipmentInfo_Details i WITH(NOLOCK) ON ba.AssetId = i.AssetNo AND i.iMasterId > 0
+    LEFT JOIN vuCore_PDI_EquipmentInfo_Details e WITH(NOLOCK) ON ba.AssetId = e.AssetNo
+    LEFT JOIN vCore_RentalSitesandTradingShipping r WITH(NOLOCK) ON i.RentalSiteandTrading = r.iMasterId
+    LEFT JOIN vCrm_Users ab WITH(NOLOCK) ON i.iAssignedTo = ab.iMasterId
+
+    UNION ALL
+    -- Return DC
+    SELECT 
+        ba.AssetId, ba.[Equipment Code], ba.[Equipment Name], ISNULL(ba.SerialNo,''),
+        'In-transit - Return','Pending Maintenance',7,
+        j.ReturnDcDate, s.sName, ba.[Current Location], ba.[Location Name], ac.sName,
+        j.ReturnDcDate, e.HourMeterReading, ba.ProductId, ba.AssetsStatus,
+        ba.CLocationId, ba.LocationId
+    FROM BaseAssets ba WITH(NOLOCK)
+    INNER JOIN vuCore_ReturnDC_EquipmentInformation_Details j WITH(NOLOCK) ON ba.AssetId = j.AssetNo AND j.iMasterId > 0
+    LEFT JOIN vuCore_PDI_EquipmentInfo_Details e WITH(NOLOCK) ON ba.AssetId = e.AssetNo
+    LEFT JOIN vCore_RentalLocation s WITH(NOLOCK) ON j.YardsandWarehouses = s.iMasterId
+    LEFT JOIN vCrm_Users ac WITH(NOLOCK) ON j.iAssignedTo = ac.iMasterId
+
+    UNION ALL
+    -- Equipment Maintenance
+    SELECT 
+        ba.AssetId, ba.[Equipment Code], ba.[Equipment Name], ISNULL(ba.SerialNo,''),
+        'Pending Maintenance','Ready For Rent',8,
+        dbo.fCrm_DateFromBigInt(k.iCreatedDate), t.sName, ba.[Current Location], ba.[Location Name], ad.sName,
+        dbo.fCrm_DateFromBigInt(k.iCreatedDate), e.HourMeterReading, ba.ProductId, ba.AssetsStatus,
+        ba.CLocationId, ba.LocationId
+    FROM BaseAssets ba WITH(NOLOCK)
+    INNER JOIN vuCore_EquipmentMaintenance_EquipmentInformation_Details k WITH(NOLOCK) ON ba.AssetId = k.AssetNo AND k.iMasterId > 0
+    LEFT JOIN vuCore_PDI_EquipmentInfo_Details e WITH(NOLOCK) ON ba.AssetId = e.AssetNo
+    LEFT JOIN vCore_RentalSitesandTradingShipping t WITH(NOLOCK) ON k.SitesandShipping = t.iMasterId
+    LEFT JOIN vCrm_Users ad WITH(NOLOCK) ON k.iAssignedTo = ad.iMasterId
+)
+SELECT top 100 percent *
+FROM AssetHistory WITH(NOLOCK)
+ORDER BY AssetId, StatusOrder, StatusDate;

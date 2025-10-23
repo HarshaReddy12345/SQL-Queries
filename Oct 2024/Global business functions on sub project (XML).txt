@@ -1,0 +1,54 @@
+CREATE FUNCTION dbo.fCore_Var1(@s xml)  
+Returns int  
+as   
+begin  
+DECLARE @Company int ,@Fret int,@SOC int  
+ select @Company = @s.value('(Fields/BodyData/BodyRow/Company)[1]','int')  
+ select @SOC = @s.value('(Fields/Header/SalesorderConfirmationNo)[1]','int')  
+  
+ select @Fret=Company from vuCore_SubProject_ProductInformation_Details where SalesorderConfirmationNo=@SOC  
+ return @Fret  
+end
+go
+CREATE FUNCTION dbo.fCore_Var2(@s xml)
+Returns int
+as 
+begin
+DECLARE @Director int ,@Fret int,@SOC int
+	select @Director = @s.value('(Fields/BodyData/BodyRow/Director)[1]','int')
+	select @SOC = @s.value('(Fields/Header/SalesorderConfirmationNo)[1]','int')
+
+	select @Fret=Director from vuCore_SubProject_ProductInformation_Details where SalesorderConfirmationNo=@SOC
+	return @Fret
+end
+go
+CREATE FUNCTION dbo.fCore_Var3(@s xml)
+Returns int
+as 
+begin
+DECLARE @Division int ,@Fret int,@SOC int
+	select @Division = @s.value('(Fields/BodyData/BodyRow/Division)[1]','int')
+	select @SOC = @s.value('(Fields/Header/SalesorderConfirmationNo)[1]','int')
+
+	select @Fret=Division from vuCore_SubProject_ProductInformation_Details where SalesorderConfirmationNo=@SOC
+	return @Fret
+end
+go
+CREATE FUNCTION dbo.fCore_Var4(@s xml)
+Returns int
+as 
+begin
+DECLARE @SalesExecutive int ,@Fret int,@SOC int
+	select @SalesExecutive = @s.value('(Fields/BodyData/BodyRow/SalesExecutive)[1]','int')
+	select @SOC = @s.value('(Fields/Header/SalesorderConfirmationNo)[1]','int')
+
+	select @Fret=SalesExecutive from vuCore_SubProject_ProductInformation_Details where SalesorderConfirmationNo=@SOC
+	return @Fret
+end
+
+
+
+&{SQLFC1}--Company
+&{SQLFC2}--Director
+&{SQLFC3}--Division
+&{SQLFC4}--SalesExecutive

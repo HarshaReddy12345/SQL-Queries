@@ -1,0 +1,182 @@
+REPORT QUERY
+
+--DECLARE @Month int=02,@Year int=2023
+SELECT 
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-01')) Planned1,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-02')) Planned2,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-03')) Planned3,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-04')) Planned4,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-05')) Planned5,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-06')) Planned6,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-07')) Planned7,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-08')) Planned8,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-09')) Planned9,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-10')) Planned10,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-11')) Planned11,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-12')) Planned12,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-13')) Planned13,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-14')) Planned14,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-15')) Planned15,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-16')) Planned16,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-17')) Planned17,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-18')) Planned18,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-19')) Planned19,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-20')) Planned20,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-21')) Planned21,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-22')) Planned22,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-23')) Planned23,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-24')) Planned24,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-25')) Planned25,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-26')) Planned26,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-27')) Planned27,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-28')) Planned28,
+ CASE WHEN @Month = 2 AND (YEAR(@Year) % 4 = 0 AND (YEAR(@Year) % 100 != 0 OR YEAR(@Year) % 400 = 0)) THEN DATENAME(WEEKDAY, CAST(CAST(@Year AS VARCHAR(4)) + '-02-29' AS DATE))
+ WHEN @Month <> 2 THEN DATENAME(WEEKDAY, CAST(CAST(@Year AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(@Month AS VARCHAR(2)), 2) + '-29' AS DATE)) ELSE '' END AS Planned29,
+ CASE WHEN @Month = 2 THEN '' else DATENAME(WEEKDAY, CAST(CAST(@Year AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(@Month AS VARCHAR(2)), 2) + '-30' AS DATE)) end Planned30,
+ CASE WHEN @Month = 2  then '' when @Month<>2  and DAY(EOMONTH(DATEFROMPARTS(@Year, @Month, 1))) = 30 THEN '' 
+ ELSE DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-31')) END AS Planned31,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-01')) Actual1,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-02')) Actual2, 
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-03')) Actual3,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-04')) Actual4,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-05')) Actual5,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-06')) Actual6,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-07')) Actual7,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-08')) Actual8,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-09')) Actual9,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-10')) Actual10,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-11')) Actual11,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-12')) Actual12,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-13')) Actual13,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-14')) Actual14,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-15')) Actual15, 
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-16')) Actual16,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-17')) Actual17,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-18'))Actual18,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-19')) Actual19,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-20')) Actual20,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-21')) Actual21,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-22')) Actual22,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-23')) Actual23,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-24')) Actual24,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-25')) Actual25,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-26')) Actual26,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-27')) Actual27,
+ DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-28')) Actual28,
+ CASE WHEN @Month = 2 AND (YEAR(@Year) % 4 = 0 AND (YEAR(@Year) % 100 != 0 OR YEAR(@Year) % 400 = 0)) THEN DATENAME(WEEKDAY, CAST(CAST(@Year AS VARCHAR(4)) + '-02-29' AS DATE))
+ WHEN @Month <> 2 THEN DATENAME(WEEKDAY, CAST(CAST(@Year AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(@Month AS VARCHAR(2)), 2) + '-29' AS DATE)) ELSE '' END AS Actual29,
+ CASE WHEN @Month = 2 THEN '' else DATENAME(WEEKDAY, CAST(CAST(@Year AS VARCHAR(4)) + '-' + RIGHT('0' + CAST(@Month AS VARCHAR(2)), 2) + '-30' AS DATE)) end Actual30,
+ CASE WHEN @Month = 2  then '' when @Month<>2  and DAY(EOMONTH(DATEFROMPARTS(@Year, @Month, 1))) = 30 THEN '' 
+ ELSE DATENAME(WEEKDAY,CONCAT(CAST(@Year AS varchar(4)), '-', RIGHT('0' + CAST(@Month AS varchar(2)), 2), '-31')) END AS Actual31,
+ '' [Account],'' [Owner],@Month,@Year
+
+ union all
+
+ select * from nCore_Test
+ where [Month]=@Month and [Year]=@Year
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+VIEW
+
+CREATE  or ALTER VIEW nCore_Test as
+SELECT 
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N1 THEN 'X' ELSE '' END  Planned1,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N2 THEN 'X' ELSE '' END  Planned2,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N3 THEN 'X' ELSE '' END  Planned3,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N4 THEN 'X' ELSE '' END  Planned4,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N5 THEN 'X' ELSE '' END  Planned5,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N6 THEN 'X' ELSE '' END  Planned6,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N7 THEN 'X' ELSE '' END  Planned7,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N8 THEN 'X' ELSE '' END  Planned8,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N9 THEN 'X' ELSE '' END  Planned9,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N10 THEN 'X' ELSE '' END  Planned10,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N11 THEN 'X' ELSE '' END  Planned11,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N12 THEN 'X' ELSE '' END  Planned12,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N13 THEN 'X' ELSE '' END  Planned13,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N14 THEN 'X' ELSE '' END  Planned14,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N15 THEN 'X' ELSE '' END  Planned15,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N16 THEN 'X' ELSE '' END  Planned16,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N17 THEN 'X' ELSE '' END  Planned17,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N18 THEN 'X' ELSE '' END  Planned18,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N19 THEN 'X' ELSE '' END  Planned19,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N20 THEN 'X' ELSE '' END  Planned20,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N21 THEN 'X' ELSE '' END  Planned21,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N22 THEN 'X' ELSE '' END  Planned22,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N23 THEN 'X' ELSE '' END  Planned23,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N24 THEN 'X' ELSE '' END  Planned24,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N25 THEN 'X' ELSE '' END  Planned25,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N26 THEN 'X' ELSE '' END  Planned26,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N27 THEN 'X' ELSE '' END  Planned27,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N28 THEN 'X' ELSE '' END  Planned28,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N29 THEN 'X' ELSE '' END  Planned29,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N30 THEN 'X' ELSE '' END  Planned30,
+    CASE WHEN DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N31 THEN 'X' ELSE '' END  Planned31,
+    CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N1 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END      Actual1,
+    CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N2 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END      Actual2,
+    CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N3 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END       Actual3,
+    CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N4 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END      Actual4,
+   CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N5 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END     Actual5,
+   CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N6 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END     Actual6,
+   CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N7 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END      Actual7,
+   CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N8 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)ELSE 'Not Completed' END        Actual8,
+  CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N9 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END     Actual9,
+  CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N10 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END    Actual10,
+  CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N11 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)ELSE 'Not Completed' END    Actual11,
+  CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N12 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)   ELSE 'Not Completed' END     Actual12,
+  CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N13 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)ELSE 'Not Completed' END    Actual13,
+  CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N14 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END    Actual14,
+  CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N15 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END) ELSE 'Not Completed' END     Actual15,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N16 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual16,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N17 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual17,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N18 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual18,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N19 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual19,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N20 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual20,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N21 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual21,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N22 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual22,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N23 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual23,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N24 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual24,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N25 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual25,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N26 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual26,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N27 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual27,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N28 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual28,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N29 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual29,
+		CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N30 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual30,
+	CASE WHEN t.Status1 = 1 and DATEPART (DAY,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) = N31 then(CASE WHEN t.ActualStartDate = PlannedStartDate THEN 'Completed' else  'Def' END)
+	ELSE 'Not Completed' END  Actual31,
+
+
+	b.sName [AccountName],
+	  c.sName [Owner],
+	   DATEPART (MONTH,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) [Month], DATEPART (YEAR,dbo.fCore_IntToDate(dbo.fCrm_DateFromBigInt(PlannedStartDate))) [Year]
+FROM
+(
+    SELECT 
+    '1'  N1,'2'  N2,'3'  N3,'4'  N4,'5'  N5,'6'  N6,'7'  N7,'8'  N8,'9'  N9,'10'  N10,'11'  N11,'12'  N12,'13'  N13,'14'  N14,'15'  N15,'16'  N16,'17'  N17,'18'  N18,'19'  N19,'20'  N20,'21'  N21,'22'  N22,'23'  N23,'24'  N24,'25'  N25,'26'  N26,'27'  N27,'28'  N28,'29'  N29,'30'  N30, '31'  N31
+) aa
+CROSS JOIN mCore_Testing a
+JOIN muCore_Testing t WITH (NOLOCK)
+  ON a.iMasterId = t.iMasterId
+JOIN vCore_Account b WITH (NOLOCK)
+  ON t.AccountName = b.iMasterId
+JOIN vCrm_Users c WITH (NOLOCK)
+  ON t.iAssignedTo = c.iMasterId
+  where a.iMasterId>0
+  
+
+

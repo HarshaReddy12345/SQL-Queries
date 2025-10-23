@@ -1,0 +1,173 @@
+USE FOCUS801BS0
+go
+   
+create or alter  view duview as  
+SELECT  
+  du.iAssignedTo,  
+  u.sName [Creator],  
+  du.sName [Service DU Number],  
+  c.sName [Job Request Number],  
+  du.JobDate [$Datetime$Job Date],  
+  ua.sName [Job Attended By],  
+  l.sName [TIPL Service Centre],  
+  du.AttendedDate [$Datetime$Attended Date Time],  
+  du.StartedTime [$Datetime$Started Time],  
+  du.EndTime [$Datetime$End Time],  
+  CASE du.ActivityCode  
+    WHEN 1 THEN 'WARR'  
+    WHEN 2 THEN 'AMCB'  
+    WHEN 3 THEN 'NWAR'  
+    WHEN 4 THEN 'AMCPW'  
+    WHEN 5 THEN 'AMCP'  
+    WHEN 6 THEN 'NUPI'  
+    WHEN 7 THEN 'INCN'  
+  END AS Activity_Code,  
+  CASE du.Revenue  
+    WHEN 1 THEN 'Yes'  
+    WHEN 2 THEN 'No'  
+    WHEN 3 THEN 'Partial'  
+  END AS Revenue,  
+  a.sName [Oil Company Name],  
+  r.sName [Outlet Name],  
+  du.OilCoROCode [Oil Co RO Code],  
+  du.OutletCode [Outlet TIPL ID],  
+  du.SiteAddress [Site Address],  
+  co.sName [Retail Outlet contact],  
+  m.sName [Equipment Model No],  
+  ca.sName [Equipment Sr Number],  
+  du.EPROMversionNumber [EPROM version Number],  
+  p.sName [Item Description],  
+  du.Description [Item Code],  
+  du.OEMPartSerialNo [OEM Part Serial No],  
+  CASE du.Billable  
+    WHEN 1 THEN 'Yes'  
+    WHEN 2 THEN 'No'  
+  END AS Billable,  
+  du.NewQuantity [New Quantity Bill],  
+  du.NewQuantityNoBill [New Quantity No Bill],  
+  '' [Item Description Old],  
+  '' [Item Code Old],  
+  '' [OEM Part Serial no Old],  
+  '' [Carried back to HO],  
+  '' [Left at site],  
+  '' [Non Returnable Disposable item],  
+  du.iMasterId,  
+  du.JobRequestNumber,du.ServiceReportEnteredDate [$Datetime$ServiceReportEnteredDate],  
+  du.iApprovalDate [$Datetime$iApprovalDate],du.iCreatedDate [$Datetime$iCreatedDate],  
+  mk.sName [Make],con.sName [Internal Contract No],gn.sName [Godown Name],ocd.sName [Oil Company Divisional Name] ,s.sName [State] 
+FROM vuCore_DUBreakdown_PartReplacementInformation_Details du WITH (NOLOCK)  
+LEFT JOIN vCrm_Users u WITH (NOLOCK)  
+  ON du.iAssignedTo = u.iMasterId  
+LEFT JOIN vCrm_Users ua WITH (NOLOCK)  
+  ON du.JobAttendedBy = ua.iMasterId  
+LEFT JOIN vCrm_Calls c WITH (NOLOCK)  
+  ON du.JobRequestNumber = c.iTransId  
+LEFT JOIN vCore_Location l WITH (NOLOCK)  
+  ON du.iLocation = l.iMasterId  
+LEFT JOIN vCore_Account a WITH (NOLOCK)  
+  ON du.NameofCustomerOilCompany = a.iMasterId  
+LEFT JOIN vCore_Retailoutlet r WITH (NOLOCK)  
+  ON du.OutletName = r.iMasterId  
+LEFT JOIN vCrm_Contacts co WITH (NOLOCK)  
+  ON du.RetailOutletcontact = co.iMasterId  
+LEFT JOIN vCore_Model m WITH (NOLOCK)  
+  ON du.EquipmentModelNo = m.iMasterId  
+LEFT JOIN vCrm_CustAssets ca WITH (NOLOCK)  
+  ON du.EquipmentSrNumber = ca.iTransId  
+LEFT JOIN vCore_Product p WITH (NOLOCK)  
+  ON du.NewItemCode = p.iMasterId  
+LEFT JOIN vCore_Make mk WITH (NOLOCK)  
+  ON du.Make=mk.iMasterId  
+LEFT JOIN vCrm_Contract con WITH (NOLOCK)  
+  ON du.InternalContractNo=con.iTransId  
+LEFT JOIN vCore_GodownName gn WITH (NOLOCK)  
+  ON du.GodownName=gn.iMasterId  
+LEFT JOIN vCore_OilCompanyDivisionalOffice ocd WITH (NOLOCK)  
+  ON du.OilCompanyDivisionalName=ocd.iMasterId  
+LEFT JOIN vCore_State s WITH(NOLOCK)
+  ON du.[State]=s.iMasterId
+WHERE du.iMasterId > 0  
+  
+UNION ALL  
+  
+SELECT  
+  pr.iAssignedTo,  
+  us.sName [Creator],  
+  pr.sName [Service DU Number],  
+  ca.sName [Job Request Number],  
+  pr.JobDate [$Datetime$Job Date],  
+  uas.sName [Job Attended By],  
+  la.sName [TIPL Service Centre],  
+  pr.AttendedDate [$Datetime$Attended Date Time],  
+  pr.StartedTime [$Datetime$Started Time],  
+  pr.EndTime [$Datetime$End Time],  
+  CASE pr.ActivityCode  
+    WHEN 1 THEN 'WARR'  
+    WHEN 2 THEN 'AMCB'  
+    WHEN 3 THEN 'NWAR'  
+    WHEN 4 THEN 'AMCPW'  
+    WHEN 5 THEN 'AMCP'  
+    WHEN 6 THEN 'NUPI'  
+    WHEN 7 THEN 'INCN'  
+  END AS Activity_Code,  
+  CASE pr.Revenue  
+    WHEN 1 THEN 'Yes'  
+    WHEN 2 THEN 'No'  
+    WHEN 3 THEN 'Partial'  
+  END AS Revenue,  
+  aa.sName [Oil Company Name],  
+  ra.sName [Outlet Name],  
+  pr.OilCoROCode [Oil Co RO Code],  
+  pr.OutletCode [Outlet TIPL ID],  
+  pr.SiteAddress [Site Address],  
+  coa.sName [Retail Outlet contact],  
+  ma.sName [Equipment Model No],  
+  caa.sName [Equipment Sr Number],  
+  pr.EPROMversionNumber [EPROM version Number],  
+  '' [Item Description],  
+  '' [Item Code],  
+  '' [OEM Part Serial No],  
+  '' [Billable],  
+  '' [New Quantity Bill],  
+  '' [New Quantity No Bill],  
+  pa.sName [Item Description Old],  
+  pr.DescriptionOld [Item Code Old],  
+  pr.OEMPartSerialnoOld [OEM Part Serial no Old],  
+  pr.CarriedbacktoHO [Carried back to HO],  
+  pr.Leftatsite [Left at site],  
+  pr.NonReturnableDisposableitem [Non Returnable Disposable item],  
+  pr.iMasterId,  
+  pr.JobRequestNumber,pr.ServiceReportEnteredDate [$Datetime$ServiceReportEnteredDate],  
+  pr.iApprovalDate [$Datetime$iApprovalDate],  
+  pr.iCreatedDate [$Datetime$iCreatedDate],  
+  m.sName [Make],con.sName [Internal Contract No],'' [Godown Name],ocd.sName [Oil Company Divisional Name] ,s.sName [State] 
+FROM vuCore_DUBreakdown_PartreplaceOld_Details pr WITH (NOLOCK)  
+LEFT JOIN vCrm_Users us WITH (NOLOCK)  
+  ON pr.iAssignedTo = us.iMasterId  
+LEFT JOIN vCrm_Users uas WITH (NOLOCK)  
+  ON pr.JobAttendedBy = uas.iMasterId  
+LEFT JOIN vCrm_Calls ca WITH (NOLOCK)  
+  ON pr.JobRequestNumber = ca.iTransId  
+LEFT JOIN vCore_Location la WITH (NOLOCK)  
+  ON pr.iLocation = la.iMasterId  
+LEFT JOIN vCore_Account aa WITH (NOLOCK)  
+  ON pr.NameofCustomerOilCompany = aa.iMasterId  
+LEFT JOIN vCore_Retailoutlet ra WITH (NOLOCK)  
+  ON pr.OutletName = ra.iMasterId  
+LEFT JOIN vCrm_Contacts coa WITH (NOLOCK)  
+  ON pr.RetailOutletcontact = coa.iMasterId  
+LEFT JOIN vCore_Model ma WITH (NOLOCK)  
+  ON pr.EquipmentModelNo = ma.iMasterId  
+LEFT JOIN vCrm_CustAssets caa WITH (NOLOCK)  
+  ON pr.EquipmentSrNumber = caa.iTransId  
+LEFT JOIN vCore_Product pa WITH (NOLOCK)  
+  ON pr.OldItemCode = pa.iMasterId  
+LEFT JOIN vCore_Make m WITH (NOLOCK)  
+  ON pr.Make=m.iMasterId  
+LEFT JOIN vCrm_Contract con WITH (NOLOCK)  
+  ON pr.InternalContractNo=con.iTransId  
+LEFT JOIN vCore_OilCompanyDivisionalOffice ocd WITH (NOLOCK)  
+  ON pr.OilCompanyDivisionalName=ocd.iMasterId 
+LEFT JOIN vCore_State s WITH(NOLOCK)
+  ON pr.[State]=s.iMasterId
+WHERE pr.iMasterId > 0

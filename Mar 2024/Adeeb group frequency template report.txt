@@ -1,0 +1,24 @@
+--select iFrequencyId,* from vCrm_FrequencyTemplate
+
+select b.sName [Frequency Template],a.sName [Request No],a.ResourceName,a.iCreatedDate [$Datetime$CreatedDate],a.iPreferredDate [$Date$Preferred Date],c.sName [Property],a.sName [Req No],e.AssetTag,e.sName [Cust Asset],f.sName [Floor],g.sName [Block],h.sName [Unit No],i.sName [SalesMan],case j.iContractFrequency when '1' then  'Time' when '2' then  'Usage' when '3' then  'Either' end [Contract Frequency],k.sName [Request Status],l.sName [User Name],m.sName [PDA UserName],n.iStartDate [$Date$Start Date],n.iStartTime [$Time$Start Time],n.iEndDate [$Time$End Time] from vCrm_Calls a
+join vCrm_FrequencyTemplate b on a.iFrequencyId=b.iMasterId
+left join vCrm_Property c on a.iPropertyId = c.iMasterId 
+left join vCrm_RequestType d on a.iCallType = d.iTransId 
+left join vCrm_CustAssets e on a.iCustAssetId = e.iTransId 
+left join vCrm_Floors f on e.Floors = f.iMasterId 
+left join vCrm_Blocks g on e.Blocks = g.iMasterId 
+left join vCrm_PMSUnits h on e.iUnitId = h.iMasterId 
+left join vCore_SalesMan i on a.ResourceName = i.iMasterId
+left join vCrm_Contract j on a.iContractId = j.iTransId
+left join vCrm_CallWorkLog n on n.iCallId = a.iTransId 
+left join vCrm_RequestStatus k on n.iStatusId = k.iTransId 
+left join vCrm_Users l on n.iCreatedBy = l.iMasterId
+left join vCrm_Users m on a.iAssignedTo = m.iMasterId
+where a.iTransId>0 
+--and (
+--    a.iCreatedDate between @STARTDATETIME 
+--    and @ENDDATETIME
+--  )
+
+
+select * from vCrm_FrequencyTemplate

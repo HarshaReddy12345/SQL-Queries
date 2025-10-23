@@ -1,0 +1,40 @@
+ALTER VIEW nCore_NTSD2
+as
+SELECT * FROM 
+(
+SELECT COUNT(a.iMasterId) [Count],a.JobStatus jbs,
+  b.sName CutsomerName,f.iFocusMasterId,c.sName EnqManNo,c.Date [$Date$Enquiry Date],a.sName QuotatioName,a.Description QDesc,
+  a.CustomerApprovalDate [$Date$ Customer Approval Date ],a.CustomerDeliveryDate [$Date$ Customer Delivery Date ],a.PioneerDeliveryDate [$Date$ PioneerDeliveryDate],
+  SUBSTRING(d.sName, CHARINDEX('- ', d.sName) + 1, LEN(d.sName))  DepartmentName,c.PONumber PONo, e.sName JobStatus,a.STotalAmount TotalAmount,a.ofCompletion PerOfCompletion,a.Currency Currency,
+  IIF(a.Currency = 2, a.STotalAmount, a.STotalAmount / 1.7) USDvalue,IIF(a.Currency = 2, 'USD', 'AZN') CurrencyCode,
+  a.STotalAmount * (a.ofCompletion / 100) ValueCompleted,a.STotalAmount - (a.STotalAmount) * (a.ofCompletion / 100) WIH,a.Jobstatusremarks JobRemarks
+FROM vCore_QuotationMF a with(nolock)
+INNER JOIN vCore_Account b with(nolock) ON a.Customer = b.iMasterId
+INNER JOIN vCore_EnquiryManufacturing c with(nolock) ON a.EnquiryNo = c.iMasterId
+INNER JOIN vCore_Department d with(nolock) ON a.Department = d.iMasterId
+INNER JOIN vCore_CommonMaster e with(nolock) ON a.JobStatus = e.iMasterId
+INNER JOIN cCrm_MasterMappings f with(nolock) ON f.iCrmMasterId = c.iMasterId  AND f.iModuleId = 2531
+where CustomerApproval=16 and a.JobStatus=19
+group by b.sName,f.iFocusMasterId,c.sName,c.Date,a.sName,a.Description,a.CustomerApprovalDate,a.CustomerDeliveryDate,a.PioneerDeliveryDate,d.sName,c.PONumber, e.sName,a.STotalAmount,a.ofCompletion,a.Currency,a.Currency,a.STotalAmount,a.ofCompletion,a.Jobstatusremarks ,a.JobStatus
+) A
+
+UNION ALL
+
+SELECT * FROM 
+(
+SELECT COUNT(a.iMasterId) [Count],a.JobStatus jbs,
+  b.sName Customer,f.iFocusMasterId,c.sName ERepairno,c.Date [$Date$Enquiry Date],a.sName EstimationQuotation,a.sDescription EQDescription,
+  a.CustApp [$Date$ Customer Approval Date],a.CustomerDeliveryDate [$Date$Customer Delivery Date],a.PioneerDeliveryDate [$Date$Pioneer Delivery Date],
+  SUBSTRING(d.sName, CHARINDEX('- ', d.sName) + 1, LEN(d.sName))  Department,a.PONumber PONumber,e.sName JObStatus,a.TotalAmountFooter TotalAmount,a.ofCompletion PerOfCompletion,a.Currency Currency,
+  IIF(a.Currency = 2, a.TotalAmountFooter, a.TotalAmountFooter / 1.7) USD,IIF(a.Currency = 2, 'USD', 'AZN') CurrencyCode,
+ (a.TotalAmountFooter) * (a.ofCompletion / 100) ValueCompleted,(a.TotalAmountFooter) - (a.TotalAmountFooter) * (a.ofCompletion / 100) WIH,
+  a.Jobstatusremarks JobRemarks
+FROM vCore_EstimationQuotation a with(nolock)
+INNER JOIN vCore_Account b with(nolock) ON a.iAccount = b.iMasterId
+INNER JOIN vCore_EnquiryRepair c with(nolock) ON a.EnquiryRepairNo = c.iMasterId
+INNER JOIN vCore_Department d with(nolock) ON a.Department = d.iMasterId
+INNER JOIN vCore_CommonMaster e with(nolock) ON a.JobStatus = e.iMasterId
+INNER JOIN cCrm_MasterMappings f with(nolock) ON f.iCrmMasterId = c.iMasterId AND f.iModuleId = 2514
+where CustomerApproval=16  and a.JobStatus=19
+group by b.sName,f.iFocusMasterId,c.sName,c.Date,a.sName,a.sDescription,a.CustApp,a.CustomerDeliveryDate,a.PioneerDeliveryDate,d.sName,a.PONumber, e.sName,a.TotalAmountFooter,a.ofCompletion,a.Currency,a.Currency, a.TotalAmountFooter,a.ofCompletion,a.Jobstatusremarks ,a.JobStatus
+) AA

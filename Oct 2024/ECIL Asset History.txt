@@ -1,0 +1,134 @@
+CREATE VIEW nCore_AssetHistory as
+SELECT 
+	   a.iTransId [machine Id],
+       a.sName [Machine Code],
+       b.sName [Main Branch],
+       b.iMasterId [BranchId],
+       c.sName [Machine Actual Location],
+       d.sName [Place Location],
+       e.sName [Model],
+       f.sName [Product],
+       a.sCode [Serial No],
+       g.sName [Customer Name],
+       a.DispatchedDate [$Date$Dispatched Date],
+       a.Delivery [$Date$Delivery Date],
+       a.InstallationDate [$Date$Installation Date],
+       a.InstallationReportNo [Installation Service Report No],
+       a.WarrantyStartDate [$Date$Warranty Start Date],
+       a.iWarrantyExpiry [$Date$Warranty End Date],
+       a.iAMCStartDate [$Date$AMC Start Date],
+       a.iAMCEndDate [$Date$AMC End Date],
+       a.WarrantyExtend [$Date$ Warrarnty Extend Date],
+       a.iAMCExtendedDate [$Date$AMC Extended Date],
+       dbo.fCrm_GetNumberListValue('1,AMC-FC,2,AMC-NC,3,AMC-WAIT,4,ADHOC,5,Warranty', a.AMCTYPES) [AMC Type],
+       h.sName [Sales Ordrer No],
+       h.PurchaseOrderRefNumber,
+       h.PODate [$Date$PO Date],
+       h.CheckListNumber,
+       h.CheckListDate [$Date$Check List Date],
+       dbo.fCrm_GetNumberListValue ('1,Sales,2,AMC,3,Rental,4,Demo', h.SalesOrderProcessType) [Sales Order Process Type],
+       j.sCode [Contract Number],
+       j.ContractDate [$Date$Contract Date],
+       dbo.fCrm_GetNumberListValue ('1,AMC-FC,2,AMC-NC,3,AMC-WAIT,4,ADHOC,5,Warranty', j.AMCType) [Contract AMC Type],
+       k.sName [Frequency],
+       l.sName [Contract Period],
+       j.iStartDate [$Date$Contract Start Date],
+       j.iEndDate [$Date$Contract End Date],
+       j.fAmountJH [Total Value],
+       m.sName [Req No],
+       m.Date [$Date$Req Date],
+       m.iDueDate [$Date$Due Date],
+       m.sSubject [Subject],
+       n.sName [Fault Code],
+       m.FaultDescription,
+       o.sName [Engineer],
+       dbo.fCrm_GetNumberListValue('1,Repair,2,Installation,3,PM CALL', m.TypeOfCall)[TYPE OF CALL],
+       m.TypeOfCall [iTypeOfCall],
+       p.sSubject [Note Subject],
+       p.sDescription [Note Description],
+       q.sName [Service Rep No],
+       q.iStartDate [$Date$SR Date],
+       q.sRemarks [Ser Rep Remarks],
+       CASE
+           WHEN LEN(q.Leftforsite)=14 THEN FORMAT(dbo.fCore_IntToDateTime(q.Leftforsite), 'dd/MM/yyyy hh:mm:ss tt')
+       END [Left for Site],
+       CASE
+           WHEN LEN(q.Reporting)=14 THEN FORMAT(dbo.fCore_IntToDateTime(q.Reporting), 'dd/MM/yyyy hh:mm:ss tt')
+       END [Reporting Date],
+       CASE
+           WHEN LEN(q.Compleation)=14 THEN FORMAT(dbo.fCore_IntToDateTime(q.Compleation), 'dd/MM/yyyy hh:mm:ss tt')
+       END [Completion Date],
+       r.sName [SRF No],
+       CASE
+           WHEN LEN(r.SRF)=14 THEN FORMAT(dbo.fCore_IntToDateTime(r.SRF), 'dd/MM/yyyy hh:mm:ss tt')
+       END [SRF Date],
+       dbo.fCrm_GetNumberListValue('1,Machine Under AMC/WAR,2,CO-Spare Sales,3,CO-Repair of Parts,4,CO-Exchange of Spares,5,CO-Repair and Actual Components Used,6,Branch Stock / RMA (Loan)', r.SRFType) [SRF Type],
+       s.sName [SRF Product],
+       r.iQuantity [SRF Qty],
+       r.Remarks [SRF Remarks],
+       t.sName [Parts Receive No],
+       CASE
+           WHEN LEN(t.SRF)=14 THEN FORMAT(dbo.fCore_IntToDateTime(t.SRF), 'dd/MM/yyyy hh:mm:ss tt')
+       END [Receive Date],
+       u.sName [WareHouse],
+       v.sName [Receive Product],
+       t.sSerialNo [Receive Serial No],
+       t.sProdDescription [Rec Prod Desc],
+       w.sName [Replaced part no],
+       w.iPurchaseDate [$Date$ Replaced Part Date],
+       x.sName [Part Code],
+       w.sProdDescription [Rep Part Desc],
+       w.iQuantity [Rep Qty],
+       w.FittedQuantity,
+       y.sName [Fitted Warehouse],
+       w.sOldSerialNo [Fitted Ser No],
+       z.sName [Removed Warehouse],
+       w.sSerialNo [Removed SerialNo],
+       ab.sName [Present Customer],
+       ac.sName [Present Place],
+       ad.sName [Present Location],
+       ae.sName [Present Actual Loc],
+       af.sName [Present MainBranch],
+       ag.sName [Prev Customer],
+       ah.sName [Prev Place],
+       ai.sName [Prev Loc],
+       aj.sName [Prev Actual Loc],
+       ak.sName [Prev MainBranch]
+FROM vCrm_CustAssets a with(nolock)
+LEFT JOIN vCore_MainBranch b with(nolock) ON a.MainBranch=b.iMasterId
+LEFT JOIN vCore_MachineActualLocation c with(nolock) ON a.ActualLocation=c.iMasterId
+LEFT JOIN vCrm_Contacts d with(nolock) ON a.contact=d.iMasterId
+LEFT JOIN vCore_ModelGroup e with(nolock) ON a.ModelGroup=e.iMasterId
+LEFT JOIN vCore_Product f with(nolock) ON a.iProductId=f.iMasterId
+LEFT JOIN vCore_Account g with(nolock) ON a.iAccountId=g.iMasterId
+LEFT JOIN vCore_SalesOrders h with(nolock) ON a.SalesOrder=h.iMasterId
+LEFT JOIN tuCrm_Contract_General_Details i with(nolock) ON a.iTransId=i.iCustAssetId
+LEFT JOIN vCrm_Contract j with(nolock) ON i.iTransId=j.iTransId
+LEFT JOIN vCrm_FrequencyTemplate k with(nolock) ON i.iFrequencyId=k.iMasterId
+LEFT JOIN vCrm_ContractTerms l with(nolock) ON j.iContractPeriod=l.iMasterId
+LEFT JOIN vCrm_Calls m with(nolock) ON a.iTransId=m.iCustAssetId
+LEFT JOIN vCrm_Issues n with(nolock) ON m.iIssueId=n.iMasterId
+LEFT JOIN vCore_EmployeeMaster o with(nolock) ON m.Employee=o.iMasterId
+LEFT JOIN vCrm_CallNotes p with(nolock) ON m.iTransId=p.iCallId
+LEFT JOIN vCrm_CallWorkLog q with(nolock) ON m.iTransId=q.iCallId
+LEFT JOIN vuCore_PartsRequest_General_Details r with(nolock) ON m.iTransId=r.RequestNo
+LEFT JOIN vCore_Product s with(nolock) ON r.iProductId=s.iMasterId
+LEFT JOIN vuCore_PartsReceive_General_Details t with(nolock) ON m.iTransId=t.RequestNo
+LEFT JOIN vCore_Warehouse u with(nolock) ON t.WareHouse1=u.iMasterId
+LEFT JOIN vCore_Product v with(nolock) ON t.iProductId=v.iMasterId
+LEFT JOIN vuCore_PartsReplace_General_Details w WITH (nolock) ON m.iTransId=w.RequestNo
+LEFT JOIN vCore_Product x with(nolock) ON w.iProductId=x.iMasterId
+LEFT JOIN vCore_Warehouse y with(nolock) ON w.WareHouse2=y.iMasterId
+LEFT JOIN vCore_Warehouse z with(nolock) ON w.WareHouse1=z.iMasterId
+LEFT JOIN vCore_BuyBackScreen aa with(nolock) ON a.iTransId=aa.MachineCode
+LEFT JOIN vCore_Account ab with(nolock) ON aa.Customer=ab.iMasterId
+LEFT JOIN vCrm_Contacts ac with(nolock) ON aa.Place1=ac.iMasterId
+LEFT JOIN vCore_Location ad with(nolock) ON aa.iLocation=ad.iMasterId
+LEFT JOIN vCore_MachineActualLocation ae with(nolock) ON aa.ActualLocation=ae.iMasterId
+LEFT JOIN vCore_MainBranch af with(nolock) ON aa.ToMainBranch=af.iMasterId
+LEFT JOIN vCore_Account ag with(nolock) ON aa.PresentCustomer=ag.iMasterId
+LEFT JOIN vCrm_Contacts ah with(nolock) ON aa.PresentPlace=ah.iMasterId
+LEFT JOIN vCore_Location ai with(nolock) ON aa.PresentLocation=ai.iMasterId
+LEFT JOIN vCore_MachineActualLocation aj with(nolock) ON aa.PresentActualLocation=aj.iMasterId
+LEFT JOIN vCore_MainBranch ak with(nolock) ON aa.PresentBranch=ak.iMasterId
+WHERE a.iTransId>0

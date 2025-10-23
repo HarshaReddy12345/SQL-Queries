@@ -1,0 +1,9 @@
+CREATE or ALTER PROC udp_GetHyperLink (@iTransId bigint,@iUserId int)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+declare @bigid bigint,@Id int
+select @Id=Financier from vaCrm_Leads where iTransId=@iTransId
+select @bigid=dbo.fCrm_getAPITransId(@Id,256,0) from vaCrm_Leads where iTransId=@iTransId
+update vaCrm_Leads set Link=CONCAT('http://localhost:8080/streamline/crmhome.do?url=/streamline/module/getDetailedView.do?moduleType=2466&recordId=',@bigid) where iTransId=@iTransId
+end

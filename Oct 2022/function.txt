@@ -1,0 +1,57 @@
+!USE [Focus801240]
+GO
+/****** Object:  UserDefinedFunction [dbo].[WEEKEND_COUNT]    Script Date: 29-09-2022 19:45:38 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ ALTER FUNCTION [dbo].[WEEKEND_COUNT]
+(
+@Start_Date1 int,
+@End_Date1 int
+)
+RETURNS int   
+AS   
+BEGIN
+    Declare @count int = 0;
+	declare @Start_Date date=dbo.fCore_IntToDate(@Start_Date1);
+	declare @End_Date date=dbo.fCore_IntToDate(@End_Date1)
+    while @Start_Date<=@End_Date
+        Begin
+        IF DatePart(dw,@Start_Date) =  1 --or DatePart(WEEKDAY,@Start_Date) =  7
+        SET @count=@count+1
+        SET @Start_Date=DateAdd(d,1,@Start_Date)
+        END
+
+return @count 
+END
+---------------------------------------------------------------------------------------
+
+
+USE [Focus801240]
+GO
+
+/****** Object:  UserDefinedFunction [dbo].[Holiday_COUNT]    Script Date: 29-09-2022 20:05:22 ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+ create function [dbo].[Holiday_COUNT]
+(
+@Start_Date1 int,
+@End_Date1 int
+)
+RETURNS int   
+AS   
+BEGIN
+    Declare @count int = 0;
+	declare @Start_Date date=dbo.fCore_IntToDate(@Start_Date1);
+	declare @End_Date date=dbo.fCore_IntToDate(@End_Date1)
+    select @count=count(*) from vCore_CalendarHoliday where iMasterId>0 and HolidayDate between @Start_Date1 and @End_Date1  
+return @count 
+END
+GO
+
+

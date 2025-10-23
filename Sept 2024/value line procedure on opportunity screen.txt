@@ -1,0 +1,14 @@
+CREATE proc udp_Opportunity(@iTransid bigint=0,@iuserid int=0)
+as 
+begin
+select @iTransid = dbo.fCrm_IntToAPITransId(@iTransid,0)
+delete from tuCrm_Opportunities_DuplicateProducts_Details  where iTransId=@iTransid
+
+insert into tuCrm_Opportunities_DuplicateProducts_Details(iTransId,DType,DProductCategory,DProductSubCategory,DBrand,DProduct,DColour,ProductSpecifications,DQuantity,DListPrice,DBaseAmount)
+
+select iTransId,Type,ProductCategory,ProductSubCategory,Brand,iProductId,Colour,PProductSpecifications,iQuantity,ListPrice,BaseAmount from tuCrm_Opportunities_General_Details WITH(NOLOCK)
+where iTransId=@iTransid
+
+update vCrm_Opportunities set Boolean=1 where iTransId=@iTransid 
+
+end

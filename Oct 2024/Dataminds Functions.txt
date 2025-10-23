@@ -1,0 +1,77 @@
+CREATE FUNCTION dbo.fCore_Var1(@s xml)
+returns varchar(max)
+as
+begin 
+    declare @Pricebook int,@Product int,@sRet varchar(max);
+
+	   select @Pricebook = @s.value('(Fields/Header/PriceBookMaster)[1]','int');
+
+	 select @sRet = coalesce(@sRet+',','')+CONCAT(b.sName,'|',b.iMasterId)
+     from muCore_PriceBookMaster_ProductDetails_Details a with(nolock) 
+    inner join vCore_Product b with(nolock) on a.[Product]=b.iMasterId
+    where a.iMasterId=@Pricebook 
+
+	return @sRet
+end
+go
+CREATE FUNCTION dbo.fCore_Var2(@s xml)
+returns decimal(18,2)
+as
+begin 
+    declare @Pricebook int,@Product int,@sRet decimal(18,2);
+
+	   select @Pricebook = @s.value('(Fields/Header/PriceBookMaster)[1]','int');
+    select @Product = @s.value('(Fields/BodyData/BodyRow/iProductId)[1]','int');
+
+	 select @sRet = a.ListPrice
+     from muCore_PriceBookMaster_ProductDetails_Details a with(nolock) 
+    where a.iMasterId=@Pricebook and a.[Product]=@Product
+	return @sRet
+end
+go
+CREATE  FUNCTION dbo.fCore_Var3(@s xml)
+returns decimal(18,2)
+as
+begin 
+    declare @Pricebook int,@Product int,@sRet decimal(18,2);
+
+	   select @Pricebook = @s.value('(Fields/Header/PriceBookMaster)[1]','int');
+    select @Product = @s.value('(Fields/BodyData/BodyRow/iProductId)[1]','int');
+
+	 select @sRet = a.CGST
+     from muCore_PriceBookMaster_ProductDetails_Details a with(nolock) 
+    where a.iMasterId=@Pricebook and a.[Product]=@Product
+	return @sRet
+end
+go
+CREATE  FUNCTION dbo.fCore_Var4(@s xml)
+returns decimal(18,2)
+as
+begin 
+    declare @Pricebook int,@Product int,@sRet decimal(18,2);
+
+	   select @Pricebook = @s.value('(Fields/Header/PriceBookMaster)[1]','int');
+    select @Product = @s.value('(Fields/BodyData/BodyRow/iProductId)[1]','int');
+
+	 select @sRet = a.SGST
+     from muCore_PriceBookMaster_ProductDetails_Details a with(nolock) 
+    where a.iMasterId=@Pricebook and a.[Product]=@Product
+	return @sRet
+end
+
+go
+
+CREATE  FUNCTION dbo.fCore_Var5(@s xml)
+returns decimal(18,2)
+as
+begin 
+    declare @Pricebook int,@Product int,@sRet decimal(18,2);
+
+	   select @Pricebook = @s.value('(Fields/Header/PriceBookMaster)[1]','int');
+    select @Product = @s.value('(Fields/BodyData/BodyRow/iProductId)[1]','int');
+
+	 select @sRet = a.IGST
+     from muCore_PriceBookMaster_ProductDetails_Details a with(nolock) 
+    where a.iMasterId=@Pricebook and a.[Product]=@Product
+	return @sRet
+end

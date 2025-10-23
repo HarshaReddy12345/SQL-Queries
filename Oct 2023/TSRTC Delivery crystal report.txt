@@ -1,0 +1,29 @@
+
+SELECT
+  a.iMasterId,
+  a.sName,
+  b.sName Destination,
+  c.sName UserId,
+  FORMAT(dbo.fCore_IntToDateTime(a.iCreatedDate), 'dd/MM/yyyy hh:mm:ss') [CreatedDate],
+  d.sName ConsignmentNo,
+  FORMAT(dbo.fCore_IntToDate(a.ReceivedDate), 'dd/MM/yyyy') [ReceivedDate],
+  a.DemurrageDays,
+  a.DemurrageCharges,
+  CASE
+    WHEN a.ToPayCharges = 0.00 THEN 0
+    ELSE a.Total
+  END Total,
+  a.ReceiptAmount,
+  CASE CollectionMode
+    WHEN 1 THEN 'Cash'
+    WHEN 2 THEN 'UPI'
+    WHEN 3 THEN 'Card'
+  END [CollectionMode]
+FROM vCore_Delivery a WITH (NOLOCK)
+JOIN vCore_Location b WITH (NOLOCK)
+  ON a.Destination = b.iMasterId
+JOIN vCrm_Users c WITH (NOLOCK)
+  ON a.iAssignedTo = c.iMasterId
+JOIN vCore_Booking d WITH (NOLOCK)
+  ON a.BookingNumber = d.iMasterId
+WHERE a.iMasterId > 0

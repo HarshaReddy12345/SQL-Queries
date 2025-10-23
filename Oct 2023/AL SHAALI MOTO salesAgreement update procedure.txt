@@ -1,0 +1,13 @@
+USE Focus8K90
+go
+CREATE or ALTER PROC udp_UpdateVechicleMaster (@iTransId bigint,@iUserId int=0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+update a set a.CustomerName=b.Customer,a.MobileNumber=b.MobileNumber,a.VehicleStatus=b.VehicleStatus
+from vCore_Vehicle a WITH(NOLOCK)
+join vuCrm_SalesOrder_General_Details b WITH(NOLOCK) 
+on a.iMasterId=b.RegistrationNo
+where b.iTransId= @iTransId
+end

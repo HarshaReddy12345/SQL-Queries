@@ -1,0 +1,11 @@
+Create or alter proc UpdateSerialNo(@iTransId bigint=0)
+as 
+begin
+select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+
+select a.SerialNo from vuCore_DeliveryNote_Product_Info_Details a
+left join vCrm_CustAssets b on a.SerialNo=b.iTransId
+
+update vCrm_CustAssets  set sName=@iTransId where sName=@iTransId
+end

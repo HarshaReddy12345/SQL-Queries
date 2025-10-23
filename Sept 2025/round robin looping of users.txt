@@ -1,0 +1,80 @@
+CREATE OR ALTER PROC [dbo].[udp_AutoAssignLead] 
+(
+    @LeadId BIGINT, -- iTransId of the lead
+    @iUserId INT = 0 -- not used
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @totalUsers INT,
+            @nextRow INT,
+            @nextUserId INT,
+            @LastAssigned INT,
+            @iRowIndex INT;
+
+    -- Convert LeadId if needed
+    SELECT @LeadId = dbo.fCrm_IntToAPITransId(@LeadId,0);
+
+    ----------------------------------------------------
+    -- 1) Load auto-assign users in ASC order
+    ----------------------------------------------------
+    DECLARE @usersTbl TABLE (RowNo INT PRIMARY KEY, Users INT);
+    
+    INSERT INTO @usersTbl (RowNo, Users)
+    SELECT ROW_NUMBER() OVER (ORDER BY iRowIndex ASC) AS RowNo, Users 
+    FROM vuCore_AutoAssignmentLeads_Users_Details 
+    WHERE iMasterId > 0;
+    
+    SELECT @totalUsers = COUNT(*) FROM @usersTbl;
+
+    IF @totalUsers = 0
+    BEGIN
+        RAISERROR('No users found in AutoAssignment list', 16, 1);
+        RETURN;
+    END
+
+    ----------------------------------------------------
+    -- 2) Find the last assigned user
+    ----------------------------------------------------
+    SELECT TOP 1 @LastAssigned = iAssignedTo
+    FROM vCrm_Opportunities
+    WHERE iTransId <> @LeadId
+    ORDER BY iCreatedDate DESC;
+
+    ----------------------------------------------------
+    -- 3) Find the row index of last assigned user
+    ----------------------------------------------------
+    SELECT @iRowIndex = RowNo 
+    FROM @usersTbl
+    WHERE Users = @LastAssigned;
+
+    IF @iRowIndex IS NULL
+        SET @iRowIndex = 0; -- start from beginning if last assigned user not found
+
+    ----------------------------------------------------
+    -- 4) Calculate next row in round-robin
+    ----------------------------------------------------
+    SET @nextRow = @iRowIndex + 1;
+
+    IF @nextRow > @totalUsers
+        SET @nextRow = 1; -- wrap around to first user
+
+    ----------------------------------------------------
+    -- 5) Get the next user
+    ----------------------------------------------------
+    SELECT @nextUserId = Users
+    FROM @usersTbl
+    WHERE RowNo = @nextRow;
+
+    ----------------------------------------------------
+    -- 6) Update the lead
+    ----------------------------------------------------
+    UPDATE vCrm_Opportunities
+    SET iAssignedTo = @nextUserId
+    WHERE iTransId = @LeadId;
+
+    -- Optional: Return assigned user
+    -- SELECT @nextUserId AS AssignedUserId;
+END
+GO

@@ -1,0 +1,20 @@
+select a.iTransId ,row_number() over(order by a.iTransId) [RecNum],FORMAT(dbo.fCore_IntToDate(Date),'dd/MM/yyyy') [Date],DENSE_RANK() over(order by iTransId) [RN],b.sName [Account],a.sDescription
+from vCrm_Quote a with(NOLOCK) 
+join vCore_Account b on a.AccountName=b.iMasterId
+where a. iTransId>0 and a.iTransId in (140,141,142,143) 
+
+ALTER VIEW nCore_QuoteGridRpt as
+select a.iTransId,a.sName,b.sName Make,c.sName [Product Name],iQuantity,a.fSalesPrice [Unit Price],(a.iQuantity*a.fSalesPrice) TotalAmt,a.fSubTotal,
+
+    ROW_NUMBER() OVER (PARTITION BY iTransId ORDER BY iTransId) AS [S.no]
+
+
+from vuCrm_Quote_General_Details a with(nolock)
+join vCore_Brands b with (nolock) on a.Brand=b.iMasterId
+join vCore_Product c with(nolock) on a.iProductId=c.iMasterId
+where a. iTransId>0 
+
+
+
+select DENSE_RANK() over(order by iTransId) [RN],*  from nCore_QuoteGridRpt
+where iTransId in (140)

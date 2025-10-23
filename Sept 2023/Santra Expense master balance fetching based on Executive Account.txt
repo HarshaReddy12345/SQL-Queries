@@ -1,0 +1,54 @@
+6:17 PM
+EXEC sp_configure 'Ole Automation Procedures';
+GO
+sp_configure 'show advanced options', 1;
+GO
+RECONFIGURE;
+GO
+sp_configure 'Ole Automation Procedures', 1;
+GO
+RECONFIGURE;
+GO
+
+create function SendGetRequest(@url varchar(8000)) returns varchar(8000) 
+as 
+BEGIN 
+	DECLARE @win int DECLARE @hr int DECLARE @text varchar(8000)
+	EXEC @hr = sp_OACreate 'WinHttp.WinHttpRequest.5.1', @win OUT IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Open', NULL, 'GET',@url,'false' IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Send' IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAGetProperty @win,'ResponseText',@text OUTPUT IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OADestroy @win IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	RETURN @text 
+END
+go
+
+CREATE FUNCTION dbo.fCore_Var001(@s XML)
+RETURNS DECIMAL(18,2)
+as 
+BEGIN
+declare @sUrl varchar(max)='http://20.204.171.249/Focus8api/GetExecSqlScalar?sCompCode=0H0&SqlCommand=';
+DECLARE @AccountId int, @result decimal(18,2),@sCode varchar(max)
+SELECT @AccountId=@s.value('(/Fields/Header/CreditAccount)[1]','int')
+select @sCode=sCode From vCore_Account where iMasterId=@AccountId
+
+set @sUrl = @sUrl+'declare @result decimal(18,2),@iMasterid int=0
+    select top 1 @iMasterid=iMasterId from vCore_Account where sCode='''+@sCode+'''
+
+    SELECT @result=dbo.udf_GetLedgerBal(@iMasterid) select @result';
+
+select @result=convert(decimal(18,2),value) from OPENJSON(dbo.SendGetRequest(@sUrl)) 
+	   with (url varchar(500) '$.url',data2 nvarchar(max) '$.data' as JSON, result int '$.result')
+	   cross apply openjson(data2) with (Obj1 nvarchar(max) '$' as json)
+	   cross apply openjson(Obj1) 
+RETURN @result
+END
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+http://20.204.171.249/Focus8api/GetExecSqlScalar?sCompCode=0H0&SqlCommand=declare @result decimal(18,2),@iMasterid int=0
+	select top 1 @iMasterid=iMasterId from vCore_Account where sCode='CUS-000014'
+	select @result=dbo.udf_GetLedgerBal(@iMasterid) select @result

@@ -1,0 +1,67 @@
+SELECT ([TL Amount]-[BL Amount]) [Balance],* FROM
+(
+SELECT
+  '1.Target' AS Target,
+  u.sName [Owner],
+  TargetAmount [TL Amount],
+  BLTargetAmount [BL Amount],
+  CASE a.[Quarter]
+    WHEN 1 THEN 'Q1'
+    WHEN 2 THEN 'Q2'
+    WHEN 3 THEN 'Q3'
+    WHEN 4 THEN 'Q4'
+  END AS [Quarter],
+  m.sName [Month],
+  a.iAssignedTo,
+  a.[Quarter] qtr,
+  a.[Month] mnt
+FROM vuCore_Targets_General_Details a WITH (NOLOCK)
+LEFT JOIN vCrm_Users u WITH (NOLOCK)
+  ON a.iAssignedTo = u.iMasterId
+LEFT JOIN vCore_Month m WITH (NOLOCK)
+  ON m.iMasterId = a.[Month]
+  INNER JOIN (SELECT DISTINCT
+  iMasterIdd sToken
+FROM tCrm_UserHirearchyDetails AA WITH (NOLOCK)
+INNER JOIN dbo.fCrm_GetTokens('@USERACCESS', ',') BB
+  ON AA.iUserId = BB.sToken) emphir
+  ON emphir.sToken = a.iAssignedTo
+WHERE a.iMasterId > 0
+and (( 0 in (@Owner) and isnull(a.iAssignedTo,0)  = isnull(a.iAssignedTo,0) ) or (0 not in (@Owner) and isnull(a.iAssignedTo,0)   in ( @Owner ))) 
+and (( 0 in (@Quarter) and isnull(a.[Quarter],0)  = isnull(a.[Quarter],0) ) or (0 not in (@Quarter) and isnull(a.[Quarter],0)   in ( @Quarter )))
+and (( 0 in (@Month) and isnull(m.iMasterId,0)  = isnull(m.iMasterId,0) ) or (0 not in (@Month) and isnull(m.iMasterId,0)   in ( @Month )))
+
+
+UNION ALL
+SELECT
+  '2.Achievement' AS Achievement,
+  u1.sName [Owner],
+  fSubTotal totalPOAmount,
+  TotalProfit TotalProfit,
+  CASE de.[Quarter]
+    WHEN 1 THEN 'Q1'
+    WHEN 2 THEN 'Q2'
+    WHEN 3 THEN 'Q3'
+    WHEN 4 THEN 'Q4'
+  END AS [Quarter],
+  m1.sName [Month],
+  de.iAssignedTo,
+  de.[Quarter] qtr,
+  de.[MonthMaster] mnt
+FROM vCore_DealSheet de WITH (NOLOCK)
+LEFT JOIN vCrm_Users u1 WITH (NOLOCK)
+  ON de.iAssignedTo = u1.iMasterId
+LEFT JOIN vCore_Month m1 WITH (NOLOCK)
+  ON m1.iMasterId = de.MonthMaster
+  INNER JOIN (SELECT DISTINCT
+  iMasterIdd sToken
+FROM tCrm_UserHirearchyDetails AA WITH (NOLOCK)
+INNER JOIN dbo.fCrm_GetTokens('@USERACCESS', ',') BB
+  ON AA.iUserId = BB.sToken) emphir
+  ON emphir.sToken = de.iAssignedTo
+WHERE de.iApprovalStatus = 114
+AND de.iMasterId > 0
+and (( 0 in (@Owner) and isnull(de.iAssignedTo,0)  = isnull(de.iAssignedTo,0) ) or (0 not in (@Owner) and isnull(de.iAssignedTo,0)   in ( @Owner ))) 
+and (( 0 in (@Quarter) and isnull(de.[Quarter],0)  = isnull(de.[Quarter],0) ) or (0 not in (@Quarter) and isnull(de.[Quarter],0)   in ( @Quarter )))
+and (( 0 in (@Month) and isnull(m1.iMasterId,0)  = isnull(m1.iMasterId,0) ) or (0 not in (@Month) and isnull(m1.iMasterId,0)   in ( @Month )))
+)aa

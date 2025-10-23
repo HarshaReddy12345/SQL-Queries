@@ -1,0 +1,24 @@
+ALTER FUNCTION [dbo].[fCore_Var009](@s xml)
+returns bit
+as
+begin
+DECLARE @JobNo int,@JobEst int,@Prod int,@Category int,@Item int
+select @JobNo=@s.value('(/Fields/Header/JobCardNo)[1]','int')
+select @Category=@s.value('(/Fields/BodyData/BodyRow/ItemCategory)[1]','int')
+select @Prod=@s.value('(/Fields/BodyData/BodyRow/ServiceCode)[1]','int')
+
+if(@Category=2)
+begin 
+if exists (select 1 from vuCore_PartsIssueReturn_ProductInformation_Details where JobCardNo=@JobNo and ItemCode=@Prod)
+begin
+return 0
+end
+else 
+begin
+return 1
+end
+end 
+
+return 0
+
+end

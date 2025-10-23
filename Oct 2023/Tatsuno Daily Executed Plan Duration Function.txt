@@ -1,0 +1,16 @@
+USE Focus801BS0
+Go
+CREATE OR ALTER FUNCTION  fCore_Var12(@e xml) 
+returns int
+AS
+BEGIN 
+declare @output int,@ActivityStartTime bigint,@ActivityStopTime bigint,@diffinminutes int
+select  @ActivityStartTime = @e.value('(/Fields/Header/ActivityStartTime)[1]', 'bigint')
+select  @ActivityStopTime = @e.value('(/Fields/Header/ActivityStopTime)[1]', 'bigint')
+
+select  @diffinminutes=DATEDIFF(Minute, dbo.fCore_IntToDateTime(@ActivityStartTime), dbo.fCore_IntToDateTime(@ActivityStopTime))
+
+select @output=dbo.fCore_TimeToInt([dbo].[fCrm_MinutesToDuration](@diffinminutes))
+return  @output
+
+end

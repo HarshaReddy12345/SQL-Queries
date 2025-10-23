@@ -1,0 +1,50 @@
+USE [FOCUS8ZX0]
+GO
+
+ALTER procedure [dbo].[udp_AS_TL_GRN_InsertSplitQtyInInvetoryGrid](@iTransId bigint=0,@iUserId int=0)
+as
+begin
+
+	select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0);
+	print @iTransId
+
+	;WITH grn_per_qty_cte AS (
+	  SELECT sName [GRNName],Product, Qty, 1 as iteration,WareHouse,iRowIndex,iMasterId
+	  FROM vuCore_TLGRN_ProductInfo_Details with(nolock)
+	  WHERE Qty > 0 and iMasterId=@iTransId  and Product>0 and WareHouse>0 and iMasterId>0
+	  UNION ALL
+	  SELECT [GRNName],Product, Qty, iteration + 1,WareHouse,iRowIndex,iMasterId
+	  FROM grn_per_qty_cte
+	  WHERE iteration < Qty 
+	)
+	SELECT [GRNName],Z.iMasterId,iRowIndex,Product,iteration,Qty,prod.sName,prod.sCode,WareHouse into #tbl_data
+	FROM grn_per_qty_cte Z
+	inner join mCore_Product prod with(nolock)  on prod.iMasterId=Z.Product
+	inner join mCore_Warehouse wrhs with(nolock) on wrhs.iMasterId=Z.WareHouse
+	ORDER BY iRowIndex ASC, Product ASC,iteration ASC
+	OPTION (MAXRECURSION 10000)
+
+	if(@@ROWCOUNT>0)
+	begin
+		declare @iMaxRowIndex int;
+		select @iMaxRowIndex=count(iRowIndex) from vuCore_GoodsReceivedNote_Inventory_Details with(nolock) where iMasterId=@iTransId;
+
+		if(@iMaxRowIndex=0)
+		begin
+			insert into muCore_TLGRN_InventoryInfo_Details (iMasterId,iRowIndex,iProductName,iQty,[UID],iWarehouse,FreezeRecord)
+			select iMasterId,
+					ROW_NUMBER() OVER (ORDER BY iRowIndex ASC,Product ASC, iteration ASC)-1 rn,
+					Product,
+					1,
+					CONCAT(GRNName,'-',sCode,'-',iteration) [UID]
+					,WareHouse
+					,1
+					from #tbl_data order by iRowIndex ASC,Product ASC, iteration ASC
+		end
+	end
+	drop table #tbl_data;
+end
+
+GO
+
+

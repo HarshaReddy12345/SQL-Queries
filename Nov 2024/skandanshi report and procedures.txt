@@ -1,0 +1,65 @@
+ procedure to update status from site survey to bookings
+ -----------------------------------
+ CREATE PROC udp_BookingStatusUpdate(@iTransId bigint,@iUserId int=0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+update b set b.SiteSurveyStatus=a.SiteSurveyStatus from vCore_SiteSurveyandMeasurements a with(nolock)
+ join vCore_BookingConfirmation b with(nolock) on a.BookingNo=b.iMasterId
+where a.iMasterId=@iTransId 
+end
+----------------------------------------------
+ procedure to update status from design phase to bookings
+ -----------------------------------------------------
+ CREATE PROC udp_BookingDesignStatusUpdate(@iTransId bigint,@iUserId int=0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+update b set b.Status1=a.Status1 from muCore_DesignMeeting a with(nolock)
+ join vCore_BookingConfirmation b with(nolock) on a.BookingNo=b.iMasterId
+where a.iMasterId=@iTransId 
+end
+----------------------------------------------------------
+backup tables
+
+select * into vCore_DesignMeeting06112024 from vCore_DesignMeeting
+select * into vCore_SiteSurveyandMeasurements06112024 from vCore_SiteSurveyandMeasurements
+------------------------------------------------------------------
+backupend update query
+------------------------------------------------------
+select CONCAT_WS(' ','exec udp_BookingDesignStatusUpdate',iMasterId,',0'),* from vCore_DesignMeeting where iMasterId>0
+select CONCAT_WS(' ','exec udp_BookingStatusUpdate',iMasterId,',0'),* from vCore_SiteSurveyandMeasurements where iMasterId>0
+----------------------------------
+QueryReport
+-----------------------------------
+select 
+       a.iCreatedDate [$Datetime$Date],
+	   a.sName [Receipt No],
+	   a.iMasterId ccol1,
+	   b.sName [Customer Name],
+	   b.iMasterId ccol2,
+	   c.sName [Project Name],
+	   c.iMasterId ccol3,
+	   d.sName [Branch Name],
+	   d.iMasterId ccol4, 
+	   case a.PaymentTowards 
+	   when '0' then N'Booking Amount' 
+	   when '1' then N'Design Signoff Amount' 
+	   when '3' then N'Project Completion Amount' 
+	   when '2' then N'Others' end  [Payment Towards],
+	   a.Amount col6  ,
+	   e.sName [Booking Cancellation Name],
+	   a.ReceiptValue,f.sName [Booking No]
+	   from vuCore_Receipt_Details_Details a with(nolock)
+	   left join vCore_Account b with(nolock) on a.CustomerAccount=b.iMasterId  
+	   left join vCore_Project c with(nolock) on a.Projects=c.iMasterId  
+	   left join vCore_Location d with(nolock) on a.iLocation=d.iMasterId   
+	   left join vCore_BookingConfirmation f with(nolock) on a.BookingNumber=f.iMasterId
+	   left join vuCore_BookingCanceling_Info_Details e with(nolock) on e.BookingNo=f.iMasterId
+	   
+	   where a.iMasterId>0   and  a.iCreatedDate between @STARTDATETIME and @ENDDATETIME	
+	   and (( 0 in (@ReceiptNo) and isnull(a.iMasterId,0)  = isnull(a.iMasterId,0) ) or (0 not in (@ReceiptNo) and isnull(a.iMasterId,0)   in ( @ReceiptNo )))
+	   and (( 0 in (@BookingNo) and isnull(f.iMasterId,0)  = isnull(f.iMasterId,0) ) or (0 not in (@BookingNo) and isnull(f.iMasterId,0)   in ( @BookingNo )))
+	   and (( 0 in (@BookingCancellation) and isnull(e.iMasterId,0)  = isnull(e.iMasterId,0) ) or (0 not in (@BookingCancellation) and isnull(e.iMasterId,0)   in ( @BookingCancellation )))

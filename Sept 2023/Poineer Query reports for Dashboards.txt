@@ -1,0 +1,143 @@
+TARGET REPORT
+-------------------------------------------------------------------------------------------------------------------------------------
+select MonthYear,sum(USD) [USD],[Target],([Target]-(sum(USD))) [Variance] from
+(
+select CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(CustApp)),'-',DATENAME(YEAR,dbo.fCore_IntToDate(CustApp))) MonthYear,IIF(Currency = 2, TotalAmountFooter, TotalAmountFooter / 1.7) AS USD,[Target] from vCore_EstimationQuotation a
+join (select CONCAT(y.sName,'-',v.sName) [MonthYear],v.sName [Year],SUM(TargetValue)[Target] from vuCore_Target_Month_Details  a
+join vCore_Month y on a.[Month]=y.iMasterId
+join vCore_Year v on a.[Year]=v.iMasterId
+where a.iMasterId>0 group by y.sName,v.sName) b on CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(CustApp)),'-',DATENAME(YEAR,dbo.fCore_IntToDate(CustApp)))=[MonthYear]
+    WHERE CustomerApproval = 16 AND iMasterId > 0
+
+union all
+
+select CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(CustomerApprovalDate)),'-',DATENAME(YEAR,dbo.fCore_IntToDate(CustomerApprovalDate))) MonthYear,IIF(Currency = 2, STotalAmount, STotalAmount / 1.7) AS USD,[Target] from vCore_QuotationMF a
+join (select CONCAT(y.sName,'-',v.sName) [MonthYear],v.sName [Year],SUM(TargetValue)[Target] from vuCore_Target_Month_Details  a
+join vCore_Month y on a.[Month]=y.iMasterId
+join vCore_Year v on a.[Year]=v.iMasterId
+where a.iMasterId>0 group by y.sName,v.sName) b on CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(CustomerApprovalDate)),'-',DATENAME(YEAR,dbo.fCore_IntToDate(CustomerApprovalDate)))=[MonthYear]
+    WHERE CustomerApproval = 16 AND iMasterId > 0
+	)aa group by MonthYear,[Target]
+
+-------------------------------------------------------------------------------------------------------------------------
+
+   DECLARE @STARTDATE DATE='2023-04-01'
+   DECLARE @ENDDATE DATE='2023-04-30'
+   
+
+SELECT
+        CASE WHEN PioneerDeliveryDate is null and len(PioneerDeliveryDate)<>9   then null else CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(PioneerDeliveryDate)),'-',datediff(ww,datediff(d,0,dateadd(m,datediff(m,7,dbo.fCore_IntToDate(PioneerDeliveryDate)),0)
+    )/7*7,dateadd(d,-1,dbo.fCore_IntToDate(PioneerDeliveryDate)))+1) end [Week],
+        COUNT(iMasterId) AS Count,
+        IIF(Currency = 2, TotalAmountFooter, TotalAmountFooter / 1.7) AS USD
+     
+    FROM
+        vCore_EstimationQuotation a
+		  
+    WHERE
+        CustomerApproval = 16
+        AND iMasterId > 0
+        AND (PioneerDeliveryDate) BETWEEN @STARTDATE AND @ENDDATE
+    GROUP BY
+        PioneerDeliveryDate, Currency, TotalAmountFooter
+
+    UNION ALL
+
+    SELECT
+        CASE WHEN PioneerDeliveryDate is null and len(PioneerDeliveryDate)<>9  then null else CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(PioneerDeliveryDate)),'-',datediff(ww,datediff(d,0,dateadd(m,datediff(m,7,dbo.fCore_IntToDate(PioneerDeliveryDate)),0)
+    )/7*7,dateadd(d,-1,dbo.fCore_IntToDate(PioneerDeliveryDate)))+1) end [Week],
+        COUNT(iMasterId) AS Count,
+        IIF(Currency = 2, STotalAmount, STotalAmount / 1.7) AS USD
+       
+    FROM
+        vCore_QuotationMF a
+		
+    WHERE
+        CustomerApproval = 16
+        AND iMasterId > 0
+      AND (PioneerDeliveryDate) BETWEEN @STARTDATE AND @ENDDATE
+    GROUP BY
+        PioneerDeliveryDate, Currency, STotalAmount
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+   DECLARE @STARTDATE DATE='2023-04-01'
+   DECLARE @ENDDATE DATE='2023-04-30'
+   
+SELECT
+        CASE WHEN CustomerDeliveryDate is null and len(CustomerDeliveryDate)<>9   then null else CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(CustomerDeliveryDate)),'-',datediff(ww,datediff(d,0,dateadd(m,datediff(m,7,dbo.fCore_IntToDate(CustomerDeliveryDate)),0)
+    )/7*7,dateadd(d,-1,dbo.fCore_IntToDate(CustomerDeliveryDate)))+1) end [Week],
+        COUNT(iMasterId) AS Count,
+        IIF(Currency = 2, TotalAmountFooter, TotalAmountFooter / 1.7) AS USD
+     
+    FROM
+        vCore_EstimationQuotation a
+		  
+    WHERE
+        CustomerApproval = 16
+        AND iMasterId > 0
+        AND dbo.fCore_IntToDate(CustomerDeliveryDate) BETWEEN @STARTDATE AND @ENDDATE
+    GROUP BY
+        CustomerDeliveryDate, Currency, TotalAmountFooter
+
+    UNION ALL
+
+    SELECT
+        CASE WHEN CustomerDeliveryDate is null and len(CustomerDeliveryDate)<>9  then null else CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(CustomerDeliveryDate)),'-',datediff(ww,datediff(d,0,dateadd(m,datediff(m,7,dbo.fCore_IntToDate(CustomerDeliveryDate)),0)
+    )/7*7,dateadd(d,-1,dbo.fCore_IntToDate(CustomerDeliveryDate)))+1) end [Week],
+        COUNT(iMasterId) AS Count,
+        IIF(Currency = 2, STotalAmount, STotalAmount / 1.7) AS USD
+       
+    FROM
+        vCore_QuotationMF a
+		
+    WHERE
+        CustomerApproval = 16
+        AND iMasterId > 0
+      AND dbo.fCore_IntToDate(CustomerDeliveryDate) BETWEEN @STARTDATE AND @ENDDATE
+    GROUP BY
+        CustomerDeliveryDate, Currency, STotalAmount
+--------------------------------------------------------------------------------------------------------------------------------------------------------------
+   DECLARE @STARTDATE DATE='2023-04-01'
+   DECLARE @ENDDATE DATE='2023-04-30'
+   
+
+SELECT
+        CASE WHEN CustApp is null and len(CustApp)<>9   then null else CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(CustApp)),'-',datediff(ww,datediff(d,0,dateadd(m,datediff(m,7,dbo.fCore_IntToDate(CustApp)),0)
+    )/7*7,dateadd(d,-1,dbo.fCore_IntToDate(CustApp)))+1) end [Week],
+        COUNT(iMasterId) AS Count,
+        IIF(Currency = 2, TotalAmountFooter, TotalAmountFooter / 1.7) AS USD
+     
+    FROM
+        vCore_EstimationQuotation a
+		  
+    WHERE
+        CustomerApproval = 16
+        AND iMasterId > 0
+        AND (CustApp) BETWEEN @STARTDATE AND @ENDDATE
+    GROUP BY
+        CustApp, Currency, TotalAmountFooter
+
+    UNION ALL
+
+    SELECT
+        CASE WHEN CustomerApprovalDate is null and len(CustomerApprovalDate)<>9  then null else CONCAT(DATENAME(MONTH,dbo.fCore_IntToDate(CustomerApprovalDate)),'-',datediff(ww,datediff(d,0,dateadd(m,datediff(m,7,dbo.fCore_IntToDate(CustomerApprovalDate)),0)
+    )/7*7,dateadd(d,-1,dbo.fCore_IntToDate(CustomerApprovalDate)))+1) end [Week],
+        COUNT(iMasterId) AS Count,
+        IIF(Currency = 2, STotalAmount, STotalAmount / 1.7) AS USD
+       
+    FROM
+        vCore_QuotationMF a
+		
+    WHERE
+        CustomerApproval = 16
+        AND iMasterId > 0
+      AND (CustomerApprovalDate) BETWEEN @STARTDATE AND @ENDDATE
+    GROUP BY
+        CustomerApprovalDate, Currency, STotalAmount
+
+
+
+
+
+
+

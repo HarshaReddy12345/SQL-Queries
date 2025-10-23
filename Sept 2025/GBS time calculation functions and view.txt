@@ -1,0 +1,205 @@
+CREATE FUNCTION dbo.NormalizeDecimalTime(@DecimalTime DECIMAL(10,2))
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @Hours INT = FLOOR(@DecimalTime);
+    DECLARE @Minutes DECIMAL(10,2) = (@DecimalTime - @Hours) * 100;
+    -- Convert excess minutes to hours
+    SET @Hours = @Hours + FLOOR(@Minutes / 60);
+    SET @Minutes = @Minutes % 60;
+    RETURN @Hours + (@Minutes / 100);
+END
+
+go
+
+CREATE OR ALTER FUNCTION dbo.DecimalToTimeAdjusted
+(
+    @DecimalTimeInput NVARCHAR(50)  -- allow nvarchar input
+)
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @DecimalTime DECIMAL(10,2)
+    DECLARE @Hours INT
+    DECLARE @Minutes INT
+
+    -- Try to cast nvarchar to decimal, fallback to 0.00 if invalid
+    SET @DecimalTime = TRY_CAST(@DecimalTimeInput AS DECIMAL(10,2))
+
+    IF @DecimalTime IS NULL
+        RETURN 0.00
+
+    -- Separate hours and minutes
+    SET @Hours = FLOOR(@DecimalTime)
+    SET @Minutes = ROUND((@DecimalTime - @Hours) * 100, 0)
+
+    -- Carry over minutes > 59
+    SET @Hours = @Hours + (@Minutes / 60)
+    SET @Minutes = @Minutes % 60
+
+    -- Return adjusted HH.MM
+    RETURN @Hours + (@Minutes / 100.0)
+END
+GO
+
+ALTER FUNCTION dbo.DecimalTimeSubtract
+(
+    @Time1Input NVARCHAR(50),
+    @Time2Input NVARCHAR(50)
+)
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @Time1 DECIMAL(10,2);
+    DECLARE @Time2 DECIMAL(10,2);
+
+    -- Safe convert inputs
+    SET @Time1 = TRY_CAST(@Time1Input AS DECIMAL(10,2));
+    SET @Time2 = TRY_CAST(@Time2Input AS DECIMAL(10,2));
+
+    IF @Time1 IS NULL SET @Time1 = 0.00;
+    IF @Time2 IS NULL SET @Time2 = 0.00;
+
+    -- If first value is 0, return negative of second
+    IF @Time1 = 0
+        RETURN -@Time2;
+
+    -- Declare variables for calculation
+    DECLARE @H1 INT; DECLARE @M1 INT;
+    DECLARE @H2 INT; DECLARE @M2 INT;
+    DECLARE @TotalMins1 INT; DECLARE @TotalMins2 INT; 
+    DECLARE @DiffMins INT;
+    DECLARE @ResultH INT; DECLARE @ResultM INT;
+
+    -- Break into hours/minutes
+    SET @H1 = FLOOR(@Time1);
+    SET @M1 = ROUND((@Time1 - @H1) * 100, 0);
+
+    SET @H2 = FLOOR(@Time2);
+    SET @M2 = ROUND((@Time2 - @H2) * 100, 0);
+
+    -- Convert to total minutes
+    SET @TotalMins1 = @H1 * 60 + @M1;
+    SET @TotalMins2 = @H2 * 60 + @M2;
+
+    -- Subtract
+    SET @DiffMins = @TotalMins1 - @TotalMins2;
+
+    -- Convert back to HH.MM
+    SET @ResultH = @DiffMins / 60;
+    SET @ResultM = @DiffMins % 60;
+
+    RETURN @ResultH + (@ResultM / 100.0);
+END
+go
+ALTER FUNCTION dbo.DecimalTimeArithmetic
+(
+    @Time1 DECIMAL(10,2),
+    @Time2 DECIMAL(10,2),
+    @Operation CHAR(1)  -- '+' or '-'
+)
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @AdjTime1 DECIMAL(10,2)
+    DECLARE @AdjTime2 DECIMAL(10,2)
+    DECLARE @Result DECIMAL(10,2)
+
+    -- Adjust inputs first
+    SET @AdjTime1 = dbo.AdjustDecimalTime(@Time1)
+    SET @AdjTime2 = dbo.AdjustDecimalTime(@Time2)
+
+    -- Perform arithmetic
+    IF @Operation = '+'
+        SET @Result = @AdjTime1 + @AdjTime2
+    ELSE IF @Operation = '-'
+        SET @Result = @AdjTime1 - @AdjTime2
+    ELSE
+        RETURN NULL
+
+    -- Adjust result before returning
+    RETURN dbo.AdjustDecimalTime(@Result)
+END
+GO
+ALTER FUNCTION dbo.AdjustDecimalTime
+(
+    @DecimalTime DECIMAL(10,2)
+)
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @Hours INT
+    DECLARE @Minutes INT
+
+    -- Separate hours and decimal part
+    SET @Hours = FLOOR(@DecimalTime)
+    SET @Minutes = ROUND((@DecimalTime - @Hours) * 100, 0)
+
+    -- Carry over minutes > 59
+    SET @Hours = @Hours + (@Minutes / 60)
+    SET @Minutes = @Minutes % 60
+
+    -- Return adjusted HH.MM
+    RETURN @Hours + (@Minutes / 100.0)
+END
+GO
+ALTER   VIEW [dbo].[m_subproject_scopeofwork] as  
+SELECT TOP 100 PERCENT  
+    iMasterId,  
+    [Sub project],  
+    [Task],  
+    [Staff Name],  
+    SUM([Budget Hours]) AS [Budget Hours],  
+    [Time Sheet],  
+    SUM([Time]) AS [Actual Hours],  
+    1 AS SortOrder  
+FROM (  
+    SELECT   
+        a.iMasterId,  
+        a.sName AS [Sub project],  
+        c.sName AS [Task],  
+        e.sName AS [Staff Name],  
+        a.PlannedHours AS [Budget Hours],  
+        ISNULL(b.sName, '') AS [Time Sheet],  
+        CAST(CASE   
+            WHEN a.iMasterId = b.SubProject AND a.StaffName = b.iStaffName AND a.Task = b.Tasks   
+                THEN CAST(dbo.DecimalToTimeAdjusted(TotalTime1) as decimal(18,2))  
+            WHEN a.iMasterId = b.SubProject AND a.StaffName = b.iStaffName  
+                 AND ISNULL(a.Task, 0) <> 0 AND ISNULL(b.Tasks, 0) = 0  
+                THEN CAST(dbo.DecimalToTimeAdjusted(TotalTime1) as decimal(18,2))   
+            ELSE 0.00   
+        END AS Decimal(18,2)) [Time]  
+    FROM vuCore_SubProject_TaskAllocation_Details a WITH (NOLOCK)  
+    LEFT JOIN vuCore_Timesheet_TimeandAttendanceInformation_Details b WITH (NOLOCK)  
+        ON a.iMasterId = b.SubProject AND a.Task = b.Tasks AND a.StaffName = b.iStaffName  
+    LEFT JOIN vCore_TaskTemplate c WITH (NOLOCK)  
+        ON a.Task = c.iMasterId  
+    LEFT JOIN vCore_TaskTemplate d WITH (NOLOCK)  
+        ON b.Tasks = d.iMasterId  
+    LEFT JOIN vCrm_Users e WITH (NOLOCK)  
+        ON a.StaffName = e.iMasterId  
+    WHERE a.iMasterId > 0 --AND a.iMasterId = 1434  
+) AS detailed  
+GROUP BY iMasterId, [Sub project], [Task], [Staff Name], [Time Sheet]  
+
+UNION  
+
+SELECT  
+    a.iMasterId,  
+    a.sName AS [Sub Project],  
+    'Blank' AS [Task],  
+    e.sName AS [Staff Name],  
+    0.00 AS [Budget Hours],  
+    '' AS [Time Sheet],  
+    0.00 AS [Actual Hours],  
+    2 AS SortOrder  
+FROM vuCore_SubProject_TaskAllocation_Details a WITH (NOLOCK)  
+LEFT JOIN vuCore_Timesheet_TimeandAttendanceInformation_Details b WITH (NOLOCK)  
+    ON a.iMasterId = b.SubProject AND a.StaffName = b.iStaffName  
+LEFT JOIN vCore_TaskTemplate c WITH (NOLOCK) ON a.Task = c.iMasterId  
+LEFT JOIN vCore_TaskTemplate d WITH (NOLOCK) ON b.Tasks = d.iMasterId  
+LEFT JOIN vCrm_Users e WITH (NOLOCK) ON a.StaffName = e.iMasterId  
+WHERE a.iMasterId > 0 --AND a.iMasterId = 1434  
+GROUP BY a.iMasterId, a.sName, e.sName
+
+

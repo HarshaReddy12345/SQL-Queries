@@ -1,0 +1,127 @@
+--CREATE OR ALTER VIEW nCore_DailyCRMleadInfo   
+--AS   
+  
+WITH DailyActivity AS   
+(   
+    SELECT   
+        SalesMan,  
+        SUM(CASE WHEN ModeOfCommunication = 2 THEN 1 ELSE 0 END) AS [Number of Calls Made],  
+        SUM(CASE WHEN VisitStatus = 2 THEN 1 ELSE 0 END) AS [Number of Visits Made], 
+        SUM(CASE WHEN VisitStatus = 1 THEN 1 ELSE 0 END) AS [Number of Planned Visits],  
+		
+        SUM(ISNULL(ActiveMinutes,0.00)) ActiveMinutes,  
+        SUM(ISNULL(InactiveMinutes,0.00)) InactiveMinutes 
+    FROM vCore_CCPDailyActivity WITH (NOLOCK)   
+    WHERE iMasterId > 0   
+      AND ISNULL([Date],0) = dbo.fCore_DateToInt(GETDATE())  --and SalesMan=46
+    GROUP BY SalesMan, ActiveMinutes, InactiveMinutes    
+  
+    UNION ALL   
+  
+    SELECT   
+        SalesMan,  
+        SUM(CASE WHEN ModeOfCommunication = 2 THEN 1 ELSE 0 END) AS [Number of Calls Made],  
+        SUM(CASE WHEN VisitStatus = 2 THEN 1 ELSE 0 END) AS [Number of Visits Made],  
+		SUM(CASE WHEN VisitStatus = 1 THEN 1 ELSE 0 END) AS [Number of Planned Visits], 
+        SUM(ISNULL(ActiveMinutes,0)) ActiveMinutes,  
+        SUM(ISNULL(InactiveMinutes,0)) InactiveMinutes   
+    FROM vCore_LeadRoutePlan WITH (NOLOCK)   
+    WHERE iMasterId > 0   
+      AND ISNULL(PlannedDate,0) = dbo.fCore_DateToInt(GETDATE())  --and SalesMan=46
+    GROUP BY SalesMan   
+),   
+LeadsConverted AS   
+(   
+    SELECT   
+        SalesMan,  
+        COUNT(*) AS [Leads Converted]  
+    FROM vCrm_Leads WITH (NOLOCK)   
+    WHERE iTransId > 0   
+      AND iLeadStatus = 87    
+      AND dbo.fCrm_DateFromBigInt(iCreatedDate) = dbo.fCore_DateToInt(GETDATE())  
+    GROUP BY SalesMan   
+),   
+MarketingProposal AS   
+(   
+    SELECT   
+        SalesMan,  
+        COUNT(*) AS [Number of Marketing]  
+    FROM vCore_MarketingActivityProposal WITH (NOLOCK)   
+    WHERE iMasterId > 0   
+      AND iApprovalStatus = 114   
+      AND ISNULL(PlanningDate,0) = dbo.fCore_DateToInt(GETDATE())  
+    GROUP BY SalesMan  
+)  
+SELECT TOP 100 PERCENT   
+    a.iMasterId,   
+    ISNULL(a.sName, '')  AS [SalesMan],   
+    ISNULL(a.sCode,'')   AS [SalesCode],  
+  
+ISNULL( CASE WHEN ISNULL(b.ActiveMinutes, 0) > 0 THEN CAST(LEFT(REPLACE(dbo.fCore_IntToTime(b.ActiveMinutes), ':', '.'), 5)AS DECIMAL(18,2)) ELSE 0 END, 0) AS ActiveMinutes,
+
+
+    ISNULL(CASE WHEN ISNULL(b.InactiveMinutes, 0) > 0 THEN CAST(LEFT(REPLACE(dbo.fCore_IntToTime(b.InactiveMinutes), ':', '.'), 5)AS DECIMAL(18,2))ELSE 0 END, 0) AS InactiveMinutes,
+
+  
+ 
+    ISNULL(b.[Number of Calls Made], 0) AS [Number of Calls Made],   
+    ISNULL(b.[Number of Visits Made], 0) AS [Number of Visits Made],   
+    ISNULL(c.[Leads Converted], 0)       AS [Leads Converted],   
+    ISNULL(d.[Number of Marketing], 0)   AS [Number of Marketing],  
+    ISNULL(b.[Number of Calls Made], 0) - ISNULL(b.[Number of Visits Made], 0) AS [Number of Not Visited] ,
+	[Number of Planned Visits]
+  
+FROM vCore_SalesMan a WITH (NOLOCK)   
+LEFT JOIN DailyActivity b    ON a.iMasterId = b.SalesMan   
+LEFT JOIN LeadsConverted c   ON a.iMasterId = c.SalesMan  
+LEFT JOIN MarketingProposal d ON a.iMasterId = d.SalesMan   
+  
+WHERE a.iMasterId > 0   and a.sName='G.NAGARAJ PANDIAN'
+ORDER BY a.sName;  
+
+
+
+
+
+
+
+SELECT
+    a.iMasterId,
+    a.SalesMan,
+    a.SalesCode,
+    CAST(ISNULL(SUM(b.[Achieved]),0) AS DECIMAL(18,2)) AS [Achieved],
+    CAST(ISNULL(SUM(b.[Collecting Amount]),0) AS DECIMAL(18,2)) AS [Collecting Amount],
+	CAST(CONCAT((REPLACE(SUM(ActiveMinutes), '.', '')/60),'.',(REPLACE(SUM(ActiveMinutes), '.', '')%60)) AS Decimal(18,2)) ActiveMinutes,
+	CAST(CONCAT((REPLACE(SUM(InactiveMinutes), '.', '')/60),'.',(REPLACE(SUM(InactiveMinutes), '.', '')%60)) AS Decimal(18,2)) InActiveMinutes,
+	SUM([Number of Calls Made]) [Number of Calls Made],
+	SUM([Number of Marketing]) [Number of Marketing],
+	SUM([Leads Converted]) [Leads Converted],
+	SUM([Number of Visits Made]) [Number of Visits Made],
+	SUM([Number of Planned Visits]) [Number of Planned Visits]
+
+
+
+
+    -- Sum of ActiveMinutes converted to HH.MM
+
+
+FROM nCore_DailyCRMleadInfo a
+LEFT JOIN (
+    SELECT  
+        SalCode,
+        [Fiscal Year],
+        FORMAT(dbo.fCore_IntToDate(iDate), 'MMM') AS [Month],
+        SUM(CASE WHEN iVoucherType = 3328 THEN Amount ELSE 0 END) AS [Achieved],
+        SUM(CASE WHEN iVoucherType IN (4609,4610) THEN Amount ELSE 0 END) AS [Collecting Amount]
+    FROM nCore_SalesTargetErp WITH (NOLOCK)
+    WHERE iDate = dbo.fCore_DateToInt(GETDATE())
+    GROUP BY SalCode, [Fiscal Year], FORMAT(dbo.fCore_IntToDate(iDate), 'MMM')
+) b 
+    ON a.SalesCode COLLATE SQL_Latin1_General_CP1_CI_AS = b.SalCode COLLATE SQL_Latin1_General_CP1_CI_AS
+
+WHERE a.iMasterId > 0 
+   and (( 0 in (@SalesMan) and isnull(a.iMasterId,0)  = isnull(a.iMasterId,0) ) or (0 not in (@SalesMan) and isnull(a.iMasterId,0)   in ( @SalesMan )))
+GROUP BY
+    a.iMasterId,
+    a.SalesMan,
+    a.SalesCode

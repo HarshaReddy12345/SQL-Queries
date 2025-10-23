@@ -1,0 +1,55 @@
+CREATE OR ALTER PROC udp_FromDeptUpdateFromGRN2 
+    @iTransId BIGINT,
+    @iUserId INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Convert transaction id
+    
+    SET @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+
+    -- Variables for cursor
+    DECLARE 
+        @RefDeptForProduct INT,@iType INT,@ProductId INT;
+
+    -- Cursor to fetch all line items under this GRN
+    DECLARE cur_DeptUpdate CURSOR FAST_FORWARD FOR
+        SELECT 
+            b.iMasterId AS ProductId,b.RefDeptForProduct,d.MaterialItemTypeAsset
+        FROM vuCore_AssetGRNInward_ProductDetails_Details a with(nolock)
+        LEFT JOIN vCore_Product b with(nolock) ON a.ProductName = b.iMasterId
+        LEFT JOIN vuCore_AssetGRNInward_AssetIDGenerationDetails_Details d with(nolock) ON a.iMasterId = d.iMasterId
+        WHERE a.iMasterId = @iTransId;
+
+    OPEN cur_DeptUpdate;
+    FETCH NEXT FROM cur_DeptUpdate INTO @ProductId, @RefDeptForProduct, @iType;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        
+
+        IF @iType = 1
+        BEGIN
+            UPDATE vCore_AssetsCreation SET RefDeptForProduct = @RefDeptForProduct WHERE GRNNo = @iTransId AND ProductName = @ProductId;
+
+           
+        END
+        ELSE IF @iType = 2
+        BEGIN
+            UPDATE vCore_ComponentAssetRegister SET RefDeptForProduct = @RefDeptForProduct WHERE GRNNo = @iTransId AND ProductName = @ProductId;
+
+          
+        END
+       
+
+        FETCH NEXT FROM cur_DeptUpdate INTO @ProductId, @RefDeptForProduct, @iType;
+    END;
+
+    CLOSE cur_DeptUpdate;
+    DEALLOCATE cur_DeptUpdate;
+
+   
+END;
+
+

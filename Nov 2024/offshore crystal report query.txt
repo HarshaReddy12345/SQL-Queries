@@ -1,0 +1,122 @@
+Headers
+select top 100 percent q.iTransId,
+q.sName Quote_no,
+FORMAT(dbo.fCore_IntToDate(q.QuoteDate), 'dd MM yyyy') [Quote Date],  
+vc.sCode as currency_code,  
+vc.sName as  CURRENCY_name,  
+dbo.ReplaceSpecialChars(va.sName) as account_name,
+dbo.ReplaceSpecialChars(va.sPhone) as sPhone,
+dbo.ReplaceSpecialChars(va.sBillingAddress) as sBillingAddress,  
+case when c.sName <>'' and c.sLastName <>'' then CONCAT(c.sName,' ',c.sLastName)   
+     when c.sName ='' and c.sLastName <>'' then c.sLastName   
+  when c.sName <>'' and c.sLastName ='' then c.sName   
+  else ' ' end as contactname,  
+dbo.ReplaceSpecialChars(c.DirectLandline) as landline_contact,  
+dbo.ReplaceSpecialChars(c.sMobile) as contact_mobile,  
+dbo.ReplaceSpecialChars(c.sEmail) as contact_email,    
+dbo.ReplaceSpecialChars(q.Notes) as Notes,  
+dbo.ReplaceSpecialChars(q.PriceTerm) as PriceTerm,  
+dbo.ReplaceSpecialChars(q.CertificationInspection) as CertificationInspection,
+dbo.ReplaceSpecialChars(q.DeliveryTerms) as DeliveryTerms,  
+dbo.ReplaceSpecialChars(q.PaymentTerms) as PaymentTerms,  
+dbo.ReplaceSpecialChars(mv.sName) as quotation_validity,  
+dbo.ReplaceSpecialChars(q.QtyTolerance) as QtyTolerance,   
+dbo.ReplaceSpecialChars(s.sName) as salesmanname,  
+dbo.ReplaceSpecialChars(s.Email) as salesmanemail,  
+dbo.ReplaceSpecialChars(s.Mobile) as salesmanmobile,  
+dbo.ReplaceSpecialChars(o.sName) as opportunity,  
+dbo.ReplaceSpecialChars(it.sName) as incoterms,  
+--q.ETD delivery, 
+dbo.ReplaceSpecialChars(bd.sName) as companyName,
+dbo.ReplaceSpecialChars(bd.BankName) as BankName,  
+dbo.ReplaceSpecialChars(bd.AccountNumber) as AccountNumber,
+dbo.ReplaceSpecialChars(bd.IBAN) as IBAN,
+dbo.ReplaceSpecialChars(bd.IFSCCode) as Currency,
+dbo.ReplaceSpecialChars(bd.SwiftCode) as SwiftCode,
+dbo.ReplaceSpecialChars(bd.SwiftCode) as Branch,  
+dbo.ReplaceSpecialChars(q.QtyTolerance) as QtyTolerance,  
+--CONCAT('http://localhost:8080/ResourceFromCRM/getres?cc=010P0&docid=',iDocsId) sImageUrl,  
+CONCAT('C:\apache-tomcat-9.0.12_J8\webapps\streamline\WEB-INF\user-resource\Documents\010P0\', iModuleTypeId, '_', iDocumentId, '_', sFileName) sImageUrl,
+dbo.ReplaceSpecialChars(bd.Address) as Address  
+   
+from   
+vCrm_Quote q with(NOLOCK)
+LEFT JOIN vCrm_Currency vc with(NOLOCK)  
+ON vc.iMasterId=q.iCurrency  
+LEFT JOIN vCore_Account va with(NOLOCK)  
+ON va.iMasterId=q.iAccount  
+LEFT JOIN vCrm_Contacts c with(NOLOCK)  
+ON c.iMasterId=q.iContactId   
+LEFT JOIN vCore_Salesman s WITH (NOLOCK) ON s.iMasterId = q.Salesman  
+LEFT JOIN vCrm_Opportunities o WITH (NOLOCK) ON o.iTransId = q.iOpportunityId  
+LEFT JOIN vCore_IncoTerms it WITH (NOLOCK) ON it.iMasterId = q.IncoTerms  
+LEFT JOIN vCore_BankDetails bd WITH (NOLOCK) ON bd.iMasterId = q.BankDetails   
+LEFT JOIN mCore_Validity mv WITH (NOLOCK)  
+      ON mv.iMasterId=q.g  
+LEFT JOIN mCore_CompanyMaster cm WITH (NOLOCK)  
+      ON cm.iMasterId=q.CompanyMaster  
+--LEFT JOIN vCrm_Currency vc WITH (NOLOCK)  
+--      ON vc.iMasterId=q.iCurrency  
+LEFT JOIN (SELECT  
+  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,  
+  iModuleTypeId,  
+  iDocumentId,  
+  sFileName,  
+  iRelatedTo,  
+  iIndex  
+FROM vCrm_Documents WITH (NOLOCK)  
+WHERE iModuleTypeId =2492  
+AND iFieldId = 301829) Docs  
+  ON Docs.iRelatedTo =cm.iMasterId  
+where q.iTransId={?iTransId}
+
+======================================================
+Body grid
+-----
+
+select top 100 percent 
+dbo.ReplaceSpecialChars(q.iTransId)iTransId,
+q.sName Quote_no,
+dbo.ReplaceSpecialChars(q.sProdDescription) description,  
+q.fSalesPrice unitprice,  
+q.fAmount fAmount,  
+q.fGrandTotal fGrandTotal,  
+dbo.ReplaceSpecialChars(q.InternalRemarks)InternalRemarks,    
+dbo.ReplaceSpecialChars(q.QtyTolerance)QtyTolerance,  
+dbo.ReplaceSpecialChars(co.sName) Origin,  
+q.ClientLineNo ClientLineNo,  
+dbo.ReplaceSpecialChars(it.sName) incoterms,  
+dbo.ReplaceSpecialChars(q.QtyTolerance)QtyTolerance,  
+dbo.ReplaceSpecialChars(q.DeliveryTimebyItem)DeliveryTimebyItem,  
+u.sName unit_uom,  
+q.Qty iQuantity,
+vc.sCode currency_code,  
+vc.sName CURRENCY_name
+   
+from   
+vuCrm_Quote_General_Details q with(NOLOCK)
+LEFT JOIN vCrm_Currency vc with(NOLOCK)  
+ON vc.iMasterId=q.iCurrency  
+LEFT JOIN vCore_Account va with(NOLOCK)  
+ON va.iMasterId=q.iAccount  
+LEFT JOIN vCrm_Contacts c with(NOLOCK)  
+ON c.iMasterId=q.iContactId  
+LEFT JOIN vCore_Product p WITH (NOLOCK)  
+  ON q.iProductId = p.iMasterId  
+LEFT JOIN vCore_CountryofOrigin co WITH (NOLOCK)  
+  ON co.iMasterId=p.CountryofOrigin1  
+LEFT JOIN vCore_Salesman s WITH (NOLOCK) ON s.iMasterId = q.Salesman  
+LEFT JOIN vCrm_Opportunities o WITH (NOLOCK) ON o.iTransId = q.iOpportunityId  
+LEFT JOIN vCore_IncoTerms it WITH (NOLOCK) ON it.iMasterId = q.IncoTerms  
+LEFT JOIN vCore_BankDetails bd WITH (NOLOCK) ON bd.iMasterId = q.BankDetails  
+LEFT JOIN vCore_UOMMaster u WITH (NOLOCK)  
+  ON q.UOM = u.iMasterId  
+LEFT JOIN mCore_Validity mv WITH (NOLOCK)  
+      ON mv.iMasterId=q.g  
+LEFT JOIN mCore_CompanyMaster cm WITH (NOLOCK)  
+      ON cm.iMasterId=q.CompanyMaster  
+--LEFT JOIN vCrm_Currency vc WITH (NOLOCK)  
+--      ON vc.iMasterId=q.iCurrency  
+  
+where q.iTransId={?iTransId}
+order by q.iSequence  

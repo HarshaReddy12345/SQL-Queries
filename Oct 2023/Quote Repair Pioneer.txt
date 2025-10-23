@@ -1,0 +1,214 @@
+
+ALTER view [dbo].[vRpt_Quoterepair]
+as
+SELECT
+  q.iMasterId iTransId,QuotationStatus,
+  q.iMasterId,
+  q.sName quoteno,
+  opp.iMasterId enqtransid,
+  opp.sName enqno,
+  dbo.fCore_IntToDate(iExpiryDate) iExpiryDate,
+  qu.sDescription,
+  curr.sCode currcode,
+  curr.sName currname,
+  CASE
+    WHEN ISNULL(qu.Date, 0) = 0 THEN ''
+    ELSE dbo.fCore_IntToDate(qu.Date)
+  END qdate,
+  acc.iMasterId accid,
+  acc.sName cname,
+  acc.CustomerNamePrint Customer,
+  acc.sCode custcode,
+  cont.iMasterId contid,
+  cont.sName contact,
+  dept.sName dept,
+  qu.sPhone,
+  qu.sEmail,
+  qu.Mobile,
+  qu.AddressInfo,
+  cont.sMailingCity,
+  cntry.sName mailingcntry,
+  qu.AddressInfo + CHAR(13) + CHAR(10) + ISNULL(cont.sMailingCity, '') + CHAR(13) + CHAR(10) + ISNULL(cntry.sName, '') custaddress,
+  CASE
+    WHEN qu.InwardDocket IS NULL THEN qgu.GRNNoText
+    ELSE InwardDocket
+  END InwardDocket,
+  qu.PONumber,
+  qu.EnquiryRef,
+  qu.PSA,
+  qu.CustomerProject,
+  qu.CustomerRigInfo,
+  dterms.sName deliveryterms,
+  qu.DeliveryIncoTerms,
+  qu.PaymentTerms,
+  qu.Note,
+  qu.Validity,
+  cm.sName WHTType,
+  qu.WHT,
+  qu.VAT,
+  qu.WHTType whttypeid,
+  qu.SubTotal,
+  qu.TotalDiscountFooter,
+  qu.TotalAmountAftDisc,
+  qu.TotalWHTAmount,
+  qu.TotalAmountAfterWHT,
+  qu.TotalRoundOff,
+  qu.TotalTaxableAmount,
+  qu.TotalVATAmount,
+  qu.TotalAmountFooter,
+  qu.TotalNetAmount,
+  --bodydetails
+  CASE
+    WHEN ISNULL(qgu.WorkBreakDown, 0) = 0 THEN 'ZZ'
+    ELSE wb.sName
+  END WorkBreakDown,
+  qgu.EquipmentName,
+  eqp.sCode Eqpcode,
+  eqp.sName Eqpname,
+  qgu.EquipmentDescription,
+  qgu.EquipmentNotes,
+  qgu.EquipmentQty,
+  eqpunit.sName EqpUOM,
+  SerialNo,
+  ttype.sName tasktype,
+  CASE
+    WHEN ISNULL(qgu.TaskType, 0) = 0 THEN 20001
+    ELSE qgu.TaskType
+  END itasktype,
+  qgu.ServiceCode pid,
+  pdt.sName pname,
+  pdt.sCode pcode,
+  qgu.Description proddesc,
+  qgu.Notes,
+  qgu.Sequence,
+  u.sName units,
+  qgu.Quantity qty,
+  ServiceCostAmount,
+  ServiceCostRate,
+  Rate,
+  ISNULL(TotalPrice, 0) SubTotalBody,
+  qgu.Discount discper,
+  qgu.DiscountAmount,
+  qgu.TotalDiscount,
+  AmountAfterDiscount,
+  qgu.WHTBody,
+  qgu.WHTAmountBody,
+  qgu.AmountAfterWHT,
+  ISNULL(qgu.Roundoff, 0) Roundoff,
+  TaxableAmount,
+  VATBody,
+  VATAmount,
+  CASE
+    WHEN qu.WHTType = 4 THEN fAmount - WHTAmountBody
+    ELSE fAmount
+  END netamount,
+  TotalPrice + ISNULL(Roundoff, 0) stotalRndoff,
+  TotalPrice + ISNULL(Roundoff, 0) - qgu.TotalDiscount stotalRndoffwithdisc,
+  CASE
+    WHEN qu.WHTType = 5 THEN TotalPrice + ISNULL(Roundoff, 0) + ISNULL(WHTAmountBody, 0)
+    ELSE TotalPrice + ISNULL(Roundoff, 0)
+  END stotalRndoffwwht,
+  --case when isnull(qgu.iQuantity,0)<>0 then cast(round(SubTotalBody/qgu.iQuantity,2) as numeric(36,2)) else 0 end rate,
+  PartNo,
+  qgu.POLineitemno,
+  CostCenterWBS,
+  pcp.sName pcontact,
+  pcp.Email pemail,
+  pcp.Mobile pmobile,
+  c.address1,
+  c.address2,
+  c.address4,
+  c.pno,
+  Addressline2,
+  sgn.sFirstName + ' ' + sgn.sLastName signatory,
+  degn.sName designation,
+  CONVERT(date, dbo.fCore_IntToDateTime(q.iCreatedDate), 105) createddate,
+  createdby.sUserName createdby,
+  CASE
+    WHEN ISNULL(q.iModifiedDate, 0) = 0 THEN ''
+    ELSE CONVERT(varchar, dbo.fCore_IntToDateTime(q.iModifiedDate), 105)
+  END modifieddate,
+  tc1.Description tc1desc,
+  tc2.Description tc2desc,
+  tc3.Description tc3desc,
+  tc4.Description tc4desc,
+  tc5.Description tc5desc,
+  tc6.Description tc6desc,
+  CAST('' AS varchar(100)) Qualitydno,
+  CASE
+    WHEN (CAST(REPLACE((CASE
+        WHEN ISNULL(qgu.WorkBreakDown, 0) = 0 THEN 'ZZ'
+        ELSE wb.sName
+      END), SUBSTRING(CASE
+        WHEN ISNULL(qgu.WorkBreakDown, 0) = 0 THEN 'ZZ'
+        ELSE wb.sName
+      END, 1, LEN(opp.sName) + 1), '') AS int)) = 0 THEN 999
+    ELSE (CAST(REPLACE((CASE
+        WHEN ISNULL(qgu.WorkBreakDown, 0) = 0 THEN 'ZZ'
+        ELSE wb.sName
+      END), SUBSTRING(CASE
+        WHEN ISNULL(qgu.WorkBreakDown, 0) = 0 THEN 'ZZ'
+        ELSE wb.sName
+      END, 1, LEN(opp.sName) + 1), '') AS int))
+  END Seqno--,bnk.sName bname,bnk.sCode bcode,bnk.Address baddress,bnk.SwiftCode,bnk.AcNumber,bnk.IBANNo,bnk.CurrencyName,bnk.IntermediaryBank,bnk.CorrespondentBank
+FROM vRpt_Company c,
+     mCore_EstimationQuotation q
+     INNER JOIN muCore_EstimationQuotation qu
+       ON q.iMasterId = qu.iMasterId
+       AND q.iStatus = 0
+     INNER JOIN muCore_EstimationQuotation_BodyGrid_Details qgu
+       ON q.iMasterId = qgu.iMasterId
+     INNER JOIN mCore_EnquiryRepair opp
+       ON opp.iMasterId = qu.EnquiryRepairNo
+     INNER JOIN vdCore_Account acc
+       ON acc.iMasterId = qu.iAccount
+     INNER JOIN vCrm_Contacts cont
+       ON cont.iMasterId = qu.iContactId
+     INNER JOIN mCore_Department dept
+       ON dept.iMasterId = qu.Department
+     LEFT JOIN mCore_CommonMaster cm
+       ON cm.iMasterId = qu.WHTType
+     LEFT JOIN mCore_DeliveryTerms dterms
+       ON dterms.iMasterId = qu.DeliveryTerms
+     LEFT JOIN muCore_TermsandConditions tc1
+       ON tc1.iMasterId = qu.TermsandConditions1
+     LEFT JOIN muCore_TermsandConditions tc2
+       ON tc2.iMasterId = qu.TermsandConditions2
+     LEFT JOIN muCore_TermsandConditions tc3
+       ON tc3.iMasterId = qu.TermsandConditions3
+     LEFT JOIN muCore_TermsandConditions tc4
+       ON tc4.iMasterId = qu.TermsandConditions4
+     LEFT JOIN muCore_TermsandConditions tc5
+       ON tc5.iMasterId = qu.TermsandConditions5
+     LEFT JOIN muCore_TermsandConditions tc6
+       ON tc6.iMasterId = qu.TermsandConditions6
+     LEFT JOIN vCore_PioneerContactPerson pcp
+       ON pcp.iMasterId = qu.PioneerContactPerson
+     LEFT JOIN mCore_Country cntry
+       ON cntry.iMasterId = cont.iMailingCountry
+     --left join vaCore_Bank bnk on bnk.iMasterId=qu.Bank
+     LEFT JOIN mCore_Currency curr
+       ON curr.iCurrencyId = qu.Currency
+     LEFT JOIN mCore_WorkBreakdown wb
+       ON wb.iMasterId = qgu.WorkBreakDown
+     LEFT JOIN mCore_Product eqp
+       ON eqp.iMasterId = qgu.EquipmentName
+     LEFT JOIN mCore_Units eqpunit
+       ON eqpunit.iMasterId = qgu.EquipmentUOM
+     INNER JOIN mCore_Product pdt
+       ON pdt.iMasterId = qgu.ServiceCode
+     LEFT JOIN vCrm_TaskType ttype
+       ON ttype.iTransId = qgu.TaskType
+     LEFT JOIN mCore_Units u
+       ON u.iMasterId = qgu.UOM
+     LEFT JOIN mCrm_Users sgn
+       ON sgn.iUserId = qu.Signatory
+     LEFT JOIN mPay_Designation degn
+       ON degn.iMasterId = sgn.iDesignation
+     LEFT JOIN mSec_Users createdby
+       ON createdby.iUserId = q.iCreatedBy
+--where q.iMasterId=69
+--order by 1 desc
+GO
+
+

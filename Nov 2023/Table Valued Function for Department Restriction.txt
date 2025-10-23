@@ -1,0 +1,133 @@
+ALTER FUNCTION fn_RoleRestriction (@iModuleId int, @sUserIds varchar(max))
+RETURNS @tblInfo TABLE (
+  iModuleId int,
+  iUserId int,
+  iTransId int
+)
+AS
+BEGIN
+
+  DECLARE @iUserId int = 0;
+  SELECT TOP 1
+    @iUserId = sToken
+  FROM dbo.fCrm_GetTokens(@sUserIds, ',');
+
+  IF NOT EXISTS (SELECT
+      1
+    FROM cCrm_SecRoleRestrictions WITH (NOLOCK)
+    WHERE iUserId = @iUserId)
+  BEGIN
+
+    INSERT INTO @tblInfo (iTransId, iModuleId, iUserId)
+      SELECT
+        sToken,
+        @iModuleId,
+        @iUserId
+      FROM dbo.fCrm_GetTokens(CASE
+        WHEN (SELECT TOP 1
+            bExclude
+          FROM vCrm_Users usr WITH (NOLOCK)
+          INNER JOIN cCrm_SecRoleRestrictions res WITH (NOLOCK)
+            ON usr.iCRMRole = res.iRoleId
+          WHERE usr.iMasterId > 0
+          AND usr.iMasterId IN (@iUserId)
+          AND res.iModuleTypeId = @iModuleId)
+          = 1 THEN (SELECT
+            STRING_AGG(iMasterId, ',')
+          FROM vCore_Department
+          WHERE iMasterId > 0
+          AND iMasterId NOT IN (SELECT
+            g.iMasterId
+          FROM cCrm_SecRoleRestrictions g WITH (NOLOCK)
+          INNER JOIN vCrm_Users f WITH (NOLOCK)
+            ON f.iCRMRole = g.iRoleId
+          WHERE g.bExclude = 1
+          AND g.iModuleTypeId = @iModuleId
+          AND f.iMasterId = (@iUserId)))
+        WHEN (SELECT TOP 1
+            bExclude
+          FROM vCrm_Users usr WITH (NOLOCK)
+          INNER JOIN cCrm_SecRoleRestrictions res WITH (NOLOCK)
+            ON usr.iCRMRole = res.iRoleId
+          WHERE usr.iMasterId > 0
+          AND usr.iMasterId IN (@iUserId)
+          AND res.iModuleTypeId = @iModuleId)
+          = 0 THEN (SELECT
+            STRING_AGG(iMasterId, ',')
+          FROM vCore_Department
+          WHERE iMasterId > 0
+          AND iMasterId IN (SELECT
+            g.iMasterId
+          FROM cCrm_SecRoleRestrictions g WITH (NOLOCK)
+          INNER JOIN vCrm_Users f WITH (NOLOCK)
+            ON f.iCRMRole = g.iRoleId
+          WHERE g.bExclude = 0
+          AND g.iModuleTypeId = @iModuleId
+          AND f.iMasterId = (@iUserId)))
+        ELSE (SELECT
+            STRING_AGG(iMasterId, ',')
+          FROM vCore_Department
+          WHERE iMasterId > 0)
+      END
+      , ',')
+  END
+  ELSE
+  BEGIN
+    INSERT INTO @tblInfo (iTransId, iModuleId, iUserId)
+      SELECT
+        sToken,
+        @iModuleId,
+        @iUserId
+      FROM dbo.fCrm_GetTokens(CASE
+        WHEN (SELECT TOP 1
+            bExclude
+          FROM vCrm_Users usr WITH (NOLOCK)
+          INNER JOIN cCrm_SecRoleRestrictions res WITH (NOLOCK)
+            ON usr.iMasterId = res.iUserId
+          WHERE usr.iMasterId > 0
+          AND usr.iMasterId IN (@iUserId)
+          AND res.iModuleTypeId = @iModuleId)
+          = 1 THEN (SELECT
+            STRING_AGG(iMasterId, ',')
+          FROM vCore_Department
+          WHERE iMasterId > 0
+          AND iMasterId NOT IN (SELECT
+            g.iMasterId
+          FROM cCrm_SecRoleRestrictions g WITH (NOLOCK)
+          INNER JOIN vCrm_Users f WITH (NOLOCK)
+            ON f.iMasterId = g.iUserId
+          WHERE g.bExclude = 1
+          AND g.iModuleTypeId = @iModuleId
+          AND f.iMasterId = (@iUserId)))
+        WHEN (SELECT TOP 1
+            bExclude
+          FROM vCrm_Users usr WITH (NOLOCK)
+          INNER JOIN cCrm_SecRoleRestrictions res WITH (NOLOCK)
+            ON usr.iMasterId = res.iUserId
+          WHERE usr.iMasterId > 0
+          AND usr.iMasterId IN (@iUserId)
+          AND res.iModuleTypeId = @iModuleId)
+          = 0 THEN (SELECT
+            STRING_AGG(iMasterId, ',')
+          FROM vCore_Department
+          WHERE iMasterId > 0
+          AND iMasterId IN (SELECT
+            g.iMasterId
+          FROM cCrm_SecRoleRestrictions g WITH (NOLOCK)
+          INNER JOIN vCrm_Users f WITH (NOLOCK)
+            ON f.iMasterId = g.iUserId
+          WHERE g.bExclude = 0
+          AND g.iModuleTypeId = @iModuleId
+          AND f.iMasterId = (@iUserId)))
+        ELSE (SELECT
+            STRING_AGG(iMasterId, ',')
+          FROM vCore_Department
+          WHERE iMasterId > 0)
+      END
+      , ',')
+  END
+
+
+  RETURN
+
+END

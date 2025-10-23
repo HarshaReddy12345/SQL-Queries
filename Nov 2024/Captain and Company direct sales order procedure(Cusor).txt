@@ -1,0 +1,35 @@
+CREATE OR ALTER PROCEDURE udp_BuyerAmt (@iTransId BIGINT, @iUserId INT)
+AS
+BEGIN
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+    
+    DECLARE @Gross DECIMAL(18, 2), @Agent INT;
+
+    DECLARE agent_cursor CURSOR FOR
+    SELECT DISTINCT Agent
+    FROM vuCore_DirectSalesOrder_Product_Details with(nolock)
+    WHERE iMasterId = @iTransId;
+
+    OPEN agent_cursor;
+
+    FETCH NEXT FROM agent_cursor INTO @Agent;
+
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+
+        SELECT @Gross = SUM(Gross)
+        FROM vuCore_DirectSalesOrder_Product_Details with(nolock)
+        WHERE Agent = @Agent AND iMasterId = @iTransId;
+
+
+        UPDATE vuCore_DirectSalesOrder_BuyerSellerCommission_Details
+        SET BuyerAgentAmount = (@Gross * BuyerAgent) / 100 
+        WHERE iMasterId = @iTransId AND BuyerAgent1 = @Agent;
+
+
+        FETCH NEXT FROM agent_cursor INTO @Agent;
+    END
+
+    CLOSE agent_cursor;
+    DEALLOCATE agent_cursor;
+END;

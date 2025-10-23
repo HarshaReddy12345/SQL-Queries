@@ -1,0 +1,197 @@
+USE Focus8014R0
+GO
+ALTER VIEW nCore_Approval
+AS
+SELECT
+  'EMD' [Module],
+  ROW_NUMBER() OVER (PARTITION BY a.iModuleId, c.iMasterId ORDER BY a.iCreatedDate DESC) AS RowNumber,
+  d.sName AS [AuthorizationName],
+  b.sName AS [ApprovalUser],
+  a.sDescription,
+  c.sName AS [Record Name],
+  CASE a.iStatus
+    WHEN 114 THEN 'Approved'
+    WHEN 115 THEN 'Pending'
+    WHEN 117 THEN 'Rejected'
+  END AS [ApprovalStatus],
+  a.iLevel,
+  dbo.fCore_IntToDateTime(a.iCreatedDate) AS [ApprovalDate],
+  a.iUserId,
+  c.iAssignedTo,
+  e.sName [CreatedBy],
+  c.iCreatedDate [$Datetime$iCreatedDate],
+  a.iStatus
+FROM cCrm_Auth_Approvals a WITH (NOLOCK)
+INNER JOIN vCrm_Users b WITH (NOLOCK)
+  ON a.iUserId = b.iMasterId
+INNER JOIN vCore_EMD c WITH (NOLOCK)
+  ON a.iTransId = c.iMasterId
+LEFT JOIN vCrm_Approvals d WITH (NOLOCK)
+  ON a.iAuthorizationId = d.iMasterId
+LEFT JOIN vCrm_Users e WITH (NOLOCK)
+  ON c.iAssignedTo = e.iMasterId
+
+WHERE b.iMasterId = 9
+
+UNION ALL
+
+SELECT
+  'Bank Garuntee' [Module],
+  ROW_NUMBER() OVER (PARTITION BY a.iModuleId, c.iMasterId ORDER BY a.iCreatedDate DESC) AS RowNumber,
+  d.sName AS [AuthorizationName],
+  b.sName AS [ApprovalUser],
+  a.sDescription,
+  c.sName AS [Record Name],
+  CASE a.iStatus
+    WHEN 114 THEN 'Approved'
+    WHEN 115 THEN 'Pending'
+    WHEN 117 THEN 'Rejected'
+  END AS [ApprovalStatus],
+  a.iLevel,
+  dbo.fCore_IntToDateTime(a.iCreatedDate) AS [ApprovalDate],
+  a.iUserId,
+  c.iAssignedTo,
+  e.sName [CreatedBy],
+  c.iCreatedDate [$Datetime$iCreatedDate],
+  a.iStatus
+FROM cCrm_Auth_Approvals a WITH (NOLOCK)
+INNER JOIN vCrm_Users b WITH (NOLOCK)
+  ON a.iUserId = b.iMasterId
+INNER JOIN vCore_BankGuarantee c WITH (NOLOCK)
+  ON a.iTransId = c.iMasterId
+LEFT JOIN vCrm_Approvals d WITH (NOLOCK)
+  ON a.iAuthorizationId = d.iMasterId
+LEFT JOIN vCrm_Users e WITH (NOLOCK)
+  ON c.iAssignedTo = e.iMasterId
+
+UNION ALL
+
+SELECT
+  'Sales Quote' [Module],
+  ROW_NUMBER() OVER (PARTITION BY a.iModuleId, c.iTransId ORDER BY a.iCreatedDate DESC) AS RowNumber,
+  d.sName AS [AuthorizationName],
+  b.sName AS [ApprovalUser],
+  a.sDescription,
+  c.sName AS [ColumnName],
+  CASE a.iStatus
+    WHEN 114 THEN 'Approved'
+    WHEN 115 THEN 'Pending'
+    WHEN 117 THEN 'Rejected'
+  END AS [ApprovalStatus],
+  a.iLevel,
+  dbo.fCore_IntToDateTime(a.iCreatedDate) AS [ApprovalDate],
+  a.iUserId,
+  c.iAssignedTo,
+  e.sName [CreatedBy],
+  c.iCreatedDate [$Datetime$iCreatedDate],
+  a.iStatus
+FROM cCrm_Auth_Approvals a WITH (NOLOCK)
+INNER JOIN vCrm_Users b WITH (NOLOCK)
+  ON a.iUserId = b.iMasterId
+INNER JOIN vCrm_Quote c WITH (NOLOCK)
+  ON a.iTransId = c.iTransId
+LEFT JOIN vCrm_Approvals d WITH (NOLOCK)
+  ON a.iAuthorizationId = d.iMasterId
+LEFT JOIN vCrm_Users e WITH (NOLOCK)
+  ON c.iAssignedTo = e.iMasterId
+WHERE c.iTransId > 0
+
+UNION ALL
+
+
+SELECT
+  'DD' [Module],
+  ROW_NUMBER() OVER (PARTITION BY a.iModuleId, c.iMasterId ORDER BY a.iCreatedDate DESC) AS RowNumber,
+  d.sName AS [AuthorizationName],
+  b.sName AS [ApprovalUser],
+  a.sDescription,
+  c.sName AS [ColumnName],
+  CASE a.iStatus
+    WHEN 114 THEN 'Approved'
+    WHEN 115 THEN 'Pending'
+    WHEN 117 THEN 'Rejected'
+  END AS [ApprovalStatus],
+  a.iLevel,
+  dbo.fCore_IntToDateTime(a.iCreatedDate) AS [ApprovalDate],
+  a.iUserId,
+  c.iAssignedTo,
+  e.sName [CreatedBy],
+  c.iCreatedDate [$Datetime$iCreatedDate],
+  a.iStatus
+
+FROM cCrm_Auth_Approvals a WITH (NOLOCK)
+INNER JOIN vCrm_Users b WITH (NOLOCK)
+  ON a.iUserId = b.iMasterId
+INNER JOIN vCore_DD c WITH (NOLOCK)
+  ON a.iTransId = c.iMasterId
+LEFT JOIN vCrm_Approvals d WITH (NOLOCK)
+  ON a.iAuthorizationId = d.iMasterId
+LEFT JOIN vCrm_Users e WITH (NOLOCK)
+  ON c.iAssignedTo = e.iMasterId
+WHERE c.iMasterId > 0
+
+UNION ALL
+
+
+SELECT
+  'Customer PO' [Module],
+  ROW_NUMBER() OVER (PARTITION BY a.iModuleId, c.iTransId ORDER BY a.iCreatedDate DESC) AS RowNumber,
+  d.sName AS [AuthorizationName],
+  b.sName AS [ApprovalUser],
+  a.sDescription,
+  c.sName AS [ColumnName],
+  CASE a.iStatus
+    WHEN 114 THEN 'Approved'
+    WHEN 115 THEN 'Pending'
+    WHEN 117 THEN 'Rejected'
+  END AS [ApprovalStatus],
+  a.iLevel,
+  dbo.fCore_IntToDateTime(a.iCreatedDate) AS [ApprovalDate],
+  a.iUserId,
+  c.iAssignedTo,
+  e.sName [CreatedBy],
+  c.iCreatedDate [$Datetime$iCreatedDate],
+  a.iStatus
+FROM cCrm_Auth_Approvals a WITH (NOLOCK)
+INNER JOIN vCrm_Users b WITH (NOLOCK)
+  ON a.iUserId = b.iMasterId
+INNER JOIN vCrm_SalesOrder c WITH (NOLOCK)
+  ON a.iTransId = c.iTransId
+LEFT JOIN vCrm_Approvals d WITH (NOLOCK)
+  ON a.iAuthorizationId = d.iMasterId
+LEFT JOIN vCrm_Users e WITH (NOLOCK)
+  ON c.iAssignedTo = e.iMasterId
+WHERE c.iTransId > 0
+
+UNION ALL
+
+
+SELECT
+  'Deal Sheet' [Module],
+  ROW_NUMBER() OVER (PARTITION BY a.iModuleId, c.iMasterId ORDER BY a.iCreatedDate DESC) AS RowNumber,
+  d.sName AS [AuthorizationName],
+  b.sName AS [ApprovalUser],
+  a.sDescription,
+  c.sName AS [ColumnName],
+  CASE a.iStatus
+    WHEN 114 THEN 'Approved'
+    WHEN 115 THEN 'Pending'
+    WHEN 117 THEN 'Rejected'
+  END AS [ApprovalStatus],
+  a.iLevel,
+  dbo.fCore_IntToDateTime(a.iCreatedDate) AS [ApprovalDate],
+  a.iUserId,
+  c.iAssignedTo,
+  e.sName [CreatedBy],
+  c.iCreatedDate [$Datetime$iCreatedDate],
+  a.iStatus
+FROM cCrm_Auth_Approvals a WITH (NOLOCK)
+INNER JOIN vCrm_Users b WITH (NOLOCK)
+  ON a.iUserId = b.iMasterId
+INNER JOIN vCore_DealSheet c WITH (NOLOCK)
+  ON a.iTransId = c.iMasterId
+LEFT JOIN vCrm_Approvals d WITH (NOLOCK)
+  ON a.iAuthorizationId = d.iMasterId
+LEFT JOIN vCrm_Users e WITH (NOLOCK)
+  ON c.iAssignedTo = e.iMasterId
+WHERE c.iMasterId > 0

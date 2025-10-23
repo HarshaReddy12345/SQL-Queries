@@ -1,0 +1,25 @@
+CREATE VIEW [dbo].[nCore_Quote] as
+select iTransId,a.sName [QuoteNo],FORMAT(dbo.fCore_IntToDate([Date]),'dd/MM/yyyy') [QuoteDate],Datafield,b.sName [AccountName],c.sName [Location],d.sName [Contact],
+CASE when EnquiryDate is null then null else FORMAT(dbo.fCore_IntToDate(EnquiryDate),'dd/MM/yyyy') end  [Enquire Date],e.sName [Attachment Type]  from vuCrm_Quote_AttachmentsList_Details a with(nolock)
+left join vCore_Account b with(nolock) on a.AccountName=b.iMasterId
+left join vCore_AddressMaster c with(nolock) on a.Ad=c.iMasterId
+left join vCrm_Contacts d with(nolock) on b.iMasterId=d.iAccountId
+left join vCore_AttachmentsList e with(nolock) on a.AttachmentType=e.iMasterId
+where a.iTransId>0
+
+-----------------------------------------------------
+CREATE  VIEW [dbo].[nCore_QuoteGrid] as  
+  
+select iTransId,QuoteNo,[EnquiryDate],QuoteDate,Datafield,mul,ItemCode,Product,Remarks,type,val,Account,iSequence  from  
+(  
+select a.iTransId,ISNULL(a.sName,'') [QuoteNo],b.sName [Product],c.sName [Account],FORMAT(dbo.fCore_IntToDate(Date),'dd/MM/yyyy') [QuoteDate],CASE when EnquiryDate is null then null else FORMAT(dbo.fCore_IntToDate(EnquiryDate),'dd/MM/yyyy') end [EnquiryDate],a.Datafield,ISNULL(a.ItemCode,'') ItemCode,ISNULL(a.Remarkssg,'') Remarks,ISNULL(a.Thkmm1,0) [Th MM],ISNULL(a.NBmmSG,0) [NB mm],'*' mul,ISNULL(a.NBmmSG2,0) [NB mm1], iSequence, 
+ISNULL(a.LengthmmSG,0) LengthmmSG ,ISNULL(a.QtyNos,0) QtyNos,ISNULL(a.UnitPriceRs,0) UnitPriceRs,ISNULL(a.TotalPriceRs,0) TotalPriceRs ,  
+ISNULL(a.Value,0) [Value]  
+from vuCrm_Quote_StandardGrid_Details a  with(nolock)
+LEFT OUTER JOIN vCore_Product b  with(nolock) on a.Product=b.iMasterId  
+LEFT OUTER JOIN vCore_Account c  with(nolock) on a.AccountName=c.iMasterId  
+where iTransId>0   
+) a  
+unpivot (  
+val for [type] in ([Th MM],[NB mm],[NB mm1],LengthmmSG,QtyNos,UnitPriceRs,TotalPriceRs,[Value])  
+) as unpvt

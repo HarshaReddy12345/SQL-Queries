@@ -1,0 +1,81 @@
+ALTER   function fCore_Var18 (@s xml)  
+returns decimal(18,2)  
+as  
+Begin  
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)    
+  
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')  
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')  
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')  
+select @iDate=dbo.fCore_DateToInt(GETDATE())  
+  
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer    
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product   
+  
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)  
+  
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)   
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId   
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc 
+  
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode   
+  
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)   
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId   
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId   
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId   
+where  p.iMasterId=@ProdId  
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc 
+  
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)   
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId   
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup   
+where ma.iMasterId=@AccId   
+  
+  
+  Declare @ExistingPB int
+ set @fRet=0  
+ set @fRet=Focus8020.dbo.[fn_GetSellingRateCustom](0,@Prodgroup,@CustPriceGroup,@iDate,0,0,0,0,0)---Customer Price Group and ITem Group  
+ --ERPCustomer  
+ --ERPPriceGroup  
+ --ERPItemGroup  
+ --ERPItem 
+ if(@fRet=0)--Customer Price Group and ITem  
+ Begin 
+ if exists
+ (
+ select * from Focus8020..mCore_SellingPriceBookDetails a with(nolock) join Focus8020..mCore_SellingPriceBookHeader b on a.iPriceBookId=b.iPriceBookId 
+ where iTagId=@CustPriceGroup and iProductId=@ProdId and bActive=1 and a.bMarkDeleted=0
+ and iStartDate<=dbo.DateToInt(GETDATE()) and (iEndDate>=dbo.DateToInt(GETDATE()) or iEndDate=0) and b.sPriceBookName like '%-Rate%' 
+
+ )
+ begin
+ select top 1 @ExistingPB=a.iPriceBookId from Focus8020..mCore_SellingPriceBookDetails a with(nolock) join Focus8020..mCore_SellingPriceBookHeader b on a.iPriceBookId=b.iPriceBookId
+ where iTagId=@CustPriceGroup and iProductId=@ProdId and bActive=1 and a.bMarkDeleted=0
+ and iStartDate<=dbo.DateToInt(GETDATE()) and (iEndDate>=dbo.DateToInt(GETDATE()) or iEndDate=0) and b.sPriceBookName like '%-Rate%' order by iStartDate desc
+
+ 
+  
+  set @fRet=Focus8020.dbo.[fn_GetSellingRateCustom](0,@ProdId,@CustPriceGroup,@iDate,0,0,0,0,@ExistingPB)  
+ End
+  end
+ if(@fRet=0)--Customer and ITem Group  
+ Begin  
+  set @fRet=Focus8020.dbo.[fn_GetSellingRateCustom](@AccId,@Prodgroup,0,@iDate,0,0,0,0,0)  
+ End  
+ if(@fRet=0)--Customer and Item  
+ Begin  
+  set @fRet=Focus8020.dbo.[fn_GetSellingRateCustom](@AccId,@ProdId,0,@iDate,0,0,0,0,0)  
+ End  
+   if(@fRet=0)--ITem  
+ Begin  
+  set @fRet=Focus8020.dbo.[fn_GetSellingRateCustom](0,@ProdId,0,@iDate,0,0,0,0,0)  
+ End
+ if(@fRet=0)--ITem Group  
+ Begin  
+  set @fRet=Focus8020.dbo.[fn_GetSellingRateCustom](0,@Prodgroup,0,@iDate,0,0,0,0,0)  
+ End  
+  
+ return @fRet  
+End

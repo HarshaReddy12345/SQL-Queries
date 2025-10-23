@@ -1,0 +1,107 @@
+select count(a.iMasterId) [Count],b.sName [Department],IIF(a.Currency=2,a.TotalAmountFooter,a.TotalAmountFooter/1.7) USD,
+
+(a.TotalAmountFooter) - (a.TotalAmountFooter) * (a.ofCompletion / 100) WIH
+
+from vCore_EstimationQuotation a with(nolock)
+
+join vCore_Department b with(nolock) on a.Department=b.iMasterId
+
+join vCore_EnquiryRepair c with(nolock) on a.EnquiryRepairNo=c.iMasterId
+
+join cCrm_MasterMappings d with (nolock) on c.iMasterId=iCrmMasterId
+
+LEFT JOIN EnqRepair2 BB
+
+  ON d.iFocusMasterId = BB.iTag3040 and d.iModuleId = 2514
+
+ 
+
+where CustomerApproval=16 and BB.sVoucherNo is null and a.JobStatus=17
+
+and  (PioneerDeliveryDate) BETWEEN @STARTDATE AND @ENDDATE
+
+and (( 0 in (@Department) and isnull(Department,0)  = isnull(Department,0) ) or (0 not in (@Department) and isnull(Department,0)   in ( @Department )))
+
+group by b.sName,a.TotalAmountFooter,a.Currency,a.ofCompletion
+
+union all
+
+ 
+
+select count(a.iMasterId) [Count],b.sName [Department],IIF(a.Currency=2,STotalAmount,a.STotalAmount/1.7) USD,
+
+a.STotalAmount - (a.STotalAmount) * (a.ofCompletion / 100) WIH
+
+from vCore_QuotationMF a with(nolock)
+
+join vCore_Department b with(nolock) on a.Department=b.iMasterId
+
+join vCore_EnquiryManufacturing c with(nolock) on a.EnquiryNo=c.iMasterId
+
+join cCrm_MasterMappings d with (nolock) on c.iMasterId=iCrmMasterId
+
+LEFT JOIN EnqMan2 BB
+
+  ON d.iFocusMasterId = BB.iTag3040 and d.iModuleId = 2531
+
+where CustomerApproval=16 and BB.sVoucherNo is null and a.JobStatus=17
+
+and  (PioneerDeliveryDate) BETWEEN @STARTDATE AND @ENDDATE
+
+and (( 0 in (@Department) and isnull(Department,0)  = isnull(Department,0) ) or (0 not in (@Department) and isnull(Department,0)   in ( @Department )))
+
+group by b.sName,a.STotalAmount,a.Currency,a.ofCompletion
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+select count(a.iMasterId) [Count],b.sName [Department],IIF(a.Currency=2,a.TotalAmountFooter,a.TotalAmountFooter/1.7) USD,
+
+(a.TotalAmountFooter) - (a.TotalAmountFooter) * (a.ofCompletion / 100) WIH
+
+from vCore_EstimationQuotation a with(nolock)
+
+join vCore_Department b with(nolock) on a.Department=b.iMasterId
+
+join vCore_EnquiryRepair c with(nolock) on a.EnquiryRepairNo=c.iMasterId
+
+join cCrm_MasterMappings d with (nolock) on c.iMasterId=iCrmMasterId
+
+LEFT JOIN EnqRepair2 BB
+
+  ON d.iFocusMasterId = BB.iTag3040 and d.iModuleId = 2514
+
+ 
+
+where CustomerApproval=16 and BB.sVoucherNo is null and a.JobStatus=17
+
+and  (PioneerDeliveryDate) BETWEEN @STARTDATE AND @ENDDATE
+
+and (( 0 in (@Department) and isnull(Department,0)  = isnull(Department,0) ) or (0 not in (@Department) and isnull(Department,0)   in ( @Department )))
+
+group by b.sName,a.TotalAmountFooter,a.Currency,a.ofCompletion
+
+union all
+
+ 
+
+select count(a.iMasterId) [Count],b.sName [Department],IIF(a.Currency=2,STotalAmount,a.STotalAmount/1.7) USD,
+
+a.STotalAmount - (a.STotalAmount) * (a.ofCompletion / 100) WIH
+
+from vCore_QuotationMF a with(nolock)
+
+join vCore_Department b with(nolock) on a.Department=b.iMasterId
+
+join vCore_EnquiryManufacturing c with(nolock) on a.EnquiryNo=c.iMasterId
+
+join cCrm_MasterMappings d with (nolock) on c.iMasterId=iCrmMasterId
+
+LEFT JOIN EnqMan2 BB
+
+  ON d.iFocusMasterId = BB.iTag3040 and d.iModuleId = 2531
+
+where CustomerApproval=16 and BB.sVoucherNo is null and a.JobStatus=17
+
+and  (PioneerDeliveryDate) BETWEEN @STARTDATE AND @ENDDATE
+
+and (( 0 in (@Department) and isnull(Department,0)  = isnull(Department,0) ) or (0 not in (@Department) and isnull(Department,0)   in ( @Department )))
+
+group by b.sName,a.STotalAmount,a.Currency,a.ofCompletion

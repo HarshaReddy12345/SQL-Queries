@@ -1,0 +1,65 @@
+CREATE OR ALTER VIEW nCore_AssetData as
+select 
+       a.iMasterId,
+	   b.sCode [ASSET ID],
+	   d.sName [STAFF NAME],
+	   e.sName [ASSET NAME],
+	   f.sName [ASSET SUB CATEGORY A],
+	   g.sName [SupplierName],
+	   b.PurchaseDate [$Date$PO Date],
+	   b.InvoiceDate[$Date$Invoice Date],
+	   dbo.fCrm_GetNumberListValue('1,NEW ASSET,2,ACTIVE ASSET,3,STOCK IN HAND,4,SERVICE,5,TRANSFER (TEMPORARY),6,TRANSFER (PERMANENT),7,SCRAP,8,Verified from Focus',b.AssetStatus) [Asset Status],
+	   b.WarrantyExpiry [$Date$Warranty Expiry],
+	   h.sName [ITEM NAME],
+	   i.sCode [ComponentAssetID],
+	   a.Date [$Date$Issue Date],
+	   i.sName [ITEM SERIAL NUMBER],
+	   a.Qty,a.Remarks,dbo.fCrm_GetNumberListValue ('1,Active,2,In-Active,3,N/A',a.PurposeStatus) [Status],
+	   b.iMasterId AssetId,
+	   d.iMasterId StaffId,
+	   e.iMasterId AssetNameId 
+	   from vuCore_ComponentPartIssuetoParentID_General_Details a with(nolock)
+	left join vCore_AssetsCreation b with(nolock) on a.AssetIDNo=b.iMasterId
+	left join vCore_AssetAllocation c with(nolock) on b.iMasterId=c.AssetIDNo
+	left join vCore_StaffName d with(nolock) on c.StaffName=d.iMasterId
+	left join vCore_Product e with(nolock) on b.ProductName=e.iMasterId
+	left join vCore_SubCategoryA f with(nolock) on b.SubCategoryA=f.iMasterId
+	left join vCore_Account g with(nolock) on b.SupplierName=g.iMasterId
+	left join vCore_Product h with(nolock) on a.ComponentsNames=h.iMasterId
+	left join vCore_ComponentAssetRegister i with(nolock) on a.ComponentAssetID=i.iMasterId 
+	where a.iMasterId>0
+
+union all
+
+select 
+      a.iMasterId,
+	  b.sCode [ASSET ID],
+	  d.sName [STAFF NAME],
+	  e.sName [ASSET NAME],
+	  f.sName [ASSET SUB CATEGORY A],
+	  g.sName [SupplierName],
+	  b.PurchaseDate [$Date$PO Date],
+	  b.InvoiceDate[$Date$Invoice Date],
+	  dbo.fCrm_GetNumberListValue('1,NEW ASSET,2,ACTIVE ASSET,3,STOCK IN HAND,4,SERVICE,5,TRANSFER (TEMPORARY),6,TRANSFER (PERMANENT),7,SCRAP,8,Verified from Focus',b.AssetStatus) [Asset Status],
+	  b.WarrantyExpiry [$Date$Warranty Expiry],
+	  h.sName [ITEM NAME],
+	  i.sCode [ComponentAssetID],
+	  a.Date [$Date$Issue Date],
+	  i.sName [ITEM SERIAL NUMBER],
+	  a.Qty,
+	  a.Remarks,
+	  dbo.fCrm_GetNumberListValue ('1,Active,2,In-Active,3,N/A',a.PurposeStatus) [Status],
+	  b.iMasterId AssetId,
+	  d.iMasterId StaffId,
+	  e.iMasterId AssetNameId 
+	  from vuCore_ComponentPartReturnfromParentID_General_Details a with(nolock)
+		left join vCore_AssetsCreation b with(nolock) on a.AssetIDNo=b.iMasterId
+		left join vCore_AssetAllocation c with(nolock) on b.iMasterId=c.AssetIDNo
+		left join vCore_StaffName d with(nolock) on c.StaffName=d.iMasterId
+		left join vCore_Product e with(nolock) on b.ProductName=e.iMasterId
+		left join vCore_SubCategoryA f with(nolock) on b.SubCategoryA=f.iMasterId
+		left join vCore_Account g with(nolock) on b.SupplierName=g.iMasterId
+		left join vCore_Product h with(nolock) on a.ComponentsNames=h.iMasterId
+		left join vCore_ComponentAssetRegister i with(nolock) on a.ComponentAssetID=i.iMasterId 
+		where a.iMasterId>0
+

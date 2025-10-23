@@ -1,0 +1,55 @@
+
+Create or alter function fCore_Var18 (@s xml)
+returns decimal(18,2)
+as
+Begin
+Declare @fRet decimal(18,2),@CustomerPriceGroup int,@Product int,@Customer int,@iDate bigint,@AccountCode varchar(max),@ProductCode varchar(Max)  
+
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')
+select @iDate=dbo.fCore_DateToInt(GETDATE())
+
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer  
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product 
+
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int 
+
+select top 1 @ProdId=iMasterId from Focus8030..vCore_Product  with(nolock) where sCode=@ProductCode   
+select top 1 @AccId=iMasterId from Focus8030..vCore_Account  with(nolock) where sCode=@AccountCode 
+
+select top 1 @Prodgroup=pp.iMasterId from Focus8030..vmCore_Product p  with(nolock) join Focus8030..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId where p.iMasterId=@ProdId
+
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8030..mCore_Account ma  with(nolock) 
+join Focus8030..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId 
+left outer join Focus8030..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup 
+where ma.iMasterId=@AccId
+
+	set @fRet=0
+	set @fRet=Focus8030.dbo.fn_GetSellingRate(@AccId,@Prodgroup,@CustPriceGroup,@iDate,0,0,0,0,0)---Customer Price Group and ITem Group
+	--ERPCustomer
+	--ERPPriceGroup
+	--ERPItemGroup
+	--ERPItem
+	if(@fRet=0)--Customer Price Group and ITem
+	Begin
+		set @fRet=Focus8030.dbo.fn_GetSellingRate(@AccId,@ProdId,@CustPriceGroup,@iDate,0,0,0,0,0)
+	End
+	if(@fRet=0)--Customer and ITem Group
+	Begin
+		set @fRet=Focus8030.dbo.fn_GetSellingRate(@AccId,@Prodgroup,@CustomerPriceGroup,@iDate,0,0,0,0,0)
+	End
+	if(@fRet=0)--Customer and Item
+	Begin
+		set @fRet=Focus8030.dbo.fn_GetSellingRate(@AccId,@ProdId,0,@iDate,0,0,0,0,0)
+	End
+	if(@fRet=0)--ITem Group
+	Begin
+		set @fRet=Focus8030.dbo.fn_GetSellingRate(0,@Prodgroup,@CustomerPriceGroup,@iDate,0,0,0,0,0)
+	End
+	if(@fRet=0)--ITem
+	Begin
+		set @fRet=Focus8030.dbo.fn_GetSellingRate(0,@ProdId,0,@iDate,0,0,0,0,0)
+	End
+	return @fRet
+End

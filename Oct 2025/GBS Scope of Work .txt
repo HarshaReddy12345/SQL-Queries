@@ -1,0 +1,203 @@
+ALTER FUNCTION dbo.DecimalTimeSubtract
+(
+    @Time1Input NVARCHAR(50),
+    @Time2Input NVARCHAR(50)
+)
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @Time1 DECIMAL(10,2);
+    DECLARE @Time2 DECIMAL(10,2);
+
+    DECLARE @H1 INT; DECLARE @M1 INT;
+    DECLARE @H2 INT; DECLARE @M2 INT;
+    DECLARE @ResultH INT; DECLARE @ResultM INT;
+    DECLARE @Result DECIMAL(10,2);
+    DECLARE @IsNegative BIT = 0;
+
+    -- Safe convert inputs
+    SET @Time1 = TRY_CAST(@Time1Input AS DECIMAL(10,2));
+    SET @Time2 = TRY_CAST(@Time2Input AS DECIMAL(10,2));
+
+    IF @Time1 IS NULL SET @Time1 = 0.00;
+    IF @Time2 IS NULL SET @Time2 = 0.00;
+
+    -- Break into hours/minutes
+    SET @H1 = FLOOR(@Time1);
+    SET @M1 = ROUND((@Time1 - @H1) * 100, 0);
+
+    SET @H2 = FLOOR(@Time2);
+    SET @M2 = ROUND((@Time2 - @H2) * 100, 0);
+
+    -- Determine if result should be negative (Time2 > Time1)
+    IF @H2 > @H1 OR (@H2 = @H1 AND @M2 > @M1)
+    BEGIN
+        SET @IsNegative = 1;
+        
+        -- YOUR SPECIFIC LOGIC: (H2 - H1) hours minus M2 minutes
+        SET @ResultH = @H2 - @H1;
+        
+        -- Convert the hours to minutes, subtract the M2 minutes, then convert back
+        DECLARE @TotalMinutes INT = (@ResultH * 60) - @M2;
+        SET @ResultH = @TotalMinutes / 60;
+        SET @ResultM = @TotalMinutes % 60;
+    END
+    ELSE
+    BEGIN
+        -- NORMAL CASE: Time1 >= Time2
+        IF @M1 >= @M2
+        BEGIN
+            SET @ResultM = @M1 - @M2;
+            SET @ResultH = @H1 - @H2;
+        END
+        ELSE
+        BEGIN
+            -- Borrow 1 hour (60 minutes)
+            SET @ResultH = @H1 - @H2 - 1;
+            SET @ResultM = 60 + @M1 - @M2;
+        END
+    END
+
+    SET @Result = @ResultH + (@ResultM / 100.0);
+    
+    -- Apply negative sign if needed - FIXED: Always apply when IsNegative = 1
+    IF @IsNegative = 1
+        SET @Result = -1 * ABS(@Result);  -- Use ABS to ensure negative sign
+
+    RETURN @Result;
+END
+
+go
+
+CREATE FUNCTION dbo.NormalizeDecimalTime(@DecimalTime DECIMAL(10,2))
+RETURNS DECIMAL(10,2)
+AS
+BEGIN
+    DECLARE @Hours INT = FLOOR(@DecimalTime);
+    DECLARE @Minutes DECIMAL(10,2) = (@DecimalTime - @Hours) * 100;
+    
+    -- Convert excess minutes to hours
+    SET @Hours = @Hours + FLOOR(@Minutes / 60);
+    SET @Minutes = @Minutes % 60;
+    
+    RETURN @Hours + (@Minutes / 100);
+END
+
+go
+
+ALTER VIEW nCore_ScopeOfWork as
+WITH detailed_tasks AS (
+    SELECT 
+        a.iMasterId, 
+        a.sName AS [Sub Project], 
+        c.sName AS [Task], 
+        e.sName AS [Staff Name], 
+        ISNULL(a.PlannedHours, 0.00) AS [Budget Hours], 
+        ISNULL(b.sName, '') AS [Time Sheet], 
+        CASE 
+            WHEN a.iMasterId = b.SubProject 
+                 AND a.StaffName = b.iStaffName 
+                 AND (a.Task = b.Tasks OR (ISNULL(a.Task,0) <> 0 AND ISNULL(b.Tasks,0) = 0)) 
+            THEN (TRY_CAST(LEFT(dbo.fCore_IntToTime(b.Time1), 2) AS INT) * 60)
+                 + TRY_CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) 
+            ELSE 0 
+        END AS TimeMinutes,
+        CASE WHEN ROW_NUMBER() OVER (PARTITION BY c.sName ORDER BY e.sName) = 1 
+             THEN ISNULL(a.PlannedHours, 0.00) ELSE 0.00 END AS [BudHrs]
+    FROM vuCore_SubProject_TaskAllocation_Details a WITH (NOLOCK)
+    LEFT JOIN vuCore_Timesheet_TimeandAttendanceInformation_Details b WITH (NOLOCK) 
+        ON a.iMasterId = b.SubProject 
+        AND a.Task = b.Tasks 
+        AND a.StaffName = b.iStaffName
+    LEFT JOIN vCore_TaskTemplate c WITH (NOLOCK) ON a.Task = c.iMasterId
+    LEFT JOIN vCrm_Users e WITH (NOLOCK) ON a.StaffName = e.iMasterId
+    WHERE a.iMasterId>0 --and a.iMasterId = 318
+),
+
+task_data AS (
+    SELECT 
+        iMasterId, 
+        [Sub Project], 
+        [Task], 
+        [Staff Name], 
+        [Time Sheet], 
+        SUM([Budget Hours]) AS [Budget Hours], 
+        SUM(TimeMinutes) AS TotalMinutes,
+        SUM([BudHrs]) AS [Budget Hours1],
+        1 AS SortOrder
+    FROM detailed_tasks
+    GROUP BY iMasterId, [Sub Project], [Task], [Staff Name], [Time Sheet]
+    
+    UNION ALL
+    
+    SELECT 
+        a.iMasterId, 
+        a.sName AS [Sub Project], 
+        'Blank' AS [Task], 
+        e.sName AS [Staff Name], 
+        ISNULL(b.sName, '') AS [Time Sheet], 
+        0.00 AS [Budget Hours], 
+        SUM(CASE WHEN a.iMasterId = b.SubProject 
+                      AND a.StaffName = b.iStaffName 
+                      AND ISNULL(b.Tasks,0) = 0 
+                 THEN (TRY_CAST(LEFT(dbo.fCore_IntToTime(b.Time1), 2) AS INT) * 60)
+                      + TRY_CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) 
+                 ELSE 0 END) AS TotalMinutes,
+        0.00 AS [Budget Hours1],
+        2 AS SortOrder
+    FROM vuCore_SubProject_TaskAllocation_Details a WITH (NOLOCK)
+    LEFT JOIN vuCore_Timesheet_TimeandAttendanceInformation_Details b WITH (NOLOCK) 
+        ON a.iMasterId = b.SubProject AND a.StaffName = b.iStaffName
+    LEFT JOIN vCrm_Users e WITH (NOLOCK) ON a.StaffName = e.iMasterId
+    WHERE  a.iMasterId >0 --and a.iMasterId = 318
+    GROUP BY a.iMasterId, a.sName, e.sName, ISNULL(b.sName, '')
+    HAVING SUM(CASE WHEN a.iMasterId = b.SubProject 
+                         AND a.StaffName = b.iStaffName 
+                         AND ISNULL(b.Tasks,0) = 0 
+                    THEN (TRY_CAST(LEFT(dbo.fCore_IntToTime(b.Time1), 2) AS INT) * 60)
+                         + TRY_CAST(SUBSTRING(dbo.fCore_IntToTime(b.Time1), 4, 2) AS INT) 
+                    ELSE 0 END) > 0
+),
+
+combined_data AS (
+    SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY [Time Sheet] ORDER BY SortOrder, iMasterId) AS RN,
+        -- FIXED: Proper decimal time conversion where 60 minutes = 1.00 hour
+        CAST(TotalMinutes / 60.0 AS DECIMAL(18,2)) AS [Actual Hours]
+    FROM task_data
+),
+
+project_totals AS (
+    SELECT DISTINCT
+        [Sub Project] AS pp,
+        iMasterId AS id,
+        -- FIXED: Proper decimal time conversion for totals where 60 minutes = 1.00 hour
+        CAST(SUM(TotalMinutes) OVER (PARTITION BY [Sub Project], iMasterId) / 60.0 AS DECIMAL(18,2)) AS OverAllSumTotal1
+    FROM combined_data
+    WHERE iMasterId > 0
+)
+
+SELECT 
+    -- FIXED: TotalSum with proper decimal conversion where 60 minutes = 1.00 hour
+    CAST(CASE WHEN a.RN = 1 
+         THEN SUM(a.TotalMinutes) OVER (PARTITION BY a.[Staff Name], a.[Time Sheet]) / 60.0
+         ELSE 0.00 END AS DECIMAL(18,2)) AS TotalSum,
+    
+    -- FIXED: OverAllSum with proper decimal conversion where 60 minutes = 1.00 hour  
+    CAST(SUM(a.TotalMinutes) OVER (PARTITION BY a.[Staff Name]) / 60.0 AS DECIMAL(18,2)) AS OverAllSum,
+    
+    a.iMasterId, 
+    a.[Sub Project], 
+    a.[Task], 
+    a.[Staff Name], 
+    a.[Time Sheet], 
+    a.[Budget Hours], 
+    a.TotalMinutes,
+    a.[Actual Hours],
+    a.SortOrder,
+    a.RN,
+    b.OverAllSumTotal1,
+    a.[Budget Hours1]
+FROM combined_data a
+LEFT JOIN project_totals b ON a.[Sub Project] = b.pp AND a.iMasterId = b.id
+GO

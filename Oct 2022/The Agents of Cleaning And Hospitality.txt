@@ -1,0 +1,17 @@
+select a.sName[TicketNo],b.sName[Location],c.sLoginName[CreatedBy],
+       iServiceId,e.sName[Status],f.sName[Service]  from vCrm_Calls a
+inner join 
+               vCore_Location b 
+               on a.iLocationId=b.iMasterId
+inner join 
+               mSec_Users c 
+               on b.iCreatedBy=c.iUserId
+inner join 
+               vCrm_CallServices d
+               on d.iCallId=a.iTransId
+left join
+               vCrm_ServiceStatus e
+               on d.iStatusId=e.iTransId
+left join     
+               vCrm_Services f
+               on  d.iStatusId=e.iTransId

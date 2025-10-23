@@ -1,0 +1,47 @@
+ALTER VIEW nCore_QuoteDubai as
+SELECT
+  a.iTransId,
+  a.sName [Quote No],
+  b.sName [Account],
+  b.sBillingAddress,
+  b.sBillingCity,
+  c.sName BillingCountry,
+  b.sBillingPinCode,
+  FORMAT(dbo.fCore_IntToDate(a.QuoteDate), 'dd/MM/yyy') [QuoteDate],
+  d.sName [Enquiry No],
+  e.sCode [Currency Code],
+  CASE f.iSalutation
+    WHEN 1 THEN 'Mr.'
+    WHEN 2 THEN 'Mrs.'
+    WHEN 3 THEN 'Miss'
+    WHEN 4 THEN 'Ms.'
+    WHEN 5 THEN 'Dr.'
+    WHEN 6 THEN 'Prof.'
+    WHEN 7 THEN 'Rev.'
+    WHEN 8 THEN 'Other'
+    WHEN 9 THEN 'Eng.'
+  END [Saluation],
+  f.sName [Contact],
+  b.sPhone,b.MobileNo,b.sEmail,b.TRNNo,
+  a.fTax [Vat],a.fGrandTotal [Total with tax],(a.fGrandTotal-a.fTax) [Without tax],
+  a.PaymentTerms,a.DeliveryTerms,a.Price,FORMAT(dbo.fCore_IntToDate(a.iExpiryDate),'dd/MM/yyyy') [Validity],
+  g.sName [SalesMan],i.sName [Designation],g.MobileNo [Smob]
+FROM vCrm_Quote a WITH (NOLOCK)
+JOIN vCore_Account b WITH (NOLOCK)
+  ON a.iAccount = b.iMasterId
+JOIN vCore_Country c WITH (NOLOCK)
+  ON b.iBillingCountry = c.iMasterId
+JOIN vCrm_Opportunities d WITH (NOLOCK)
+  ON a.iOpportunityId = d.iTransId
+JOIN vCrm_Currency e WITH (NOLOCK)
+  ON a.iCurrency = e.iMasterId
+JOIN vCrm_Contacts f WITH (NOLOCK)
+  ON a.iContactId = f.iMasterId
+JOIN vCore_SalesMan g WITH (NOLOCK)
+  ON a.Salesman=g.iMasterId
+JOIN mPay_Designation i WITH (NOLOCK)
+  ON g.Designation=i.iMasterId
+WHERE a.iTransId > 0
+
+
+================================================================

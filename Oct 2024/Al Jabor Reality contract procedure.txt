@@ -1,0 +1,181 @@
+ALTER Proc [dbo].[sp_ExtContract_RCT] (@iTransId as int)		-- @CrystalRepModule varchar(50)
+as    
+begin    
+
+----- Ibrahim -----
+Declare  @t_PostACNotIn Table (iAccountId int)
+Insert Into @t_PostACNotIn Values(410)
+Insert Into @t_PostACNotIn Values(411)
+
+-----
+
+
+Select *    
+--,Description = Case when tbl.RwType = 'I' then cast((tbl.Descr + ' ' + cast(tbl.SlNo as varchar(2))) as varchar(30)) else (tbl.Descr) end    
+into #Tbldata    
+ from (    
+Select ROW_NUMBER()     
+        OVER (ORDER BY a.Descr) AS SlNo,a.* from     
+(Select tc.sContractNumber RcptNo,a.sCode as TenantNo,a.sName TenantName ,a.TRNNo,    
+tc.sContractNumber,    
+FromDt = CASE WHEN LEN(tc.iLeaseStartDate)=9 then  Convert(varchar, dbo.IntToDate(tc.iLeaseStartDate),105) end ,    
+ToDt= CASE WHEN LEN(tc.iLeaseEndDate)=9 then  Convert(varchar,dbo.IntToDate(tc.iLeaseEndDate),105) end ,    
+pty.sName Property,    
+unt.sName Unit,    
+u.sFirstName PreparedBy,    
+'' TRN,    
+Descr ='Installment',    
+ChequeNumber='-', --tug.sChequeNumber,  
+ChequeDate ='', -- Convert(varchar,dbo.IntToDate(tug.iChequeDate),105),    
+DrawnBank='-', --tug.sBank ,    
+Amount=tug.NetAmount,    
+0 fRentPerAnum,    
+RentalVATAmount=tug.VatAmount,    
+RentVAT=TaxPercent,    
+RentalTaxCode=tug.TaxCode,    
+fAmount=tug.fAmount,    
+RwType='I',    
+PayMode = '-'  --Case when tug.TestPaymentMode = 1 then 'Cash' when tug.TestPaymentMode = 2 then 'CDC' when tug.TestPaymentMode = 3 then 'PDC' when tug.TestPaymentMode = 4 then 'BankTransfer' end    
+--1. Cash, 2. CDC, 3. PDC, 4. Bank Transfer    
+,CASE WHEN LEN(tu.DateofContract)=9 then  Convert(varchar,dbo.IntToDate(tu.DateofContract),105) end DateofContract,    
+'Company_Rental' Company,    
+'' CompanyAddress ,    
+ps.sName PlaceofSupply    
+, (Select Top (1) erp.sFocusVoucher From cCrm_TransMappings erp Where erp.iCrmTransId = tc.iTransId And erp.iModuleId = tc.iTypeId And erp.iMapperId =65 ) FocusVoucher     
+ , UsageType = ut.sName   
+from tCrm_PMSContract tc 
+inner join vCore_Account a on tc.iCustomerId = a.iMasterId    
+inner join tuCrm_PMSContract tu on tc.iTransId= tu.iTransId    
+inner join mCrm_Blocks pty on tu.Property = pty.iMasterId    
+inner join mCrm_PMSUnits unt on tu.HeaderUnit = unt.iMasterId    
+inner join mCrm_Users u on tc.iCreatedBy = u.iUserId    
+inner join tuCrm_PMSContract_General_Details tug on tc.iTransId = tug.iTransId    
+--inner join vCore_FinancialCompany fcomp on fcomp.iMasterId=tug.CompanyforRent    
+inner join mCore_PlaceofSupply ps on ps.iMasterId=tu.PlaceofSupply    
+ inner join mCore_UsageType ut on ut.iMasterId = tu.UsageType  
+  
+where tc.iTransId  =@iTransId
+and tc.iTransStatus =0    
+and tug.fAmount < 0    
+)a   
+    
+union all    
+    
+Select SlNo =0,tc.sContractNumber RcptNo,a.sCode as TenantNo,a.sName TenantName , a.TRNNo,    
+tc.sContractNumber,    
+FromDt = CASE WHEN LEN(tc.iLeaseStartDate)=9 then  Convert(varchar, dbo.IntToDate(tc.iLeaseStartDate),105) end ,    
+ToDt= CASE WHEN LEN(tc.iLeaseEndDate)=9 then  Convert(varchar,dbo.IntToDate(tc.iLeaseEndDate),105) end ,      
+pty.sName Property,unt.sName Unit,u.sFirstName PreparedBy,'' TRN,    
+Descr =p.sName,    
+ChequeNumber=oth.ChequeNoOC,  
+ChequeDateOC = CASE WHEN LEN(oth.ChequeDateOC)=9 then Convert(varchar,dbo.IntToDate(oth.ChequeDateOC),105) end,  
+DrawnBank=oth.BankNameOC ,    
+Amount=oth.NetAmountOC,    
+fRentPerAnum,    
+VATAmount=oth.VATAMOUNTOCTEST3    
+,VAT=oth.VatPercentOC,    
+TaxCode=oth.ChargeTypeNew2,    
+Amount=oth.AmountOC,    
+    
+RwType='O',    
+PayMode = Case when oth.PaymentModeTest = 1 then 'Cash' when oth.PaymentModeTest = 2 then 'CDC'  when oth.PaymentModeTest = 3 then 'PDC'  end    
+,CASE WHEN LEN(tu.DateofContract)=9 then  Convert(varchar,dbo.IntToDate(tu.DateofContract),105) end DateofContract,    
+'Company_Other' Company,    
+'' CompanyAddress,    
+ps.sName PlaceofSupply    
+, (Select Top (1) erp.sFocusVoucher From cCrm_TransMappings erp Where erp.iCrmTransId = tc.iTransId And erp.iModuleId = tc.iTypeId And erp.iMapperId =69 ) FocusVoucher     
+  , UsageType = ut.sName   
+-- 1. Cash, 2. CDC, 3. PDC    
+from tCrm_PMSContract tc inner join vCore_Account a on tc.iCustomerId = a.iMasterId    
+inner join tuCrm_PMSContract tu on tc.iTransId= tu.iTransId    
+--inner join tuCrm_PMSContract tu1 on tc.iTransId= tu1.TRN    
+inner join mCrm_Blocks pty on tu.Property = pty.iMasterId    
+inner join mCrm_PMSUnits unt on tu.HeaderUnit = unt.iMasterId    
+inner join mCrm_Users u on tc.iCreatedBy = u.iUserId    
+inner join tuCrm_PMSContract_Other_Charges_Details oth on tc.iTransId = oth.iTransId    
+inner join mCore_PostingAccounts p on oth.OtherAccounts = p.iMasterId    
+--inner join vCore_FinancialCompany fcomp on fcomp.iMasterId=oth.CompanyforOtherChrgs    
+inner join mCore_PlaceofSupply ps on ps.iMasterId=tu.PlaceofSupply    
+inner join mCore_UsageType ut on ut.iMasterId = tu.UsageType  
+    
+    
+--where tc.sContractNumber = @ContractNo    
+where tc.iTransId  =@iTransId 
+and tc.iTransStatus =0    
+and p.sName <> ''    
+And p.iMasterId In (Select iAccountId From @t_PostACNotIn)		---Ibrahim
+)tbl		
+    
+select 0 [SlNo]  
+  , RcptNo  
+  , TenantNo  
+  , TenantName  
+  , TRNNo  
+  , sContractNumber  
+  , FromDt  
+  , ToDt  
+  , Property  
+  , Unit  
+  , PreparedBy  
+  , TRN  
+  , Descr  
+  , ChequeNumber  
+  , ChequeDate  
+  , DrawnBank  
+  , SUM(Amount) [Amount]  
+  , SUM(fRentPerAnum) [fRentPerAnum]  
+  , SUM(RentalVATAmount) [RentalVATAmount]  
+  , RentVAT  
+  , RentalTaxCode  
+  , SUM(fAmount) [fAmount]  
+  , RwType  
+  , PayMode  
+  , DateofContract  
+  , Company  
+  , CompanyAddress  
+  , PlaceofSupply  
+  , FocusVoucher  
+    
+  
+   --*     
+  --,Description = Case when tbl.RwType = 'I' then cast((tbl.Descr + ' ' + cast(tbl.SlNo as varchar(2))) as varchar(30)) else (tbl.Descr) end    
+  ,Case when tbl.RwType = 'I' then cast(('Annual Rent') as varchar(30)) else (tbl.Descr) end  [Description]  
+  ,dbo.fnMoneyToEnglish(isnull((select sum(Amount) from #Tbldata where Company=tbl.Company),0)) [AmtInWords]  
+  , 1 [Quantity]  
+  , UsageType  
+  --, FocusVoucher
+      
+	  --, @CrystalRepModule [RptMod]
+
+from #Tbldata tbl    
+Group By  RcptNo  
+  , TenantNo  
+  , TenantName  
+  , TRNNo  
+  , sContractNumber  
+  , FromDt  
+  , ToDt  
+  , Property  
+  , Unit  
+  , PreparedBy  
+  , TRN  
+  , Descr  
+  , ChequeNumber  
+  , ChequeDate  
+  , DrawnBank  
+  , RentVAT  
+  , RentalTaxCode  
+  , RwType  
+  , PayMode  
+  , DateofContract  
+  , Company  
+  , CompanyAddress  
+  , PlaceofSupply  
+  , FocusVoucher  
+  , UsageType  
+--select * from tuCrm_PMSContract    
+end    
+  
+GO
+
+

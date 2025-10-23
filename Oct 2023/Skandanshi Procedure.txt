@@ -1,0 +1,19 @@
+CREATE  OR ALTER PROCEDURE udp_Quote_Grid (@iTransId bigint,@iUserId int=0)
+as
+BEGIN
+SELECT @iTransId =dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+UPDATE b
+SET TotalAmount = (
+    SELECT SUM(a.fAmount)
+    FROM vuCrm_Quote_General_Details a WITH (NOLOCK)
+    WHERE a.WorkType = b.Room AND a.iTransId = @iTransId
+)
+FROM vuCrm_Quote_Discount_Details b WITH(NOLOCK)
+WHERE EXISTS (
+    SELECT 1
+    FROM vuCrm_Quote_General_Details a WITH(NOLOCK)
+    WHERE a.WorkType = b.Room AND a.iTransId = @iTransId
+)
+
+END
