@@ -1,0 +1,20 @@
+CREATE PROC [dbo].[udp_InvSBGrid] @iTransId int
+as
+begin
+select  a.iMasterId,b.MaterialDescription [Type of Material],sum(a.Quantity) [Qty],MAX(a.UnitPrice) [Unit Price],sum(a.GrossAmount) [Taxable Amount],MAX(a.VAT) [Vat per],SUM(a.VATAmount) [Vat AMount],sum(a.NetAmount) [Total] from vuCore_InvoiceSB_ProductInformation_Details a with(nolock)
+left join vCore_Material b with(nolock) on a.TypeofMaterial=b.iMasterId
+where a.iMasterId=@iTransId
+group by a.iMasterId,b.MaterialDescription
+
+end
+go
+CREATE PROC [dbo].[udp_InvSBHeader] @iTransId int
+as
+begin
+select a.iMasterId,a.sName [Invoice No],FORMAT(dbo.fCore_IntToDate(a.[Date]),'dd/MM/yyyyy') [Invoice Date],c.sName [SO No],c.LPORefNo,b.TRN,b.sCode [Customer Code],b.sName [Customer Name],sBillingAddress,sBillingCity,sBillingPinCode,b.sEmail,d.sName [Deli Location],a.TotalGrossAmount,a.TotalVATAmount,a.TotalLocalNetAmount,AmtInWords=dbo.fnMoneyToEnglish(a.TotalLocalNetAmount,e.sCoinsName,'Only'),a.PaymentTerms from vCore_InvoiceSB a with(nolock)
+left join vCore_Account b with(nolock) on a.AccountName=b.iMasterId
+left join vCore_LPO c with(nolock) on a.LPONo=c.iMasterId
+left join vCore_Location d with(nolock) on a.DeliveryLocation=d.iMasterId
+left join vCrm_Currency e with(nolock) on a.TransactionCurrency=e.iMasterId
+where a.iMasterId=@iTransId
+end

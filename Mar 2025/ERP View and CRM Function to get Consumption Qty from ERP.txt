@@ -1,0 +1,35 @@
+ERP View
+================================
+CREATE  VIEW ERP_JobNo
+as
+select h.sVoucherNo, v.Base, v.Balance,f.sName [Job Card],f.sCode [Job Card Code],f.iMasterId [JobId],i.sName [Item],i.sCode [Item Code],i.iMasterId [ItemId] from tCore_Header_0 h with(nolock)
+ join tCore_Data_0 d with(nolock) on d.iHeaderId = h.iHeaderId 
+ join tCore_Data_Tags_0 e with(nolock) on d.iBodyId=e.iBodyId
+ join vCore_Links520426755_0 v with(nolock) on v.iRefId = d.iTransactionId 
+ join vCore_jobno f with(nolock) on e.iTag3014=f.iMasterId
+ join tCore_Indta_0 g with(nolock) on e.iBodyId=g.iBodyId
+ join vCore_Product i with(nolock) on g.iProduct=i.iMasterId
+where h.iHeaderId>0 --and h.sVoucherNo='PR2400576'
+--and f.sName='JC-00852' and i.sCode='200400880'
+
+
+
+
+
+CRM FUNCTION
+=================================
+CREATE FUNCTION dbo.fCore_Var9(@s xml)
+returns Decimal(18,2)
+as
+begin
+DECLARE @JobNo int,@Product int,@fRet decimal(18,2)
+select @JobNo=@s.value('(/Fields/Header/jrno)[1]','int')
+select @Product=@s.value('(/Fields/BodyData/BodyRow/PartsName)[1]','int')
+
+declare @Prod varchar(500),@Job varchar(500)
+select @Job=sName from vCrm_Calls with(nolock) where iTransId=@JobNo
+select @Prod=sCode from vCore_Product with(nolock) where iMasterId=@Product
+select @fRet= SUM(Balance) from focus8010..ERP_JobNo with(nolock) where [Job Card Code]=@Job and [Item Code]=@Prod
+return @fRet
+end
+

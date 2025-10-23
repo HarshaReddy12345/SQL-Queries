@@ -1,0 +1,399 @@
+Create  or alter view TargetModuleData as
+
+select 
+  * 
+from 
+  (
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ) [From Date], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+ TB.iAssignedDate [$Date$iAssignedDate],
+      '10.Jan' [Month], 
+      'Q4' [Quarter], 
+      'H2' [Yearhalf], 
+      TB.JanQty [Qty], 
+      TB.JanuaryActual [Actual], 
+      TB.Jan [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	  U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+   
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+      
+         TB.iAssignedDate [$Date$iAssignedDate], 
+		 
+      '11.Feb' [Month], 
+      'Q4' [Quarter], 
+      'H2' [Yearhalf], 
+      TB.FebQty [Qty], 
+      TB.FebruaryActual [Actual], 
+      TB.Feb [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	  U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock)       
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+   
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+ TB.iAssignedDate [$Date$iAssignedDate], 
+      '12.Mar' [Month], 
+      'Q4' [Quarter], 
+      'H2' [Yearhalf], 
+      TB.MarQty [Qty], 
+      TB.MarchActual [Actual], 
+      TB.Mar [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock)       
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+   
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+  TB.iAssignedDate [$Date$iAssignedDate],
+      '01.Apr' [Month], 
+      'Q1' [Quarter], 
+      'H1' [Yearhalf], 
+      TB.AprQty [Qty], 
+      TB.Actual [Actual], 
+      TB.Apr [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+   
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+   
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+ TB.iAssignedDate [$Date$iAssignedDate],
+      '02.May' [Month], 
+      'Q1' [Quarter], 
+      'H1' [Yearhalf], 
+      TB.MayQty [Qty], 
+      TB.MayActual [Actual], 
+      TB.May [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+       
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+   
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+ TB.iAssignedDate [$Date$iAssignedDate], 
+      '03.June' [Month], 
+      'Q1' [Quarter], 
+      'H1' [Yearhalf], 
+      TB.JunQty [Qty], 
+      TB.JuneActual [Actual], 
+      TB.Jun [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved, 
+	  U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+      
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+	  left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+  
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+ TB.iAssignedDate [$Date$iAssignedDate],
+      '04.July' [Month], 
+      'Q2' [Quarter], 
+      'H1' [Yearhalf], 
+      TB.JulQty [Qty], 
+      TB.JulyActual [Actual], 
+      TB.Jul [Target],
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+       
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join  vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+  TB.iAssignedDate [$Date$iAssignedDate], 
+      '05.August' [Month], 
+      'Q2' [Quarter], 
+      'H1' [Yearhalf], 
+      TB.AugQty [Qty], 
+      TB.AugActual [Actual], 
+      TB.Aug [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+      
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+   
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+ TB.iAssignedDate [$Date$iAssignedDate], 
+      '06.Sep' [Month], 
+      'Q2' [Quarter], 
+      'H1' [Yearhalf], 
+      TB.SepQty [Qty], 
+      TB.Septembr [Actual], 
+      TB.Sep [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+      
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+   
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+  TB.iAssignedDate [$Date$iAssignedDate], 
+      '07.Oct' [Month], 
+      'Q3' [Quarter], 
+      'H2' [Yearhalf], 
+      TB.OctQty [Qty], 
+      TB.OctoberActual [Actual], 
+      TB.Oct [Target],
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+    
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+ TB.iAssignedDate [$Date$iAssignedDate],
+      '08.Nov' [Month], 
+      'Q3' [Quarter], 
+      'H2' [Yearhalf], 
+      TB.NovQty [Qty], 
+      TB.NovemberActual [Actual], 
+      TB.Nov [Target],
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+     
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+  
+    union all 
+    select 
+      P.sCode [Product Name], 
+      V.sName [Verticle], 
+      U.sName [Sales Person], 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.FromDate), 
+        103
+      ), 
+      convert(
+        varchar(10), 
+        dbo.IntToDate(TB.ToDate), 
+        103
+      ) [To Date], 
+      TB.sName [Target No.], 
+ TB.iAssignedDate [$Date$iAssignedDate], 
+      '09.Dec' [Month], 
+      'Q3' [Quarter], 
+      'H2' [Yearhalf], 
+      TB.DecQty [Qty], 
+      TB.DecemberActual [Actual], 
+      TB.Dec [Target] ,
+	  TB.TotalTarget,
+	  TB.TotalAchieved,
+	   U.iMasterId
+    from 
+      vuCore_TargetModule_Product_Details TB with(nolock) 
+      
+      left join vCore_Product P with(nolock) on TB.ProductName = P.iMasterId 
+      left join vCrm_Vertical V with(nolock) on TB.Vertical = V.iMasterId 
+      left join vCrm_Users U with(nolock) on TB.Salesperson = U.iMasterId 
+   
+  ) a

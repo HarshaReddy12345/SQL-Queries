@@ -1,0 +1,40 @@
+CREATE OR ALTER PROC udp_StatusFromReqToJobCard @iTransId BIGINT,@iUserId INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+
+    DECLARE @Status INT, @JobCard INT, @ServiceName INT;
+
+    SELECT  @Status = iStatusId, @JobCard = JobCardNo,@ServiceName = ServiceName FROM vCrm_Calls WITH(nolock) WHERE iTransId = @iTransId;
+
+    -- Update the service status of the matching job card line item (only for MainCategory=2)
+    UPDATE vuCore_JobCard_ProductGrid_Details SET ServiceStatus = @Status WHERE iMasterId = @JobCard AND PartsServiceName = @ServiceName 
+    AND MainCategory = 2;
+
+    -- Check if all line items are resolved (i.e., ServiceStatus = 59)
+    IF NOT EXISTS (
+        SELECT 1 FROM vuCore_JobCard_ProductGrid_Details WITH(nolock) WHERE iMasterId = @JobCard  AND ISNULL(ServiceStatus, 0) <> 59 AND MainCategory = 2)
+    BEGIN
+        UPDATE vCore_JobCard SET JobCardStatus = 3 WHERE iMasterId = @JobCard;
+    END
+END
+
+
+go
+
+CREATE OR ALTER PROC [dbo].[SetPartRequestNo] @iTransId BIGINT,@iUserId INT = 0
+AS 
+BEGIN
+
+    SET @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+
+    UPDATE JC SET JC.PartRequest = PR.iMasterId
+    FROM vuCore_JobCard_General_Details JC WITH(nolock)
+    INNER JOIN vuCore_PartRequest_General_Details PR WITH(nolock) ON JC.iMasterId = PR.JobCardNo and JC.iMasterId = PR.JobCardNo 
+    AND JC.PartsServiceName = PR.PartName 
+    WHERE PR.iMasterId = @iTransId
+    
+END
+

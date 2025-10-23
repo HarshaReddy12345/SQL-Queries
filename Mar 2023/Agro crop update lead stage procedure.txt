@@ -1,0 +1,13 @@
+create or alter Procedure A_UpdateModule(@iMasterId bigint,@iUserId int)
+as 
+begin
+	select @iMasterId = dbo.fCrm_IntToAPITransId(@iMasterId,0)
+	update b set b.LeadStage=2 from vCrm_Tasks a 
+	inner join vaCrm_Leads b on a.iRelatedToType=b.iTypeId and a.iRelatedTo=b.iTransId
+	where a.iTransId>0 and b.iTransStatus<>5 and a.iTransId=@iMasterId
+
+end
+
+
+select * into cCrm_LayoutActions01032023 from cCrm_LayoutActions 
+delete cCrm_LayoutActions where iChildModuleTypeId=2572 and iActionId in (5,22,47,48)

@@ -1,0 +1,21 @@
+  
+ALTER  procedure [dbo].[exp_erpbodyid_1](@iTransId bigint,@iUserId int)                      
+as                      
+begin           
+   DECLARE @ERPBody2 varchar(20)
+    select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0) 
+	
+	set @ERPBody2= (select top 1 b.i3PBodyId_14   
+   from muCore_invoice a with (nolock)      
+   left join muCore_Invoice_Finance_Details b with(nolock)      
+   on  a.iMasterId= b.iMasterId  where a.iMasterId=@iTransId)
+
+  update a set a.ERPBody2=@ERPBody2   
+   from muCore_invoice a with (nolock)      
+   left join muCore_Invoice_Finance_Details b with(nolock)      
+   on  a.iMasterId= b.iMasterId  where a.iMasterId=@iTransId   
+         
+            
+END; 
+
+exec [dbo].[exp_erpbodyid_1] 173177481568715303,0

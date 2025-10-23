@@ -1,0 +1,82 @@
+CREATE OR ALTER PROC udp_DuplicateSubRFNo
+    @iTransId BIGINT,
+    @iUserId INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    -- Convert TransId
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+
+    DECLARE @FromRf VARCHAR(100), 
+            @ToRf VARCHAR(100), 
+            @Duplicate NVARCHAR(MAX), 
+            @DuplicateText NVARCHAR(MAX), 
+            @name VARCHAR(MAX);
+
+    -- Get current FromRf, ToRf, and sName
+    SELECT 
+        @FromRf = b.sName,
+        @ToRf = c.sName,
+        @name = a.sName
+    FROM vCore_Allocations a WITH (NOLOCK)
+    JOIN vCore_SubRFNumber b WITH (NOLOCK) ON a.FromSubRFNo = b.iMasterId
+    JOIN vCore_SubRFNumber c WITH (NOLOCK) ON a.ToSubRFNo = c.iMasterId
+    WHERE a.iMasterId = @iTransId;
+
+    -- Check for duplicates
+    IF EXISTS (
+        SELECT TOP 1 1
+        FROM vCore_Allocations a WITH (NOLOCK)
+        JOIN vCore_SubRFNumber b WITH (NOLOCK) ON a.FromSubRFNo = b.iMasterId
+        JOIN vCore_SubRFNumber c WITH (NOLOCK) ON a.ToSubRFNo = c.iMasterId
+        WHERE a.iMasterId <> @iTransId
+          AND b.sName between b.sName AND c.sName 
+        ORDER BY a.iCreatedDate DESC
+    )
+    BEGIN
+        SELECT TOP 1 @Duplicate = a.sName
+        FROM vCore_Allocations a WITH (NOLOCK)
+        JOIN vCore_SubRFNumber b WITH (NOLOCK) ON a.FromSubRFNo = b.iMasterId
+        JOIN vCore_SubRFNumber c WITH (NOLOCK) ON a.ToSubRFNo = c.iMasterId
+        WHERE a.iMasterId <> @iTransId
+          AND b.sName between b.sName AND c.sName 
+        ORDER BY a.iCreatedDate DESC
+
+        SET @DuplicateText = 'Duplicate SubRfNo Used On:';
+        RAISERROR('%s:- %s', 16, 1, @DuplicateText, @Duplicate);
+    END
+END
+-----------------------------------------------------------------------------------------------------------
+
+SELECT 
+  b.sName AS [Owner],
+  c.sName AS [From SubRF No],  
+  d.sName AS [To SubRF No],
+  FORMAT(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy')  [Created Date],
+  e.sName AS [RF Number],
+  f.sName AS [Customer],
+  a.Discription AS [Description],
+  FORMAT(dbo.fCore_IntToDate(a.CDD),'dd/MM/yyyy') AS [CDD],
+  a.Week AS [Week],
+  FORMAT(dbo.fCore_IntToDate(a.DesignInput),'dd/MM/yyyy')  [Design Input],
+  FORMAT(dbo.fCore_IntToDate(a.CBOM),'dd/MM/yyyy') AS [CBOM],
+  FORMAT(dbo.fCore_IntToDate(a.GADrg),'dd/MM/yyyy') AS [GA Drg Submission Date],
+  FORMAT(dbo.fCore_IntToDate(a.ReleaseDate),'dd/MM/yyyy') AS [MfgDrg Release Date],
+  g.sName AS [Coordinator],
+  h.sName AS [Marketing Region],
+  ISNULL(CASE WHEN c.sName<>'' and d.sName<>'' then (CAST(d.sName as int)-CAST(c.sName as int))+1 else '' end ,'') [Difference]
+FROM vCore_Allocations a WITH (NOLOCK) 
+INNER JOIN vCrm_Users b WITH (NOLOCK) ON a.iAssignedTo = b.iMasterId  
+JOIN vCore_SubRFNumber c WITH (NOLOCK) ON a.FromSubRFNo = c.iMasterId 
+JOIN vCore_SubRFNumber d WITH (NOLOCK) ON a.ToSubRFNo = d.iMasterId
+INNER JOIN vCore_RFNumber e WITH (NOLOCK) ON a.RFno = e.iMasterId 
+INNER JOIN vCore_Account f WITH (NOLOCK) ON a.CUSTOUMER = f.iMasterId  
+INNER JOIN vCrm_Users g WITH (NOLOCK) ON a.Coordinator = g.iMasterId  
+INNER JOIN vCore_Location h ON a.iLocation = h.iMasterId  
+
+WHERE 
+  a.iMasterId > 0   
+AND dbo.fCrm_DateFromBigInt(a.iCreatedDate) BETWEEN @STARTDATE  AND @ENDDATE
+
+

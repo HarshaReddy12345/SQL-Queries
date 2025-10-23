@@ -1,0 +1,18 @@
+CREATE function GetDatesFromDateRange(@STARTDATE date,@ENDDATE date)
+Returns @RecursionCTE Table ([date] date,dateint int)
+
+
+as
+			begin
+				with RecursionCTE (date ,dateint  )
+				as
+				(
+			SELECT @STARTDATE,dbo.fCore_DateToInt(@STARTDATE) 
+			UNION ALL
+			SELECT DateAdd(day,1,RecursionCTE.date),dbo.fCore_DateToInt(DateAdd(day,1,RecursionCTE.date)) FROM RecursionCTE WHERE RecursionCTE.date < @ENDDATE
+				)
+
+			insert into @RecursionCTE
+			select [date] ,dateint from RecursionCTE OPTION (MAXRECURSION 0)
+            RETURN
+			End

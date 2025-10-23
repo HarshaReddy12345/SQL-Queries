@@ -1,0 +1,18 @@
+select 'Account with Activities' [Type],CASE WHEN COUNT(a.iRelatedTo)>=1 then 1 else 0 end [Account Count],a.iCreatedDate [$Datetime$Created Date],a.sDescription,b.sName [Account],c.sName [Assigned To],0 [Activities not created count]from vCrm_Activities a with(nolock)
+left join vCore_Account b with(nolock) on a.iRelatedTo=b.iMasterId
+left join vCrm_Users c with(nolock) on a.iAssignedTo=c.iMasterId
+where iTransId>0 and iRelatedToType=2305
+and a.iCreatedDate between @STARTDATETIME and @ENDDATETIME
+and (( 0 in (@Account) and isnull(b.iMasterId,0)  = isnull(b.iMasterId,0) ) or (0 not in (@Account) and isnull(b.iMasterId,0)   in ( @Account)))
+and (( 0 in (@AssignedTo) and isnull(c.iMasterId,0)  = isnull(c.iMasterId,0) ) or (0 not in (@AssignedTo) and isnull(c.iMasterId,0)   in ( @AssignedTo)))
+group by a.iCreatedDate,a.sDescription,b.sName,c.sName
+union all 
+
+select 'Account without Activities',0 [Account Count],0 [$Datetime$Created Date],a.sDescription, b.sName  [Account],c.sName [Assigned To],1 [Activities not created count] from vCore_Account b with(nolock)
+left join vCrm_Activities a with(nolock) on a.iRelatedTo = b.iMasterId and a.iRelatedToType = 2305
+left join vCrm_Users c with(nolock) on b.iAssignedTo=c.iMasterId
+where a.iTransId is null and b.iMasterId>0
+and b.iCreatedDate between @STARTDATETIME and @ENDDATETIME
+and (( 0 in (@Account) and isnull(b.iMasterId,0)  = isnull(b.iMasterId,0) ) or (0 not in (@Account) and isnull(b.iMasterId,0)   in ( @Account)))
+and (( 0 in (@AssignedTo) and isnull(c.iMasterId,0)  = isnull(c.iMasterId,0) ) or (0 not in (@AssignedTo) and isnull(c.iMasterId,0)   in ( @AssignedTo)))
+

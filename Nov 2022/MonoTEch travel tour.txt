@@ -1,0 +1,46 @@
+select 
+a.sCode,
+(a.TRDate)[$Date$TRDate],
+ISNULL(a.TravelStartTime,0)[$Date$TravelStartTime],
+ISNULL(a.TravelEndTime,0)[$Date$TravelEndTime],
+a.AdvanceAmuount,
+b.sName[TTR Employee],
+a.AdditionalAdvance,
+a.AdditionalAdvance2,
+a.PurposeofTravel,
+a.Location[RTravelLocation],
+c.sName[Vertical],
+d.sName[Branch],
+Remarks,
+a.TotalAdvanceamount,
+a.sCode[TravelTourRequestNo],
+e.sCode[TravelTourSettelementNo],
+e.TSDate[$Date$TSDate],
+e.PurposeofVisit[Settlement Purpose Of Visit], 
+e.Location[STravelLocation],
+e.ERPDocNo,
+e.TotalAmount[STotalAmount],
+e.AdvanceAmt[LessAdvPayment],
+e.BalanceSettlementAmount,
+ISNULL(e.TravelStartdateTime,0)[$Date$TravelStartDateTime],
+ISNULL(e.TravelEndDateTime,0)[$Date$TravelEndDateTime],
+f.sName[TTS Employee],
+g.sName[Settelement VErtical],
+h.sName[SLocation]
+from vCrm_TravelTourRequest a WITH(NOLOCK)
+left join vCore_Executive b WITH(NOLOCK) on a.Employee=b.iMasterId
+left join vCrm_Vertical c WITH(NOLOCK) on a.Vertical=c.iMasterId
+left join vCore_Location d WITH(NOLOCK) on a.iLocation=d.iMasterId
+left join vCrm_TravelTourSettlement e WITH(NOLOCK) on a.iMasterId=e.TravelTourRequestNo
+left join vCore_Executive f WITH(NOLOCK) on e.Employee=f.iMasterId
+left join vCrm_Vertical g WITH(NOLOCK) on e.Vertical=g.iMasterId
+left join vCore_Location h WITH(NOLOCK) on e.iLocation=h.iMasterId
+left join vCrm_Users AA WITH(NOLOCK) on a.iAssignedTo=AA.iMasterId
+left join dbo.fCrm_GetTokens ('@USERACCESS', ',') BB  on AA.iMasterId = BB.sToken
+
+
+
+
+
+
+

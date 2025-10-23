@@ -1,0 +1,46 @@
+-------------------------------------------
+-------------------------------------------
+LEZOF job Wise-Outstandind Balance REPORT
+------------------------------------------
+-------------------------------------------
+
+select JobCardNo,#col0,Customer,
+       #col1,Mobile,Platecode,
+       Plateno,#col4,Make,#col5,
+       InvoiceAmount,AmountPaid,
+       SalesReturn, RefundedAmount,
+        Balance
+ from 
+(
+select 
+        vCrm_Calls.sName JobCardNo,vCrm_Calls.iTransId #col0,
+        vCore_Account_iAccountId.sName Customer,
+	vCore_Account_iAccountId.iMasterId #col1,
+        vCore_Account_iAccountId.Mobile Mobile,
+	vCrm_CustAssets_iCustAssetId.PlateCode Platecode,
+	vCrm_CustAssets_iCustAssetId.sName Plateno,
+        vCrm_CustAssets_iCustAssetId.iTransId #col4,
+        vCrm_CustAssets_vCore_VehicleBrand_VehicleBrand.sName Make,
+        vCrm_CustAssets_iCustAssetId.VehicleBrand #col5,
+	vCrm_Calls.InvoiceAmount InvoiceAmount,
+	vCrm_Calls.AmountPaid AmountPaid,
+        vCrm_Calls.SalesReturnAmt SalesReturn, vCrm_Calls.RefundedAmount,
+	(ISNULL(InvoiceAmount,0)-ISNULL(AmountPaid,0)-ISNULL(SalesReturnAmt,0)+ISNULL(RefundedAmount,0)) Balance
+from
+        vCrm_Calls inner join vCore_Account vCore_Account_iAccountId 
+on
+        vCrm_Calls.iAccountId=vCore_Account_iAccountId.iMasterId 
+inner join
+        vCrm_CustAssets vCrm_CustAssets_iCustAssetId 
+on 
+        vCrm_Calls.iCustAssetId=vCrm_CustAssets_iCustAssetId.iTransId  
+inner join
+        vCore_VehicleBrand vCrm_CustAssets_vCore_VehicleBrand_VehicleBrand 
+on
+        vCrm_CustAssets_iCustAssetId.VehicleBrand=vCrm_CustAssets_vCore_VehicleBrand_VehicleBrand.iMasterId   
+where 
+        vCrm_Calls.iTransId>0   
+ ) a 
+        where  #col0= case when isnull(@JobCardNo,0)=0 then #col0 else @JobCardNo end and 
+        #col1=case when isnull(@Customer,0)=0 then #col1 else @Customer end and 
+        ((@BalanceRange=0) or(@BalanceRange>0 and abs(Balance)>case when isnull(@BalanceRange,0)=0 then 0 else @BalanceRange end)) and         	#col4=case when isnull(@Vehicle,0)=0 then #col4 else #col4 end 

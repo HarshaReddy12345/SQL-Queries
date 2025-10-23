@@ -1,0 +1,156 @@
+CREATE   FUNCTION dbo.fCore_Var1(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @CallDate=FORMAT(dbo.fCore_IntToDate(CallDate),'dd/MM/yyyy') from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc    
+  
+return @CallDate  
+end
+
+go
+
+CREATE   FUNCTION dbo.fCore_Var2(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @CallType=CallType from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc  
+  
+return @CallType  
+end
+
+go
+
+CREATE   FUNCTION dbo.fCore_Var3(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')   
+ 
+select top 1 @BlackReading=Counter101 from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc  
+  
+return @BlackReading  
+end  
+go
+CREATE   FUNCTION dbo.fCore_Var4(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @MagentaReading=MagentaReading from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc    
+  
+return @MagentaReading  
+end  
+
+go
+
+CREATE   FUNCTION dbo.fCore_Var5(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @CallRemarks=Remarks from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc  
+  
+return @CallRemarks  
+end
+
+go
+
+CREATE   FUNCTION dbo.fCore_Var6(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @cpReplaced=TonerRequire1 from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc  
+  
+return @cpReplaced  
+end
+
+go
+
+CREATE   FUNCTION dbo.fCore_Var7(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @CallAttended=AssignTo from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc  
+  
+return @CallAttended  
+end
+
+go
+
+CREATE   FUNCTION dbo.fCore_Var8(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+  
+select top 1 @CyanReading=CyanReadin from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc   
+  
+return @CyanReading  
+end  
+
+go
+
+CREATE   FUNCTION dbo.fCore_Var9(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @Yellowreading=YellowReading from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc  
+  
+return @Yellowreading  
+end  
+
+go
+
+CREATE FUNCTION dbo.fCore_Var10(@s xml)
+returns int
+as
+begin
+DECLARE @Asset int,@fRet int
+select  @Asset=@s.value('(/Fields/Header/Asset)[1]','int')
+select top 1 @fRet=a.iTransId from tuCrm_Contract_General_Details a
+join vCrm_Contract b on a.iTransId=b.iTransId
+where iCustAssetId=@Asset order by a.iCreatedDate desc
+return @fRet
+
+go
+
+CREATE   FUNCTION dbo.fCore_Var11(@S xml)  
+returns decimal (18,2)
+as  
+begin  
+declare @Asset int,@fRet decimal(18,2)
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+select top 1 @fRet =Counter1011 from vCore_TonerCall with(nolock) where Asset=@Asset order by iCreatedDate desc    
+return @fRet 
+end

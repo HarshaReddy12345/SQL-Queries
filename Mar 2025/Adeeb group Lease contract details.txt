@@ -1,0 +1,33 @@
+
+SELECT 
+       'Rental Information' [Grid],a.iTransId, b.sName [Property],c.sName [Building Name],d.sName [Unit No],e.sName [Tenant Name],a.sContractNumber [Contract Number],f.sName [PDC/INV No], 
+       ISNULL(a.sChequeNumber, '') [Cheque No],a.iChequeDate [$Date$Cheque Date],a.fAmount [Amount],g.sName [Cheque Status],ISNULL(a.RentRemarks, '') [Rent Remarks],a.iSequence
+FROM vuCrm_PMSContract_General_Details a WITH (NOLOCK)
+LEFT JOIN vCrm_Property b WITH (NOLOCK) ON a.Property = b.iMasterId
+LEFT JOIN vCore_Buildingmaster c WITH (NOLOCK) ON a.BuildingMasters = c.iMasterId
+LEFT JOIN vCrm_PMSUnits d WITH (NOLOCK) ON a.Unitforprint = d.iMasterId
+LEFT JOIN vCore_Account e WITH (NOLOCK) ON a.iCustomerId = e.iMasterId
+LEFT JOIN vCore_PDCMANAGEMENT f WITH (NOLOCK) ON a.PDCManagement = f.iMasterId
+LEFT JOIN vCrm_ChequeStatus g WITH (NOLOCK) ON a.iChequeStatus = g.iTransId
+WHERE a.iTransId > 0 
+and (( 0 in (@LeaseContract) and isnull(a.iTransId,0)  = isnull(a.iTransId,0) ) or (0 not in (@LeaseContract) and isnull(a.iTransId,0)   in ( @LeaseContract )))
+
+UNION ALL
+
+SELECT 
+      'Rental Information' [Grid],a.iTransId, b.sName [Property],c.sName [Building Name],d.sName [Unit No],e.sName [Tenant Name],a.sContractNumber [Contract Number], 
+      f.sName [Invoice No],'',a.InvoiceMonth [$Date$Cheque Date],a.TotalInvoiceAmount [Amount],'' [Cheque Status],'' [Rent Remarks],a.iSequence
+FROM vuCrm_PMSContract_InvoiceManagement_Details a WITH (NOLOCK)
+LEFT JOIN vCrm_Property b WITH (NOLOCK) ON a.Property = b.iMasterId
+LEFT JOIN vCore_Buildingmaster c WITH (NOLOCK) ON a.BuildingMasters = c.iMasterId
+LEFT JOIN vCrm_PMSUnits d WITH (NOLOCK) ON a.Unitforprint = d.iMasterId
+LEFT JOIN vCore_Account e WITH (NOLOCK) ON a.iCustomerId = e.iMasterId
+LEFT JOIN vCore_InvoiceGeneratingscreen f WITH (NOLOCK) ON a.InvoiceNo = f.iMasterId
+WHERE a.iTransId > 0 
+and (( 0 in (@LeaseContract) and isnull(a.iTransId,0)  = isnull(a.iTransId,0) ) or (0 not in (@LeaseContract) and isnull(a.iTransId,0)   in ( @LeaseContract )))
+
+
+
+143871
+
+&{M3007F2019*M3007F2020}

@@ -1,0 +1,16 @@
+--ALTER TABLE [dbo].[tCrm_Calls] ADD  DEFAULT ((1)) FOR [bActive]
+--GO
+
+CREATE or ALTER procedure  udp_ProjectActivity(@iTransId bigint=0,@iUserId int=0)    
+as    
+begin    
+        
+    select @iTransId  =dbo.fCrm_IntToAPITransId(@iTransId,0)  
+ print @iTransId  
+    declare @completionper decimal(18,2)   
+  
+  
+ select @completionper=avg(isnull(TaskCompletionPercentage,0)) from vCore_ProjectTask where ProjectActivityID=@iTransId  
+  
+ update vuCore_CRMProjects_General_Details set CompletionPercentage=@completionper where ProjectActivity=@iTransId  
+ end

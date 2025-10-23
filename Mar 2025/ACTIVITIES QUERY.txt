@@ -1,0 +1,24 @@
+SELECT 
+    CASE 
+        WHEN COUNT(a.iTransId) > 0 THEN 'Account Count' 
+        ELSE 'Account Count Without Activities' 
+    END AS [Type],
+    b.sName AS [Account],
+    c.sName AS [Assigned To],
+    COUNT(DISTINCT b.iMasterId) AS [Total Accounts],
+    COUNT(a.iTransId) AS [Total Activities],
+    MAX(a.iCreatedDate) AS [$Datetime$Created Date],
+    MAX(a.sDescription) AS [Latest Activity Description]
+FROM vCore_Account b WITH (NOLOCK)
+LEFT JOIN vCrm_Activities a WITH (NOLOCK) 
+    ON a.iRelatedTo = b.iMasterId 
+    AND a.iRelatedToType = 2305
+    AND a.iCreatedDate BETWEEN @STARTDATETIME AND @ENDDATETIME
+LEFT JOIN vCrm_Users c WITH (NOLOCK) ON b.iAssignedTo = c.iMasterId
+WHERE b.iMasterId > 0
+and b.iAssignedTo in ('3078','20','4141','4137','3101','4125','31')
+    AND ((0 IN (@Account) AND ISNULL(b.iMasterId, 0) = ISNULL(b.iMasterId, 0)) 
+        OR (0 NOT IN (@Account) AND ISNULL(b.iMasterId, 0) IN (@Account)))
+    AND ((0 IN (@AssignedTo) AND ISNULL(c.iMasterId, 0) = ISNULL(c.iMasterId, 0)) 
+        OR (0 NOT IN (@AssignedTo) AND ISNULL(c.iMasterId, 0) IN (@AssignedTo)))
+GROUP BY b.sName, c.sName

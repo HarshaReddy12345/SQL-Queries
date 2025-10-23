@@ -1,0 +1,38 @@
+SELECT 
+       d.sName [Customer Name],
+       d.sCode [Customer Code],
+       e.sName [City],
+       d.sBillingAddress,
+       a.sPhone [Primary Contact],
+       a.BuildingPermitOwnerName,
+       a.RegistrationCPRNumber,
+       a.iTransId,
+       a.sName [Contract Number],
+       a.fSubTotal [Contact Amount Inc VAT],
+       b.sName [Department],
+       case when a.iOpportunityType=1 then FORMAT(dbo.fCore_IntToDate(a.iExpiryDate), 'dd/MM/yyyy') end [Contract Date],
+	   case when a.iOpportunityType in(5,6) then FORMAT(dbo.fCore_IntToDate(a.iExpiryDate), 'dd/MM/yyyy') end [Adjusted Date], 
+       dbo.fCrm_GetNumberListValue('1,New Business,2,Additional Business,3,Size Variations,4,Partner Sale,5,Size Variation,6,Cancellation,7,Free of Cost', a.iOpportunityType) [Opportunity Type],
+       c.sName [SalesMan],
+       case when a.iOpportunityType=1 then a.TaxableAmount else 0.00 end [Contract Amt exc. VAT],
+       case when a.iOpportunityType=1 then a.VAT else 0.00 end [VAT Rate],
+       case when a.iOpportunityType=1 then a.VATValue else 0.00 end [VAT Amount],
+       case when a.iOpportunityType=1 then a.fAmount else 0.00 end [Contract Amt Inclusive of VAT],
+	   case when len(f.iCreatedDate)=14 then FORMAT(dbo.fCore_IntToDateTime(f.iCreatedDate),'dd/MM/yyyy') else '' end [Receipt Date],
+	   f.sName [Adv Receipt No],
+	   dbo.fCrm_GetNumberListValue('1,Cash,2,Cheque,3,Transfer,4,Benefit Pay',f.ModeOfPayment) [Mode of Payment],
+	   f.ReceivedAmount,
+	   case when a.iOpportunityType in (5,6) then a.TaxableAmount else 0.00 end [Adjusted Amount]
+FROM vuCrm_SalesOrder_General_Details a WITH (NOLOCK)
+LEFT JOIN vCore_Department b WITH (NOLOCK) ON a.Department = b.iMasterId
+LEFT JOIN vCore_SalesMan c WITH (NOLOCK) ON a.SalesMan = c.iMasterId
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.AccountName = d.iMasterId
+LEFT JOIN vCore_City e WITH (NOLOCK) ON a.City = e.iMasterId
+LEFT JOIN vCore_Receipt f WITH(NOLOCK) on a.iTransId=f.ContractNo
+WHERE a.iTransId > 0 AND a.[iExpiryDate] between @STARTDATE and @ENDDATE
+and (( 0 in (@Contract) and isnull(a.iTransId,0)  = isnull(a.iTransId,0) ) or (0 not in (@Contract) and isnull(a.iTransId,0)   in ( @Contract )))
+and (( 0 in (@OpportunityType) and isnull(a.iOpportunityType,0)  = isnull(a.iOpportunityType,0) ) or (0 not in (@OpportunityType) and isnull(a.iOpportunityType,0)   in ( @OpportunityType )))
+and (( 0 in (@Customer) and isnull(d.iMasterId,0)  = isnull(d.iMasterId,0) ) or (0 not in (@Customer) and isnull(d.iMasterId,0)   in ( @Customer )))
+
+
+

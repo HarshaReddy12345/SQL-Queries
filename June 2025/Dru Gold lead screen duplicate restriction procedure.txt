@@ -1,0 +1,41 @@
+ALTER PROCEDURE [dbo].[UpdateValidationField]  
+    @iTransId bigint = 0,  
+    @UserId int = 0  
+AS  
+BEGIN  
+    SET NOCOUNT ON;
+	declare @iModifiedDate bigint
+    SET @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+	select @iModifiedDate=iModifiedDate from vCrm_Leads where iTransId=@iTransId
+    IF (ISNULL(@iModifiedDate,0)=0)
+    BEGIN
+        DECLARE @ComputedValidation NVARCHAR(200);
+ 
+        SELECT @ComputedValidation = CONCAT(
+            CASE 
+                WHEN LEFT(sMobile, 1) = '+' THEN SUBSTRING(sMobile, 2, LEN(sMobile))  
+                ELSE sMobile 
+            END,
+            ' ',
+            FORMAT(dbo.fCore_IntToDateTime(iCreatedDate), 'dd MM yyyy')
+        )
+        FROM vCrm_Leads 
+        WHERE iTransId = @iTransId;
+ 
+        -- Only check for other records with the same Validation that is NOT NULL or empty
+        IF EXISTS (
+            SELECT 1 
+            FROM vCrm_Leads 
+            WHERE Validation = @ComputedValidation 
+              AND iTransId <> @iTransId
+        )
+        BEGIN
+            RAISERROR('Validation already exists for another lead. Cannot update.', 16, 1);
+            RETURN;
+        END
+ 
+        UPDATE vCrm_Leads 
+        SET Validation = @ComputedValidation 
+        WHERE iTransId = @iTransId 
+    END
+END

@@ -1,0 +1,9 @@
+SELECT name AS ConstraintName
+FROM sys.default_constraints 
+WHERE parent_object_id = OBJECT_ID('dbo.tCrm_Calls') 
+  AND parent_column_id = (
+    SELECT column_id
+    FROM sys.columns
+    WHERE object_id = OBJECT_ID('dbo.tCrm_Calls')
+      AND name = 'bActive'
+  );

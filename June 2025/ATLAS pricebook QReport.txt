@@ -1,0 +1,36 @@
+CREATE or ALTER view PriceBook as  
+SELECT 
+       h.iPriceBookId,
+       i.sPriceBookName[PriceBook],
+       h.fVal0[Rate],
+       j.sName[Unit],
+       h.iProductId, 
+       case when len(h.iStartDate)=9 then FORMAT(dbo.fCore_IntToDate(h.iStartDate),'dd/MM/yyyy') end as StartDate,        
+       h.iStartDate, 
+       ISNULL(case when len(h.iEndDate)=9 then FORMAT(dbo.fCore_IntToDate(h.iEndDate),'dd/MM/yyyy') else FORMAT(GETDATE(),'dd/MM/yyyy') end,'') as EndDate, 
+       CASE WHEN h.iEndDate=0 then dbo.fCore_DateToInt(GETDATE()) else h.iEndDate end iEndDate,
+       a.sName[ProdName], 
+       a.sCode[ProdCode],
+       b.sName[Owner],     
+       dbo.fCrm_GetNumberListValue('1,Service,2,Raw material,3,Intermediate product,4,Finished goods,5,Non stock item,6,Modifier',a.iProductType)[ProdType],     
+       a.sDescription[Desc],
+       c.sName[Department],
+       a.SupplierLeadTime,
+       a.ReOrderQuantity,
+       d.sName[DefaultBaseUnit],     
+       e.sName[SalesModule],
+       f.sName[MainGroup],
+       g.sName[SubGroup]       
+       FROM          
+       mCore_SellingPriceBookDetails h      
+       left join mCore_SellingPriceBookHeader i with(nolock) on h.iPriceBookId=i.iPriceBookId      
+       inner join mCore_Units j on h.iUnit=j.iMasterId        
+       left JOIN vCore_Product a ON h.iProductId = a.iMasterId      
+       left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId      
+       left join vCore_Department c with(nolock) on a.Department=c.iMasterId      
+       left join vCore_Units d with(nolock) on a.iDefaultBaseUnit=d.iMasterId      
+       left join vCore_SalesModule e with(nolock) on a.SalesModule=e.iMasterId      
+       left join vCore_MainGroup f with(nolock) on a.MainGroup=f.iMasterId 
+       left join vCore_SubGroup g with(nolock) on a.SubGroup=g.iMasterId      
+       WHERE h.iProductId>0 and ISNULL(h.iStartDate, 0) = (SELECT MAX(ISNULL(iStartDate, 0))     
+       FROM mCore_SellingPriceBookDetails WHERE iPriceBookId = h.iPriceBookId)

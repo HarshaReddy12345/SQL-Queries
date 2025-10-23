@@ -1,0 +1,29 @@
+CREATE OR ALTER PROC udp_WorklogToRequest 
+    @iTransId BIGINT,
+    @iUserId INT = 0
+AS
+BEGIN
+    -- Convert iTransId to APITransId
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+
+    -- Get the Call ID from one of the related rows (assuming all share same iCallId)
+    DECLARE @CallId INT;
+    SELECT TOP 1 @CallId = iCallId FROM vuCrm_CallWorkLog_ManpowerUtilized_Details with(nolock) WHERE iTransId = @iTransId;
+
+    -- Get the latest sequence from existing worklogs for this call
+    DECLARE @CurrentMaxSequence INT = 0;
+    SELECT @CurrentMaxSequence = ISNULL(MAX(iSequence), 0) FROM tuCrm_Calls_WorklogGrid_Details with(nolock) WHERE iTransId = @CallId;
+
+    -- Insert all rows from the view into the table with incremented sequence numbers
+    ;WITH Worklogs AS (
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1 AS RowNum,Cleaners,sRemarks,iDuration,VehicleLocation
+        FROM vuCrm_CallWorkLog_ManpowerUtilized_Details with(nolock) WHERE iTransId = @iTransId
+    )
+    INSERT INTO tuCrm_Calls_WorklogGrid_Details (iTransId,iSequence,Cleaner,WorkLogRemarks,HoursWorked1,VehicleLocation)
+    SELECT 
+        @CallId,@CurrentMaxSequence + RowNum + 1,Cleaners,sRemarks,iDuration,VehicleLocation FROM Worklogs with(nolock);
+END
+
+
+

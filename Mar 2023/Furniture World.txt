@@ -1,0 +1,59 @@
+ALTER view [dbo].[salesandcollection]  
+as  
+  
+select a.sName [Account Name],  
+  a.iMasterId,  
+  so.Date [Date1],  
+  so.sName [Doc No],  
+  so.fLocalNetAmountNew [Sales Amount],  
+  0 [Reciept Amount],  
+  0 [Advance Amount],  
+  'Sales Order' [source],  
+  d.sName [Company],  
+  d.iMasterId [CompanyId],  
+  e.sName [Sales Exec]  
+  ,st.sName [Store]  
+  
+  from vCrm_SalesOrder so WITH(NOLOCK) join vCore_Account a WITH(NOLOCK)  
+  on so.AccountName=a.iMasterId   
+  join vCore_SalesExecutive e WITH(NOLOCK) on so.SalesExecutive=e.iMasterId  
+  join vCore_Department d WITH(NOLOCK) on d.iMasterId=so.FwCompany  
+    join  vCore_Location st WITH(NOLOCK) on so.Store=st.iMasterId  
+  union all  
+select a.sName [Account Name],  
+  a.iMasterId,  
+  r.Date,  
+  r.sName [Doc No],  
+  0 [Sales Amount],  
+  r.CollectedAmount [Reciept Amount],  
+  0 [Advance Amount],  
+  'Reciept' [source],  
+  d.sName [Company],  
+  d.iMasterId [CompanyId],  
+  e.sName [Sales Exec],  
+  st.sName [Store]  
+  from  vCore_Receipt r WITH(NOLOCK) join vCore_Account a WITH(NOLOCK) on r.AccountName=a.iMasterId  
+  join vCore_SalesExecutive e WITH(NOLOCK) on r.SalesExecutive=e.iMasterId  
+  join vCore_Department d WITH(NOLOCK) on d.iMasterId=r.FwCompany  
+  join vCore_Location st WITH(NOLOCK) on r.Store=st.iMasterId  
+  
+union all  
+select a.sName [Account Name],  
+  a.iMasterId,  
+  ap.Date,  
+  ap.sCode [Doc No],  
+  0 [Sales Amount],  
+  0 [Reciept Amount],  
+  ap.Amount [Advance Amount],  
+  'Advance Reciept' [source],  
+  d.sName [Company],  
+  d.iMasterId [CompanyId],  
+  b.sName [Sales Exec],  
+  st.sName [Store]  
+    
+  from vCore_AdvancePayment ap WITH(NOLOCK) join  vCore_Account a WITH(NOLOCK) on ap.AccountName=a.iMasterId  
+  join vCore_Department d WITH(NOLOCK) on d.iMasterId=ap.FWDCompany  
+  join vCore_Location st WITH(NOLOCK) on ap.Store=st.iMasterId  
+  join vCore_SalesExecutive b WITH(NOLOCK) on ap.SalesExecutive=b.iMasterId
+  where ap.Type=3  
+    

@@ -1,0 +1,43 @@
+CREATE VIEW nCore_ApprovalsPending 
+as
+
+select 'Account' [Module],a.iMasterId,a.sName [Account],b.sName [Owner],Case a.iApprovalStatus when 114 then 'Approved' when 115 then 'Pending' when 117 then 'Rejected' end [Approval Status],
+a.iApprovalStatus,a.iAssignedTo 
+from vCore_Account a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+where a.iMasterId>0 and a.iApprovalStatus=115
+
+union all
+
+select 'Bank Garuntee' [Module],a.iMasterId,a.sName,b.sName,Case a.iApprovalStatus when 114 then 'Approved' when 115 then 'Pending' when 117 then 'Rejected' end [Approval Status],a.iApprovalStatus,a.iAssignedTo 
+from vCore_BankGuarantee a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+where a.iMasterId>0 and a.iApprovalStatus=115
+
+union all
+
+select 'Customer PO' [Module],a.iMasterId,a.sName,b.sName,Case a.iApprovalStatus when 114 then 'Approved' when 115 then 'Pending' when 117 then 'Rejected' end [Approval Status],a.iApprovalStatus,a.iAssignedTo 
+from vCore_PO a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+where a.iMasterId>0 and a.iApprovalStatus=115
+
+union all
+
+select 'DD' [Module],a.iMasterId,a.sName,b.sName,Case a.iApprovalStatus when 114 then 'Approved' when 115 then 'Pending' when 117 then 'Rejected' end [Approval Status] ,a.iApprovalStatus,a.iAssignedTo
+from vCore_DD a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+where a.iMasterId>0 and a.iApprovalStatus=115
+
+union all
+
+select 'Deal Sheet' [Module],a.iMasterId,a.sName,b.sName,Case a.iApprovalStatus when 114 then 'Approved' when 115 then 'Pending' when 117 then 'Rejected' end [Approval Status],a.iApprovalStatus,a.iAssignedTo 
+from vCore_DealSheet a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+where a.iMasterId>0 and a.iApprovalStatus=115
+
+union all
+
+select 'EMD' [Module],a.iMasterId,a.sName,b.sName,Case a.iApprovalStatus when 114 then 'Approved' when 115 then 'Pending' when 117 then 'Rejected' end [Approval Status],a.iApprovalStatus,a.iAssignedTo 
+from vCore_EMD a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+where a.iMasterId>0 and a.iApprovalStatus=115

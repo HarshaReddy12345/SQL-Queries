@@ -1,0 +1,18 @@
+ALTER function dbo.fCore_Var1606(@s xml)
+returns bit
+as 
+begin
+declare @daytar decimal(18,2),@TotalQty decimal(18,2),@EmailUpdate bit
+select @daytar=@s.value('(/Fields/Header/DayTarget)[1]','decimal(18,2)')  
+select @TotalQty=@s.value('(/Fields/Header/TotalQtyinCrates)[1]','decimal(18,2)')   
+ 
+if(@daytar=@TotalQty)
+begin
+set @EmailUpdate=0
+end
+else 
+begin
+set @EmailUpdate=1
+end
+return @EmailUpdate
+end

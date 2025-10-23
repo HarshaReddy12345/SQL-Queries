@@ -1,0 +1,44 @@
+select ISNULL(a.Details,0)[Details],
+       case when a.ModeofPay in (1) then 'cash'
+               when a.ModeofPay in(2) then 'Cheque'
+               when a.ModeofPay in (3) then 'CreditCard'
+               when a.ModeofPay in (4) then 'DebitCard'
+               when a.ModeofPay in(5) then 'UPI'
+               when a.ModeofPay in (6) then 'Finance'
+       else '0' end as ModeOfPayment ,ISNULL(a.Amount,0)[Amount],
+       ISNULL(a.RemarksG,0)[Remarks],b.fBalanceAmount[BalanceAmount],
+       dbo.fCore_IntToDate(b.Date)[Date],
+       b.sName[ReceiptNO],
+       c.sName[Owner],
+       d.sName[Store],
+       e.sName[FwCompany],
+       f.sName[SalesExecutive],
+      ISNULL( g.sName,0)[InvoiceNo],g.InvoiceDate,g.InvoiceValue,
+      h.sName[Opportunity No],
+      i.sName[SalesOrder],
+      j.sName[AccountName],
+      k.sName[Contact]
+from 
+       vuCore_Receipt_Payments_Details a
+
+left Join 
+       vCore_Receipt b on a.iMasterId=b.iMasterId
+left Join
+       vCrm_Users c on b.iAssignedTo=c.iMasterId
+left join 
+       vCore_Location d on b.Store=d.iMasterId
+left join
+        vCore_Department e on b.FwCompany=e.iMasterId
+left Join 
+        vCore_SalesExecutive f on b.SalesExecutive=f.iMasterId
+left join
+        (select sName,InvoiceValue,dbo.fCore_IntToDateTime(iCreatedDate)[InvoiceDate],
+        iMasterId from vCrm_Invoice ) g on b.InvoiceNo=g.iMasterId
+left join 
+         vCrm_Opportunities h on b.OpportunityNo=h.iTransId 
+left join
+        vCrm_SalesOrder i on b.SalesOrder=i.iTransId
+left join 
+        vCore_Account j on b.AccountName=j.iMasterId
+left Join
+        vCrm_Contacts k on b.Contact=k.iMasterId

@@ -1,0 +1,34 @@
+select  sum([LeasedDays]) [LeasedDays], [TotalDays],[Unit],
+case when isnull(sum([LeasedDays]),0)>0 and [TotalDays]>0 then (isnull(sum([LeasedDays]),0)*100)/[TotalDays]  end [Average Leasing %]
+ from (SELECT 
+    iLeaseStartDate [$Date$ContractStartDate],
+    iLeaseEndDate [$Date$ContractEndDate],
+    CASE 
+        WHEN iTerminationDate < @ENDDATE AND iTerminationDate > @STARTDATE THEN 
+            DATEDIFF(dd,dbo.fCore_IntToDate(@STARTDATE),dbo.fCore_IntToDate(iTerminationDate))
+
+
+        WHEN iLeaseStartDate >= @STARTDATE AND iLeaseEndDate <= @ENDDATE THEN 
+            DATEDIFF(dd,dbo.fCore_IntToDate(iLeaseStartDate),dbo.fCore_IntToDate(iLeaseEndDate))
+
+
+			WHEN iLeaseStartDate<@STARTDATE AND iLeaseEndDate>@ENDDATE THEN
+			 DATEDIFF(dd,dbo.fCore_IntToDate(@STARTDATE),dbo.fCore_IntToDate(@ENDDATE))
+
+
+			 WHEN iLeaseStartDate>@STARTDATE and iLeaseEndDate>@ENDDATE THEN
+			 DATEDIFF(dd,dbo.fCore_IntToDate(iLeaseStartDate),dbo.fCore_IntToDate(@ENDDATE))
+
+
+			 WHEN iLeaseStartDate<=@STARTDATE and iLeaseEndDate<=@ENDDATE THEN
+			 DATEDIFF(dd,dbo.fCore_IntToDate(@STARTDATE),dbo.fCore_IntToDate(iLeaseEndDate))
+
+        ELSE NULL
+    END [LeasedDays],
+    DATEDIFF(dd,dbo.fCore_IntToDate(@STARTDATE),dbo.fCore_IntToDate(@ENDDATE))[TotalDays],
+    u.sName [Unit],
+    c.sName [Contract]
+FROM vCrm_PMSContract c
+LEFT JOIN vCrm_PMSUnits u ON c.iUnitId = u.iMasterId
+LEFT JOIN vCrm_ContractTermination t ON c.iTransId = t.LeaseAgreementNumbers
+where c.iTransId>0)aa group by [TotalDays],[Unit] 

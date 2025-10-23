@@ -1,0 +1,16 @@
+CREATE OR ALTER PROC udp_DayTarget @iTransId bigint,@iUserId int=0
+as
+begin 
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+Declare @WEEKDAY varchar(max)
+select @WEEKDAY=DATENAME(WEEKDAY,dbo.fCore_IntToDate(iDayDate)) from vCrm_SalesOrder WITH(NOLOCK) where iTransId=@iTransId
+update a set a.DayTarget=CASE when @WEEKDAY='Monday' then b.MondayCrates
+                              when @WEEKDAY='Tuesday' then b.TuesdayCrates
+                              when @WEEKDAY='Wednesday' then b.WednesdayCrates
+                              when @WEEKDAY='Thursday' then b.ThursdayCrates
+                              when @WEEKDAY='Friday' then b.FridayCrates
+                              when @WEEKDAY='Saturday' then b.SaturdayCrates
+                              when @WEEKDAY='Sunday' then b.SundayCrates else 0.00 end
+from vCrm_SalesOrder a WITH(NOLOCK) join vCore_Account b WITH(NOLOCK) on a.Customer=b.iMasterId
+where a.iTransId=@iTransId
+end

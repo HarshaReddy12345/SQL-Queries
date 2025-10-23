@@ -1,0 +1,26 @@
+ALTER PROC udp_UpdateActivityStreamAddressToEnggLocDu (@ITransId bigint,@iUserId int =0)
+as
+begin
+DECLARE @Address NVARCHAR(MAX)  
+select @ITransId=dbo.fCrm_IntToAPITransId(@ITransId,0)
+
+SELECT top 1 @Address=tlla.sAddress
+from vCore_DUBreakdown a
+ LEFT join tCore_MasterAuditLog au on a.iMasterId=au.iMasterId
+inner join tCore_MasterLocAuditLog llog
+  ON au.iAuditId = llog.iAuditId
+inner join tCrm_LatLngAddress tlla
+  ON llog.iAddressId = tlla.iAddressId
+ where iMasterTypeId=3012 and a.iMasterId>0 and a.iMasterId=@ITransId
+ order by  au.iAuditId desc
+
+	IF (@Address <> '' AND @Address IS NOT NULL)  
+	BEGIN 
+UPDATE vCore_DUBreakdown  
+        SET EngineerLocation = @Address  
+         
+        WHERE iMasterId > 0 AND iMasterId = @ITransId
+END
+end
+
+

@@ -1,0 +1,47 @@
+ALTER PROC [dbo].[udp_LeadsRestriction]  
+    @iTransId BIGINT,
+    @iUserId INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON; 
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+    DECLARE @SourceOfCreation INT,@iModifiedDate BIGINT,@DuplicateNumber VARCHAR(200),@MobileNum VARCHAR(50),@iUser INT,@LeadState INT,@DuplicateExists BIT = 0,@LastAssignedTo INT,@NextAssignedTo INT;
+    SELECT @SourceOfCreation = a.iSourceOfCreation,@iModifiedDate = a.iModifiedDate,@MobileNum = dbo.ConvMobNoTo10Digit(MobileNo),@iUser = a.iCreatedBy,@LeadState = LeadState1,@LastAssignedTo = a.iAssignedTo
+    FROM vaCrm_Leads a WITH (NOLOCK) WHERE a.iTransId = @iTransId;
+
+    SET @DuplicateExists = (SELECT CASE WHEN EXISTS (SELECT 1 FROM vCrm_Leads WHERE iTransId <> @iTransId AND dbo.ConvMobNoTo10Digit(MobileNo) = @MobileNum) THEN 1 ELSE 0 END);
+
+    --  next assigned ID in the sequence (14 → 19 → 10 → 14 )
+    SET @NextAssignedTo =CASE  WHEN @LastAssignedTo = 14 THEN 19 WHEN @LastAssignedTo = 19 THEN 10 ELSE 14 END;
+
+
+    IF (ISNULL(@iModifiedDate, 0) = 0 AND (@SourceOfCreation <> 2 AND @SourceOfCreation <> 10))
+    BEGIN
+        IF @DuplicateExists = 1
+        BEGIN
+            SET @DuplicateNumber = (SELECT TOP 1 LeadNumber FROM vCrm_Leads WITH (NOLOCK) WHERE iTransId <> @iTransId AND dbo.ConvMobNoTo10Digit(MobileNo) = @MobileNum ORDER BY iCreatedDate DESC);
+            INSERT INTO LeadRestrictionLog (iTransId, iUserId, MobileNum, DuplicateNumber, SourceOfCreation, LeadState) VALUES (@iTransId, @iUserId, @MobileNum, @DuplicateNumber, @SourceOfCreation, @LeadState);
+            RAISERROR('%s:- %s', 16, 1, 'Duplicate Lead on:', @DuplicateNumber);
+            EXEC udp_UpdateMobileNoOnLead @iTransId, 0;
+        END
+    END
+   
+    ELSE IF (ISNULL(@iModifiedDate, 0) = 0 AND (@SourceOfCreation = 2 OR @SourceOfCreation = 10))
+    BEGIN
+        IF @DuplicateExists = 1
+        BEGIN
+            INSERT INTO LeadRestrictionLog (iTransId, iUserId, MobileNum, DuplicateNumber, SourceOfCreation, LeadState) VALUES (@iTransId, @iUserId, @MobileNum, 'Auto Processed Duplicate', @SourceOfCreation, @LeadState);
+            EXEC udp_UpdateMobileNoOnLead @iTransId, 0;
+            UPDATE vCrm_Leads SET LeadState1 = 20003 WHERE iTransId = @iTransId;
+        END
+        ELSE 
+        BEGIN
+            UPDATE vCrm_Leads SET LeadState1 = 20002 WHERE iTransId = @iTransId;
+			update tCrm_CampaignLeads set iAssignedTo=@NextAssignedTo where iLeadId=@iTransId
+			update vCrm_Assignments set iRuleAssignedTo=@NextAssignedTo where iTransId=@iTransId
+
+        END
+    END
+END;
+
+

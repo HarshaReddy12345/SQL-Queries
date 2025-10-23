@@ -1,0 +1,20 @@
+CREATE OR ALTER PROCEDURE udp_UpdateInvoiceBalanceByReceipt(@iTransId BIGINT,@iUserId INT = 0)
+AS
+BEGIN
+ 
+       SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0)
+    DECLARE @InvoiceDetails TABLE (InvoiceNoB INT,ToCollect DECIMAL(18,2),Installation decimal(18,2))
+ 
+   exec x_invoicestatus @iTransId,0
+ 
+    INSERT INTO @InvoiceDetails (InvoiceNoB, ToCollect,Installation)
+    SELECT InvoiceNoB,isnull(sum(ReceiptAmountB),0) ToCollect,MAX(InstallmentAmountB) Installation
+    FROM vuCore_Receipt_ReceiptBody_Details WITH (NOLOCK)
+    WHERE iMasterId = @iTransId group by InvoiceNoB
+   
+    UPDATE si
+    SET si.BalanceAmount = id.Installation-id.ToCollect
+    FROM vCore_SalesInvoice si
+    INNER JOIN @InvoiceDetails id ON si.iMasterId = id.InvoiceNoB
+
+END

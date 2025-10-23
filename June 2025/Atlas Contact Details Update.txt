@@ -1,0 +1,65 @@
+DECLARE @taxable DECIMAL(18,2), @Con INT;
+DECLARE cur CURSOR FOR
+SELECT iTransId, SUM(TaxableAmount)
+FROM vuCrm_SalesOrder_General_Details
+WHERE iTransId > 0
+GROUP BY iTransId;
+
+OPEN cur;
+FETCH NEXT FROM cur INTO @Con, @taxable;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE vCrm_SalesOrder
+    SET TotalTaxableAmount = @taxable
+    WHERE iTransId = @Con;
+
+    FETCH NEXT FROM cur INTO @Con, @taxable;
+END
+
+CLOSE cur;
+DEALLOCATE cur;
+go
+DECLARE @taxable DECIMAL(18,2), @Con INT;
+DECLARE cur CURSOR FOR
+SELECT iTransId, SUM(GrossAmount)
+FROM vuCrm_SalesOrder_General_Details
+WHERE iTransId > 0
+GROUP BY iTransId;
+
+OPEN cur;
+FETCH NEXT FROM cur INTO @Con, @taxable;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE vCrm_SalesOrder
+    SET Advance = @taxable
+    WHERE iTransId = @Con;
+
+    FETCH NEXT FROM cur INTO @Con, @taxable;
+END
+
+CLOSE cur;
+DEALLOCATE cur;
+go
+DECLARE @taxable DECIMAL(18,2), @Con INT;
+DECLARE cur CURSOR FOR
+SELECT iTransId, SUM(fAmount)
+FROM vuCrm_SalesOrder_General_Details
+WHERE iTransId > 0
+GROUP BY iTransId;
+
+OPEN cur;
+FETCH NEXT FROM cur INTO @Con, @taxable;
+
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    UPDATE vCrm_SalesOrder
+    SET fSubTotal = @taxable
+    WHERE iTransId = @Con;
+
+    FETCH NEXT FROM cur INTO @Con, @taxable;
+END
+
+CLOSE cur;
+DEALLOCATE cur;

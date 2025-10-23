@@ -1,0 +1,63 @@
+  
+
+
+CREATE view [dbo].[nCore_TeleCallHistory]  
+
+as  
+
+select dbo.fCore_IntToDateTime(vtcal.iCreatedDate) as [Createdate], vtcal.iCreatedDate [iCreatedDate],  
+
+case vtcal.iStatus  when 618 then 'Missed call' else 'Completed'  end as [call_status] ,  
+
+case when vtcal.iStatus=618 then '3.Missed call' when iTelephonicType = 23 and vtcal.iStatus!=618 then '1.Incoming Call' else '2.Outgoing call'  end as [call_type],  
+
+u.sUserName as [username],case when len(iStartDatetime)=14 and len(iEndDatetime)=14 then datediff(MINUTE,dbo.fCore_IntToDateTime(iStartDatetime),dbo.fCore_IntToDateTime(iEndDatetime)) else 0 End [Duration in Mins],  
+
+case when vtcal.iRelatedToType=256 then le.iTransId when vtcal.iRelatedToType=2305 then acc.iMasterId when vtcal.iRelatedToType=2309 then con.iMasterId End [Trans MasterId],  
+
+case when vtcal.iRelatedToType=256 then le.sName when vtcal.iRelatedToType=2305 then acc.sName when vtcal.iRelatedToType=2309 then con.sName  
+
+when vtcal.iRelatedToType=1792 then opp.sName End [Account Name],vtcal.sPhone [Mobile No.],  
+
+vtcal.iTransId [TransId],  
+
+case when vtcal.iStatus=618 then 2 when iTelephonicType = 23 and vtcal.iStatus!=618 then 3 else 4  end as [NumberList],  
+
+u.iUserId [UserId],1 [COUNT], case when vtcal.iStatus=618 and vtcal.iTelephonicType=23  then '1' else 0 end[Missed Call],  
+
+case when iTelephonicType = 23 and vtcal.iStatus!=618  then '1' else 0 end [Incoming Call],  
+
+case when (vtcal.iStatus!=618 or vtcal.iStatus=618) and iTelephonicType! = 23  then '1' else 0  end as [Outgoing Call],  
+
+vtcal.iRelatedTo [iRelatedTo],vtcal.iTransId [TeleCallId],  
+
+case when iTelephonicType = 23 and vtcal.iStatus!=618 then '1' else 0 end+case when vtcal.iStatus!=618 and iTelephonicType! = 23 then '1' else 0  end [Outgoing+Incoming],  
+
+case when vtcal.iTelephonicType=23 and vtcal.iStatus=618 then 1 else 0 end [InComing Missed Call],  
+
+case when vtcal.iTelephonicType=24 and vtcal.iStatus=618 then 1 else 0 end [OutGoing Missed Call] ,
+bran.sName [Branches],div.sName [Division],fun.sName [Functionalities],subf.sName [Sub Function],bran.iMasterId [BranchId],div.iMasterId [DivisionId],fun.iMasterId [FunctionId],subf.iMasterId [SubFunctionId],vtcal.iStatus
+
+from vCrm_TeleCalls vtcal  with(nolock)  
+
+inner join mSec_Users u with(nolock) on  vtcal.iAssignedTo=u.iUserId and u.iUserId NOT IN (1,14,16,37)  
+
+left join vCore_Account acc with(nolock) on vtcal.iRelatedTo=acc.iMasterId and vtcal.iRelatedToType=2305  
+
+left join vaCrm_Leads le with(nolock) on vtcal.iRelatedTo=le.iMemberId and vtcal.iRelatedToType=256  
+
+left join vCrm_Contacts con with(nolock) on vtcal.iRelatedTo=con.iMasterId and vtcal.iRelatedToType=2309  
+
+left join vCrm_Opportunities opp with(nolock) on vtcal.iRelatedTo=opp.iTransId and vtcal.iRelatedToType=1792  
+left join vCore_Branches bran with(nolock) on le.Branches=bran.iMasterId
+left join vCore_Division div with(nolock) on le.Division=div.iMasterId
+left join vCore_Functionalities fun with(nolock) on le.Functionalities=fun.iMasterId
+left join vCore_SubFunction subf with(nolock) on le.SubFunction=subf.iMasterId
+--inner join nCore_IgnoreMissedCalls imc with(nolock) on vtcal.iTransId=imc.[Active CallId]  
+
+where vtcal.iTransId>0-- not in (select [Missed CallId] from nCore_IgnoreMissedCalls with(nolock)) and vtcal.sPhone!='+100000000000'  
+
+--and u.iUserId NOT IN (1,14,16,37)   
+
+--and ISNULL(le.sName,'')<>''  
+ 

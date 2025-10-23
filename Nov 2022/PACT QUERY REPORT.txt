@@ -1,0 +1,103 @@
+SELECT 
+       dbo.Fcore_inttodate(h.iassigneddate)     [Assigned Date],
+       i.sname                                  [Branches],
+       h.clickonsubmit,
+       h.scode,
+       dbo.Fcore_inttodate(h.date)              [Date],
+       j.sname                                  [Designation],
+       k.sname                                  [Division],
+       h.s3perpcompany,
+       dbo.Fcore_inttodatetime(h.i3perpdatetime)[i3PERPDateTime],
+       CASE
+         WHEN h.i3perptype IN ( 1 ) THEN 'Focus6'
+         WHEN h.i3perptype IN ( 2 ) THEN 'Focus8'
+         WHEN h.i3perptype IN ( 3 ) THEN 'MYOB'
+         WHEN h.i3perptype IN ( 4 ) THEN 'Tally'
+         WHEN h.i3perptype IN ( 5 ) THEN 'Xero'
+         WHEN h.i3perptype IN ( 6 ) THEN 'QuickBooks'
+         WHEN h.i3perptype IN ( 7 ) THEN 'Others'
+         ELSE '0'
+       END                                      AS i3PERPType,
+       h.s3perpvoucherno,
+       h.s3perpvouchertype,
+       h.fromlocation,
+       h.fromtime,
+       l.sname                                  [Location],
+       h.sname                                  [Name],
+       m.sname,
+       n.sname                                  [ReportingTo],
+       CASE
+         WHEN h.submitstatus IN( 0 ) THEN 'Submitted'
+         WHEN h.submitstatus IN( 1 ) THEN 'Not Submitted'
+         ELSE '0'
+       END                                      AS[SubmitStatus],
+       h.tolocation,
+       dbo.Fcore_inttodatetime(h.totime)        [ToTime],
+       h.totalamount,
+       h.totalclaimamount,
+       O.sname                                  [VendorAccount],
+       attachment,
+       billamount,
+       claimamount,
+       edit,
+       c.sname                                  [ExpensesType],
+       fixedamount,
+       b.sname                                  [Functionalities],
+       purchaseaccount,
+       remarks,
+       v.sname                                  [SubFunction],
+       e.sname                                  [DailyVisit],
+       CASE
+         WHEN d.deliverymonth IN ( 0 ) THEN 'JAN'
+         WHEN d.deliverymonth IN ( 1 ) THEN 'FEB'
+         WHEN d.deliverymonth IN ( 2 ) THEN 'MAR'
+         WHEN d.deliverymonth IN ( 3 ) THEN 'APR'
+         WHEN d.deliverymonth IN ( 4 ) THEN 'MAY'
+         WHEN d.deliverymonth IN ( 5 ) THEN 'JUN'
+         WHEN d.deliverymonth IN ( 6 ) THEN 'JUL'
+         WHEN d.deliverymonth IN ( 7 ) THEN 'AUG'
+         WHEN d.deliverymonth IN ( 8 ) THEN 'SEP'
+         WHEN d.deliverymonth IN ( 8 ) THEN 'OCT'
+         WHEN d.deliverymonth IN ( 10 ) THEN 'NOV'
+         WHEN d.deliverymonth IN ( 11 ) THEN 'DEC'
+         ELSE '0'
+       END                                      AS [DeliveryMonth],
+       f.sname                                  [EnquireNumber],
+       g.sname                                  [Product],
+       CASE
+         WHEN d.requirement IN( 0 ) THEN 'Yes'
+         WHEN d.requirement IN( 1 ) THEN 'No'
+         ELSE '0'
+       END                                      AS [Requirement]
+FROM   vcrm_travelclaim h WITH(nolock)
+       LEFT JOIN vcore_branches i WITH(nolock)
+              ON i.imasterid = h.branches
+       LEFT JOIN vcore_designationmaster j WITH(nolock)
+              ON j.imasterid = h.designation
+       LEFT JOIN vcrm_division k WITH(nolock)
+              ON k.imasterid = h.division
+       LEFT JOIN vcore_location l WITH(nolock)
+              ON l.imasterid = h.ilocation
+       LEFT JOIN vcrm_users m WITH(nolock)
+              ON m.imasterid = h.iassignedto
+       LEFT JOIN vcrm_users n WITH(nolock)
+              ON m.imasterid = h.reportingto
+       LEFT JOIN vcore_account O WITH(nolock)
+              ON O.imasterid = h.vendoraccount
+       LEFT JOIN vucore_travelclaim_claimdetails_details a WITH(nolock)
+              ON h.imasterid = a.imasterid
+       LEFT JOIN vcrm_functionalities b WITH(nolock)
+              ON b.imasterid = a.functionalities
+       LEFT JOIN vcrm_expensestype c WITH(nolock)
+              ON c.imasterid = a.expensestype
+       LEFT JOIN vcrm_subfunction v WITH(nolock)
+              ON v.imasterid = a.subfunction
+       LEFT JOIN vucore_travelclaim_dailyvisitdetails_details d WITH(nolock)
+              ON d.imasterid = a.imasterid
+       LEFT JOIN vcore_dailyvisit e WITH(nolock)
+              ON e.imasterid = d.dail
+       LEFT JOIN vcrm_opportunities f WITH(nolock)
+              ON f.itransid = d.enquirynumber
+       LEFT JOIN vcrm_product g WITH(nolock)
+              ON g.imasterid = d.product
+--where a.Date between @STARTDATE and @ENDDATE

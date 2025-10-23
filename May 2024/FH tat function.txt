@@ -1,0 +1,225 @@
+
+==================================================================
+Holidays calculation
+===================================================================
+ALTER FUNCTION dbo.IsWeekend (@Date INT,@Entity int)
+RETURNS BIT
+AS
+BEGIN
+
+    DECLARE @HolidayCount INT;
+
+
+    SELECT @HolidayCount = COUNT(*)
+    FROM vuCore_OrganizationalLeaves_OrgDetails_Details with(Nolock)
+    WHERE [Date] = @Date and Entity=@Entity;
+
+
+    RETURN CASE 
+       when @HolidayCount > 0 THEN 1 
+        ELSE 0 
+    END;
+END;
+GO
+
+===================================================================================
+TAT HOURS
+==================================================================================
+ALTER FUNCTION dbo.fun_TATHour (
+    @StartDate bigint,
+    @EndDate bigint,@Entity int
+)
+RETURNS BIGINT
+AS
+BEGIN
+    DECLARE @TotalBusinessMinutes INT = 0;
+    DECLARE @CurrentDate int;
+    DECLARE @StartTime int;
+    DECLARE @EndTime int;
+    
+    -- Business hours start and end time
+    DECLARE @BusinessStart int 
+    DECLARE @BusinessEnd int 
+	select top 1 @BusinessStart=StartTime,@BusinessEnd=EndTime,@Entity=Entity from vCore_OrganizationalHours with(Nolock) where iMasterId>0
+    
+    -- Loop through each day from start date to end date
+    SET @CurrentDate =dbo.fCrm_DateFromBigInt(@StartDate)
+    
+    WHILE @CurrentDate <= dbo.fCrm_DateFromBigInt(@EndDate)
+    BEGIN
+        IF dbo.IsWeekend(@CurrentDate,@Entity) = 0
+        BEGIN
+            -- Determine the start time for the current date
+            IF @CurrentDate = dbo.fCrm_DateFromBigInt(@StartDate)
+                SET @StartTime = dbo.fCrm_TimeFromBigInt(@StartDate)
+            ELSE
+                SET @StartTime = @BusinessStart;
+                
+            -- Determine the end time for the current date
+            IF @CurrentDate = dbo.fCrm_DateFromBigInt(@EndDate)
+                SET @EndTime =  dbo.fCrm_TimeFromBigInt(@EndDate)
+            ELSE
+                SET @EndTime = @BusinessEnd;
+                
+            -- If start time is before business hours, set to business start time
+            IF @StartTime < @BusinessStart SET @StartTime = @BusinessStart;
+            
+            -- If end time is after business hours, set to business end time
+            IF @EndTime > @BusinessEnd SET @EndTime = @BusinessEnd;
+            
+            -- Calculate the difference in minutes
+            IF @StartTime <= @EndTime
+                SET @TotalBusinessMinutes +=DATEDIFF(MINUTE,dbo.fCore_IntToTime(@StartTime),dbo.fCore_IntToTime(@EndTime));
+        END
+        
+        -- Move to the next day
+        SET @CurrentDate = dbo.fCore_DateToInt(DATEADD(dd,1,dbo.fCore_IntToDate(@CurrentDate)));
+    END
+    
+    --  total minutes
+    RETURN @TotalBusinessMinutes 
+END;
+GO
+==============================================================================================
+QUERY
+===========================================================================================
+SELECT 
+    b.sName [Stage],
+    d.sName [User],
+    dbo.fCrm_DATEDIFF(5, a.iCreatedDatetime, ISNULL(a.iEndDatetime, dbo.fCore_DateTimeToInt(GETDATE()))) [Difference],
+    a.iCreatedDatetime [$Datetime$Start Date],
+    ISNULL(a.iEndDatetime, dbo.fCore_DateTimeToInt(GETDATE()))[$Datetime$End Date],
+    a.iRelatedTo,
+    c.sName [Lead Name],
+    dbo.fun_TATHour(a.iCreatedDatetime, ISNULL(a.iEndDatetime, dbo.fCore_DateTimeToInt(GETDATE())), c.Entity) [Tat]
+FROM 
+    mExt_PickAndRelease_Audit a WITH (NOLOCK)
+INNER JOIN  vCore_ProspectStatus b WITH (NOLOCK) ON a.iStageId = b.iMasterId
+INNER JOIN vCrm_Leads c WITH (NOLOCK) ON a.iRelatedTo = c.iTransId AND a.iRelatedToType = 256
+INNER JOIN tCrm_CampaignLeads e WITH (NOLOCK) ON c.iTransId = e.iLeadId
+INNER JOIN vCrm_Users d WITH (NOLOCK) ON a.iUserId = d.iMasterId
+WHERE a.iCreatedDatetime > 0 --and a.iRelatedTo=616
+    AND ((a.iEndDatetime > 0 AND b.iMasterId NOT IN (3, 4, 5, 6))  OR (b.iMasterId IN (3, 4, 5, 6))) 
+ AND ((0 IN (@Lead) AND ISNULL(e.iMemberId, 0) = ISNULL(e.iMemberId, 0))OR (0 NOT IN (@Lead) AND ISNULL(e.iMemberId, 0) IN (@Lead)))
+ 
+ =========================================================================
+ TAT TEST QUERY
+ ==========================================================================
+
+DECLARE 
+    @iBusinessStartTime BIGINT,
+    @iCreateDateTime BIGINT,
+    @iEndDateTime BIGINT,
+    @Entity INT,
+    @iBusinessEndTime BIGINT,
+    @iEndTime INT,
+    @iStartTime INT,
+    @Result INT,
+    @LeaveDays INT
+
+SET @iCreateDateTime = dbo.fCore_DateTimeToInt('2024-04-10 19:05:59')
+SET @iEndDateTime = dbo.fCore_DateTimeToInt('2024-04-13 21:45:59')
+SET @Entity = 1
+
+-- Get business hours
+SELECT TOP 1 
+    @iStartTime = StartTime,
+    @iEndTime = EndTime,
+    @iBusinessStartTime = dbo.fCore_IntIntToBigInt(dbo.fCrm_DateFromBigInt(@iCreateDateTime), StartTime),
+    @iBusinessEndTime = dbo.fCore_IntIntToBigInt(dbo.fCrm_DateFromBigInt(@iCreateDateTime), EndTime) 
+FROM 
+    vCore_OrganizationalHours 
+WHERE 
+    WEF < dbo.fCore_DateFromBigInt(@iCreateDateTime) 
+    AND Entity = @Entity
+
+-- Calculate leave days between start and end dates
+SET @LeaveDays = (SELECT COUNT(*) 
+                  FROM vuCore_OrganizationalLeaves_OrgDetails_Details 
+                  WHERE [Date] BETWEEN dbo.fCrm_DateFromBigInt(@iCreateDateTime) AND dbo.fCrm_DateFromBigInt(@iEndDateTime))
+
+-- Check if start and end dates are the same
+IF (dbo.fCrm_DateFromBigInt(@iCreateDateTime) = dbo.fCrm_DateFromBigInt(@iEndDateTime))
+BEGIN
+    -- Scenario 1: Start and End date is same and the start time and End time within the Business hours
+    IF (dbo.fCrm_TimeFromBigInt(@iCreateDateTime) >= @iStartTime AND dbo.fCrm_TimeFromBigInt(@iEndDateTime) <= @iEndTime)
+    BEGIN
+        SET @Result = ISNULL(dbo.fCrm_DATEDIFF(5, @iCreateDateTime, @iEndDateTime), 0)
+        PRINT '1: ' + CAST(@Result AS VARCHAR(10))
+    END
+    -- Scenario 2: Start and End Date is same and the start time is before business hours and end date is within the business hours
+    ELSE IF (@iCreateDateTime < @iBusinessStartTime AND @iEndDateTime <= @iBusinessEndTime)
+    BEGIN
+        SET @Result = dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iEndDateTime)
+        PRINT '2: ' + CAST(@Result AS VARCHAR(10))
+    END
+    -- Scenario 3: Start and End Date is same and the start time is within the business hours and end date is after the business hours
+    ELSE IF (@iCreateDateTime <= @iBusinessStartTime AND @iEndDateTime > @iBusinessEndTime)
+    BEGIN
+        SET @Result = dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime)
+        PRINT '3: ' + CAST(@Result AS VARCHAR(10))
+    END
+    -- Scenario 4: Start and End Date is same and start time and end time is outside the business hours
+    ELSE IF (@iCreateDateTime > @iBusinessStartTime AND @iEndDateTime > @iBusinessEndTime)
+    BEGIN
+        SET @Result = dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime)
+        PRINT '4: ' + CAST(@Result AS VARCHAR(10))
+    END
+   
+END
+-- Handle different start and end dates
+ELSE
+BEGIN
+    -- Scenario 5: Start and End date is different and the start time and End time within the Business hours
+    IF (dbo.fCrm_TimeFromBigInt(@iCreateDateTime) >= @iStartTime AND dbo.fCrm_TimeFromBigInt(@iEndDateTime) <= @iEndTime)
+    BEGIN
+        SET @Result = ISNULL(dbo.fCrm_DATEDIFF(5, @iCreateDateTime, @iBusinessEndTime), 0) + 
+                      ISNULL(dbo.fCrm_DATEDIFF(5, dbo.fCrm_DATEADD(1, @iCreateDateTime, dbo.fCrm_DATEDIFF(1, @iCreateDateTime, @iEndDateTime)), @iEndDateTime), 0) 
+					  --@LeaveDays * (dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime))
+        PRINT '5: ' + CAST(@Result AS VARCHAR(10))
+    END
+    -- Scenario 6: Start and End Date is different and the start time is before business hours and end date is within the business hours
+    ELSE IF (@iCreateDateTime < @iBusinessStartTime AND @iEndDateTime <= @iBusinessEndTime)
+    BEGIN
+        SET @Result = ISNULL(dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iEndDateTime), 0) + 
+                      ISNULL(dbo.fCrm_DATEDIFF(5, dbo.fCrm_DATEADD(1, @iBusinessStartTime, dbo.fCrm_DATEDIFF(1, @iBusinessStartTime, @iEndDateTime)), @iEndDateTime), 0)
+					  -- @LeaveDays * (dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime))
+        PRINT '6: ' + CAST(@Result AS VARCHAR(10))
+    END
+    -- Scenario 7: Start and End Date is different and the start time is within the business hours and end date is after the business hours
+    ELSE IF (@iCreateDateTime <= @iBusinessStartTime AND @iEndDateTime > @iBusinessEndTime)
+    BEGIN
+        SET @Result = ISNULL(dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime), 0) + 
+                      ISNULL(dbo.fCrm_DATEDIFF(5, dbo.fCrm_DATEADD(1, @iBusinessStartTime, dbo.fCrm_DATEDIFF(1, @iCreateDateTime, @iEndDateTime)), @iEndDateTime), 0) 
+					  --- 
+                      --@LeaveDays * (dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime))
+        PRINT '7: ' + CAST(@Result AS VARCHAR(10))
+    END
+    -- Scenario 8: Start and End Date is different and start time and end time is outside the business hours
+    ELSE IF (@iCreateDateTime > @iBusinessStartTime AND @iEndDateTime > @iBusinessEndTime)
+    BEGIN
+        SET @Result = ISNULL(dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime), 0) + 
+                      ISNULL(dbo.fCrm_DATEDIFF(5, dbo.fCrm_DATEADD(1, @iBusinessStartTime, dbo.fCrm_DATEDIFF(1, @iCreateDateTime, @iEndDateTime)), @iEndDateTime), 0)
+					   
+                     - @LeaveDays * (dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime))
+        PRINT '8: ' + CAST(@Result AS VARCHAR(10))
+    END
+    -- Scenario 9-12: Handle leave days in between
+    ELSE IF (@LeaveDays > 0)
+    BEGIN
+        SET @Result = ISNULL(dbo.fCrm_DATEDIFF(5, @iCreateDateTime, @iEndDateTime), 0) - 
+                      @LeaveDays * (dbo.fCrm_DATEDIFF(5, @iBusinessStartTime, @iBusinessEndTime))
+        PRINT '9-12: ' + CAST(@Result AS VARCHAR(10))
+    END
+	 -- Scenario 13-16: Start and End Date is same and start date is leave
+    ELSE IF (EXISTS (SELECT 1 FROM vuCore_OrganizationalLeaves_OrgDetails_Details WHERE [Date] = dbo.fCrm_DateFromBigInt(@iCreateDateTime)))
+    BEGIN
+        PRINT '13-16: 0 (start date is a leave day)'
+    END
+    -- Scenario 17-28: Handle start date or end date being a leave
+    ELSE IF (EXISTS (SELECT 1 FROM vuCore_OrganizationalLeaves_OrgDetails_Details WHERE [Date] = dbo.fCrm_DateFromBigInt(@iCreateDateTime))
+             OR EXISTS (SELECT 1 FROM vuCore_OrganizationalLeaves_OrgDetails_Details WHERE [Date] = dbo.fCrm_DateFromBigInt(@iEndDateTime)))
+    BEGIN
+        PRINT '17-28: 0 (start or end date is a leave day)'
+    END
+END

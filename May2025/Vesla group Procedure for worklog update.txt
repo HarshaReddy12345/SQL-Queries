@@ -1,0 +1,13 @@
+CREATE or ALTER PROC udp_UpdateWorkLog @iTransId bigint,@iUserId int =0 
+  as 
+   begin 
+    select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+      declare @SerReq int,@JobCard int,@WorkLog int 
+    select @SerReq=ServiceRequest,@JobCard=JobCardNo,@WorkLog=WorklogStatus from vCore_ServiceWorklog where iMasterId=@iTransId
+      If (@WorkLog=3) 
+   begin 
+    update vuCrm_Calls_Product_Details_Details set Worklog=1 where ServiceNo=@SerReq and iTransId=@JobCard
+   end 
+   else 
+    update vuCrm_Calls_Product_Details_Details set Worklog=0 where ServiceNo=@SerReq and iTransId=@JobCard
+   end

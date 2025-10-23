@@ -1,0 +1,116 @@
+
+ALTER VIEW nCrm_AllActivities as
+
+select 
+  b.sFirstName FirstName,c.sCaption Caption,a.iRelatedTo RelatedTo ,b.sCode LoginName,b.iMasterId ccol3,a.sSubject sSubject,e.sName AccountBranch,d.Branch ccol5, h.sName Purpose,
+  i.sName LeadBranch,a.iCreatedDate [$Datetime$Created Date],a.iStartDatetime [$Datetime$StartDateTime], a.iEndDatetime [$Datetime$EndDateTime],a.sDescription col11, 
+  j.sName [Task Status],j.iTransId ccol12,k.sModuleName ModuleName,p1.sName Product1,p2.sName Product2,p3.sName Product3,
+  case l.[Classification] when '1' then  'A' when '2' then  'A+' when '3' then 'B' when '4' then  'C' when '5' then  'D' end [Classification] ,sm.sName [SalesMan],d.sName [Account],f.sName [Lead],l.sName [Doctor],m.sName [Campaign],a.sContactName,a.sLocation
+from 
+  vCrm_Activities a with(NOLOCK)
+  left join vCrm_Users b with(NOLOCK) on a.iCreatedBy = b.iMasterId 
+  left join vCrm_ModuleTypes c with(NOLOCK) on a.iRelatedToType = c.iMasterId 
+  left join vCore_Account d with(NOLOCK) on a.iRelatedTo = d.iMasterId 
+  left join vCore_Branch e with(NOLOCK) on d.Branch = e.iMasterId 
+  left join vaCrm_Leads f with(NOLOCK) on a.iRelatedTo = f.iTransId 
+  left join vCrm_Appointments g with(NOLOCK) on f.iAppointmentId = g.iTransId 
+  left join vCrm_PurposeOfVisit h with(NOLOCK) on a.iPurposeId = h.iTransId 
+  left join vCore_Branch i with(NOLOCK) on f.Branch = i.iMasterId 
+  left join vCrm_TaskStatus j with(NOLOCK) on a.iStatus = j.iTransId 
+  left join vCrm_ModuleTypes k with(NOLOCK) on a.iTypeId = k.iMasterId 
+left join vCore_Product p1 with(NOLOCK) on a.Product1=p1.iMasterId
+left join vCore_Product p2 with(NOLOCK) on a.Product2=p2.iMasterId
+left join vCore_Product p3 with(NOLOCK) on a.Product3=p3.iMasterId
+left join vCore_Salesman sm with(NOLOCK) on a.Salesman=sm.iMasterId
+  left join vCore_Doctor l with(NOLOCK) on a.Doctor = l.iMasterId 
+  left join vCrm_Campaigns m with(NOLOCK) on a.iRelatedTo=m.iMasterId
+
+where 
+  a.iTransId>0
+
+  union all
+
+  select 
+  b.sFirstName FirstName,c.sCaption Caption,a.iRelatedTo RelatedTo ,b.sCode LoginName, b.iMasterId ccol3,a.sSubject sSubject,e.sName AccountBranch,d.Branch ccol5, '',
+  i.sName LeadBranch,a.iCreatedDate [$Datetime$Created Date], 0 ,0,a.sDescription col11, j.sName [Task Status],j.iTransId ccol12, k.sModuleName ModuleName,'','','','','',d.sName [Account],f.sName [Lead],'',m.sName [Campaign],a.sContactName,''
+from 
+  vCrm_Tasks a with(NOLOCK)
+  left join vCrm_Users b with(NOLOCK) on a.iCreatedBy = b.iMasterId 
+  left join vCrm_ModuleTypes c with(NOLOCK) on a.iRelatedToType = c.iMasterId 
+  left join vCore_Account d with(NOLOCK) on a.iRelatedTo = d.iMasterId 
+  left join vCore_Branch e with(NOLOCK) on d.Branch = e.iMasterId 
+  left join vaCrm_Leads f with(NOLOCK) on a.iRelatedTo = f.iTransId 
+  left join vCrm_Appointments g with(NOLOCK) on f.iAppointmentId = g.iTransId 
+  left join vCore_Branch i with(NOLOCK) on f.Branch = i.iMasterId 
+  left join vCrm_TaskStatus j with(NOLOCK) on a.iStatus = j.iTransId 
+  left join vCrm_ModuleTypes k with(NOLOCK) on a.iTypeId = k.iMasterId 
+    left join vCrm_Campaigns m with(NOLOCK) on a.iRelatedTo=m.iMasterId
+
+where 
+  a.iTransId>0
+
+  union all
+
+  select 
+  b.sFirstName FirstName,c.sCaption Caption,a.iRelatedTo RelatedTo ,b.sCode LoginName,b.iMasterId ccol3,a.sSubject sSubject,e.sName AccountBranch,d.Branch ccol5,h.sName Purpose,
+  i.sName LeadBranch,a.iCreatedDate [$Datetime$Created Date],a.iStartDatetime [$Datetime$StartDateTime],a.iEndDatetime [$Datetime$EndDateTime], a.sDescription col11, j.sName [Task Status],j.iTransId ccol12,k.sModuleName ModuleName,'','','','','',d.sName [Account],f.sName [Lead],'',m.sName [Campaign],a.sContactName,a.sLocation
+from 
+  vCrm_Appointments a with(NOLOCK)
+  left join vCrm_Users b with(NOLOCK) on a.iCreatedBy = b.iMasterId 
+  left join vCrm_ModuleTypes c with(NOLOCK) on a.iRelatedToType = c.iMasterId 
+  left join vCore_Account d with(NOLOCK) on a.iRelatedTo = d.iMasterId 
+  left join vCore_Branch e with(NOLOCK) on d.Branch = e.iMasterId 
+  left join vaCrm_Leads f with(NOLOCK) on a.iRelatedTo = f.iTransId 
+  left join vCrm_Appointments g with(NOLOCK) on f.iAppointmentId = g.iTransId 
+  left join vCrm_PurposeOfVisit h with(NOLOCK) on a.iPurposeId = h.iTransId 
+  left join vCore_Branch i with(NOLOCK) on f.Branch = i.iMasterId 
+  left join vCrm_TaskStatus j with(NOLOCK) on a.iStatus = j.iTransId 
+  left join vCrm_ModuleTypes k with(NOLOCK) on a.iTypeId = k.iMasterId 
+    left join vCrm_Campaigns m with(NOLOCK) on a.iRelatedTo=m.iMasterId
+where 
+  a.iTransId>0
+
+
+  union all
+
+    select 
+  b.sFirstName FirstName,c.sCaption Caption,a.iRelatedTo RelatedTo ,b.sCode LoginName,b.iMasterId ccol3,a.sSubject sSubject,e.sName AccountBranch,d.Branch ccol5,h.sName Purpose,
+  i.sName LeadBranch,a.iCreatedDate [$Datetime$Created Date],a.iStartDatetime [$Datetime$StartDateTime],a.iEndDatetime [$Datetime$EndDateTime], a.sDescription col11, j.sName [Task Status],j.iTransId ccol12,k.sModuleName ModuleName,'','','','','',d.sName [Account],f.sName [Lead],'',m.sName [Campaign],a.sContactName,a.sLocation
+from 
+  vCrm_Plans a with(NOLOCK)
+  left join vCrm_Users b with(NOLOCK) on a.iCreatedBy = b.iMasterId 
+  left join vCrm_ModuleTypes c with(NOLOCK) on a.iRelatedToType = c.iMasterId 
+  left join vCore_Account d with(NOLOCK) on a.iRelatedTo = d.iMasterId 
+  left join vCore_Branch e with(NOLOCK) on d.Branch = e.iMasterId 
+  left join vaCrm_Leads f with(NOLOCK) on a.iRelatedTo = f.iTransId 
+  left join vCrm_Appointments g with(NOLOCK) on f.iAppointmentId = g.iTransId 
+  left join vCrm_PurposeOfVisit h with(NOLOCK) on a.iPurposeId = h.iTransId 
+  left join vCore_Branch i with(NOLOCK) on f.Branch = i.iMasterId 
+  left join vCrm_TaskStatus j with(NOLOCK) on a.iStatus = j.iTransId 
+  left join vCrm_ModuleTypes k with(NOLOCK) on a.iTypeId = k.iMasterId 
+    left join vCrm_Campaigns m with(NOLOCK) on a.iRelatedTo=m.iMasterId
+where 
+  a.iTransId>0
+
+
+  union all
+
+    select 
+  b.sFirstName FirstName,c.sCaption Caption,a.iRelatedTo RelatedTo ,b.sCode LoginName,b.iMasterId ccol3,a.sSubject sSubject,e.sName AccountBranch,d.Branch ccol5,h.sName Purpose,
+  i.sName LeadBranch,a.iCreatedDate [$Datetime$Created Date],a.iStartDatetime [$Datetime$StartDateTime],a.iEndDatetime [$Datetime$EndDateTime], a.sDescription col11, j.sName [Task Status],j.iTransId ccol12,k.sModuleName ModuleName,'','','','','',d.sName [Account],f.sName [Lead],'',m.sName [Campaign],a.sContactName,a.sLocation
+from 
+  vCrm_TeleCalls a with(NOLOCK)
+  left join vCrm_Users b with(NOLOCK) on a.iCreatedBy = b.iMasterId 
+  left join vCrm_ModuleTypes c with(NOLOCK) on a.iRelatedToType = c.iMasterId 
+  left join vCore_Account d with(NOLOCK) on a.iRelatedTo = d.iMasterId 
+  left join vCore_Branch e with(NOLOCK) on d.Branch = e.iMasterId 
+  left join vaCrm_Leads f with(NOLOCK) on a.iRelatedTo = f.iTransId 
+  left join vCrm_Appointments g with(NOLOCK) on f.iAppointmentId = g.iTransId 
+  left join vCrm_PurposeOfVisit h with(NOLOCK) on a.iPurposeId = h.iTransId 
+  left join vCore_Branch i with(NOLOCK) on f.Branch = i.iMasterId
+  left join vCrm_TaskStatus j with(NOLOCK) on a.iStatus = j.iTransId 
+  left join vCrm_ModuleTypes k with(NOLOCK) on a.iTypeId = k.iMasterId 
+    left join vCrm_Campaigns m with(NOLOCK) on a.iRelatedTo=m.iMasterId
+where 
+  a.iTransId>0
+

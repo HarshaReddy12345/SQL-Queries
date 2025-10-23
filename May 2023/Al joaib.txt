@@ -1,0 +1,60 @@
+
+ALTER procedure udp_HR_InsertIntoQtSummaryGrid(@iTransId bigint=0,@iUserId int=0)
+as
+begin
+	select @iTransId= dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+	delete muCore_Quotation_SummaryGrid_Details where iMasterId=@iTransId;
+
+	INSERT INTO muCore_Quotation_SummaryGrid_Details
+	(iRowIndex,iMasterId,CategoryS, CurrencyS, ModelS, BrandGroupS, ItemDescriptionS, ItemS, FrontFinishS, ColorS, UnitS,
+	HandleS,HandleColorS, DimensionS, VolumeS, QuantityS, RateS, GrossS, PackingChargesS, DiscountPercentS,
+	DiscountValueS, ValueAfterDiscountS, SpecialDiscountPercentS, SpecialDiscountValueS, ValueAfterSpecialDiscountS,
+	VATS, VATvalueS, LineTotalS)
+
+	select  ROW_NUMBER() OVER (ORDER BY iMasterId)-1, iMasterId,Category,
+	  Currency, Model, BrandGroup,[ItemDescription], Item, FrontFinish,
+	   Color1, unit,Handle,Color2,Dimension,Volume,Quantity,Rate,Gross, PackingCharges,
+	  DiscountPercent,DiscountValue,ValueafterDiscount,SpecialDiscountPercent,SpecialDiscountValue,ValueafterspecialDiscount,
+	  VAT,VATValue,Linetotal from
+	(SELECT iMasterId,
+	   CASE WHEN Category <0 then 0 else Category end Category,
+	  a.Currency, a.Model, a.BrandGroup,''[ItemDescription],a.Item,FrontFinish,
+	   a.Color1, '' unit,a.Handle,a.Color2,a.Dimension,a.Volume,a.Quantity,a.Rate,a.Gross, a.PackingCharges,
+	  a.DiscountPercent,a.DiscountValue,a.ValueafterDiscount,a.SpecialDiscountPercent,a.SpecialDiscountValue,a.ValueafterspecialDiscount,
+	  a.VAT,a.VATValue,a.Linetotal
+	FROM muCore_Quotation_Section2_Details a WITH(NOLOCK)
+	where a.iMasterId>0
+	UNION ALL
+	SELECT iMasterId,0 Category,0 [Currency],0 [Model],0 BrandGroup,
+	  ItemDescription,0 Item,0FrontFinish,
+	   ColorCTM,
+	  Unit,0 Handle,0 [Handle Color],'' Dimension,0 Volume,
+	  Quantityct,
+	  PriceCT,
+	  AmountCT,0 PackingCharges,
+	  DiscountPercentTC,
+	  CTDiscountValue,
+	  ValueafterDiscountTC,
+	  SpecialDiscountPercentTC,
+	  CTSpecialDiscountValue,
+	  ValueafterspecialdiscountTC,
+	  VATPercentTC,
+	  VATValueTC,
+	  LinetotalTC
+	FROM muCore_Quotation_Section3_Details a WITH(NOLOCK)
+	where a.iMasterId>0
+	UNION ALL
+	select iMasterId, 0 Category,0 [Currency], ModelAP,0 BrandGroup,
+		   ItemDescriptionAP,0 Item,0 FrontFinish,0 [Front Color],UnitAP,
+		   0 Handle,0 [Handle Color],'' Dimension,0 Volume,QuantityAP,PriceAP,AmountAP,
+		   DiscountPercentAP,APDiscountValue,ValueafterDiscountAP,SpecialDiscountPercentAP,
+		   APSpecialDiscountValue,ValueafterDiscountAP,ValueafterSpecialDiscountAP,
+		  VATPercentAP,VATAmountAP,LineTotalAP
+	from muCore_Quotation_Section4_Details a WITH(NOLOCK)
+	where a.iMasterId>0 ) Fin1 where iMasterId=@iTransId
+
+end
+
+
+

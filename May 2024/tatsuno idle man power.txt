@@ -1,0 +1,12 @@
+select [User Name],Region,State,date,case when SUM([Count])>=1 then 0 else 1 end [Count]  from
+			(
+			select a.sName [User Name],case when isnull(b.iMasterId,0) >0 then 1 else 0 End [Count],d.sName [Region],e.sName [State],date from GetDatesFromDateRange(dbo.fCore_IntToDate(@STARTDATE),dbo.fCore_IntToDate(@ENDDATE)) aa
+			cross apply vCrm_Users a
+			left join vCore_DailyExecutedTasks b with(nolock) on a.iMasterId=b.iAssignedTo and aa.dateint=dbo.fCrm_DateFromBigInt(DTSDate)
+			left outer join vCore_Location c with(nolock) on a.iLocation=c.iMasterId
+			left outer join vCore_Region d with(nolock) on c.RegionM=d.iMasterId
+			left outer join vCore_State e with(nolock) on c.StateM=e.iMasterId
+			where a.iMasterId>0 and a.bAccountDisabled=0  and iCRMRole in (5,26,12)
+			) a
+
+			group by [User Name],Region,State,date,Count

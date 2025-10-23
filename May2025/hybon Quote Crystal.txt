@@ -1,0 +1,89 @@
+ALTER VIEW [dbo].[nCore_QuoteCarDoorDetails] AS      
+select iTransId, Val, Type      
+from (      
+    select       
+        a.iTransId,      
+        ISNULL(CAST(b.sName AS VARCHAR(100)), '-') [Type of door On Front Side],      
+        ISNULL(CAST(a.xFinish AS VARCHAR(100)), '-') [Floor Markings],      
+        ISNULL(CAST(h.sName AS VARCHAR(100)), '-') [Colour],      
+        ISNULL(CAST(a.xTypeofOpening AS VARCHAR(100)), '-') [Type of Opening],      
+        ISNULL(CAST(c.sName AS VARCHAR(100)), '-') [Door Width Front Side (mm)],      
+        ISNULL(CAST(d.sName AS VARCHAR(100)), '-') [Door Height Front Side (mm)],      
+        ISNULL(CAST(f.sName AS VARCHAR(100)), '-') [Car Door on Other Side],      
+        ISNULL(CAST(g.sName AS VARCHAR(100)), '-') [Type of door On Other Side]      
+    from vuCrm_Quote_General_Details a with(nolock)      
+    left join vCore_SpecificationMaster b with(nolock) on a.xTypeofdoorOnFrontSide=b.iMasterId      
+    left join vCore_SpecificationMaster c with(nolock) on a.xDoorWidthFrontSidemm=c.iMasterId      
+    left join vCore_SpecificationMaster d with(nolock) on a.DoorHeightFrontSidemm=d.iMasterId      
+    left join vCore_SpecificationMaster f with(nolock) on a.OtherSideCarDoorOn=f.iMasterId      
+    left join vCore_SpecificationMaster g with(nolock) on a.xTypeofdoorOnOtherSide=g.iMasterId  
+    left join vCore_Color h with(nolock) on a.Color1=h.iMasterId
+    where a.iTransId>0   
+) a      
+unpivot (      
+    Val for Type in (      
+        [Type of door On Front Side],      
+        [Floor Markings],      
+        [Colour],      
+        [Type of Opening],      
+        [Door Width Front Side (mm)],      
+        [Door Height Front Side (mm)],      
+        [Car Door on Other Side],      
+             [Type of door On Other Side]      
+    )      
+) b 
+===============================================
+ALTER view nCore_QuoteCabinDetails as    
+select iTransId, Val, Type    
+from (    
+    select     
+        a.iTransId,    
+        CAST(b.sName AS VARCHAR(MAX)) [Cabin Width (Mm)],    
+        CAST(c.sName AS VARCHAR(MAX)) [Cabin Depth (Mm)],    
+        CAST(d.sName AS VARCHAR(MAX)) [Cabin Height (Mm)],    
+        CAST(e.sName AS VARCHAR(MAX)) [Cabin Design Model],    
+        CAST(f.sName AS VARCHAR(MAX)) [RH SIDE PANEL FINISH],    
+        CAST(g.sName AS VARCHAR(MAX)) [LH SIDE PANEL FINISH],    
+        CAST(h.sName AS VARCHAR(MAX)) [REAR SIDE PANEL FINISH],    
+        CAST(i.sName AS VARCHAR(MAX)) [CABIN JAMB POST/ HEADER FINISH],    
+        CAST(j.sName AS VARCHAR(MAX)) [FALSE CEILING TYPE],    
+        CAST(k.sName AS VARCHAR(MAX)) [FLOORING TYPE],    
+        CAST(a.xLightingSelection AS VARCHAR(MAX)) [Lighting Selection],    
+        CAST(l.sName AS VARCHAR(MAX)) [Fan Type],    
+        CAST(m.sName AS VARCHAR(MAX)) [Handrail],    
+        CAST(a.xHandrailLocation AS VARCHAR(MAX)) [Handrail Location],
+        CAST(dbo.fCrm_GetNumberListValue('1,Front Opening,2,L type Opening,3,Reverse Opening,4,Telescopic lift,5,Telescopic right,6,3 Side',a.OpeningofLift1) as VARCHAR(MAX)) [Opening of Lift],
+        CAST(dbo.fCrm_GetNumberListValue('1,Unfinished Brick,2,Finished Brick,3,Unfinished RCC,4,Finished RCC,5,Metal Structure to be Made,6,Metal Structure Ready,7,NA',ShaftStatus1)as VARCHAR(max)) [Shaft Status]
+    from vuCrm_Quote_General_Details a with(nolock)    
+    left join vCore_CabinWidthMm b with(nolock) on a.xCabinWidthMm=b.iMasterId    
+    left join vCore_CabinDepthMm c with(nolock) on a.xCabinDepthMm=c.iMasterId    
+    left join vCore_CabinHeightMm d with(nolock) on a.CabinHeightMm=d.iMasterId    
+    left join vCore_SpecificationMaster e with(nolock) on a.xCabinDesignModel=e.iMasterId    
+    left join vCore_SpecificationMaster f with(nolock) on a.xRHSidePanelFinish=f.iMasterId    
+    left join vCore_SpecificationMaster g with(nolock) on a.xLHSidePanelFinish=g.iMasterId    
+    left join vCore_SpecificationMaster h with(nolock) on a.xRearsidePanelFinish=h.iMasterId    
+    left join vCore_SpecificationMaster i with(nolock) on a.xCabinJambPostHeaderFinish=i.iMasterId    
+    left join vCore_SpecificationMaster j with(nolock) on a.xFalseCeilingType=j.iMasterId    
+    left join vCore_SpecificationMaster k with(nolock) on a.iFlooringType=k.iMasterId    
+    left join vCore_SpecificationMaster l with(nolock) on a.xFanType=l.iMasterId    
+    left join vCore_SpecificationMaster m with(nolock) on a.xHandrail=m.iMasterId    
+    where a.iTransId>0   
+) a    
+unpivot (    
+    Val for Type in (    
+        [Cabin Width (Mm)],    
+        [Cabin Depth (Mm)],    
+        [Cabin Height (Mm)],    
+        [Cabin Design Model],    
+        [RH SIDE PANEL FINISH],    
+        [LH SIDE PANEL FINISH],    
+        [REAR SIDE PANEL FINISH],    
+        [CABIN JAMB POST/ HEADER FINISH],    
+        [FALSE CEILING TYPE],    
+        [FLOORING TYPE],    
+        [Lighting Selection],    
+        [Fan Type],    
+        [Handrail],    
+        [Handrail Location],[Opening of Lift],[Shaft Status]  
+    )    
+) b

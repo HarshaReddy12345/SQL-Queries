@@ -1,0 +1,169 @@
+ALTER   VIEW [dbo].[nCore_QuoteCrystal] as  
+select   
+       a.iTransId,  
+    a.sName [Quote No],  
+    b.sName [Account],  
+    FORMAT(dbo.fCore_IntToDate(a.[Date]),'dd/MM/yyyy') [Date],  
+    f.sName [HybonBranch],  
+    a.BranchAddress,  
+    a.SalesPersonName,  
+    a.SalesPersonNo,  
+    a.SalesPersonEmailId,  
+    g.sName OfferNumber,  
+    a.ProjectName,  
+    a.ProjectDeliveryAddress,  
+    c.sName [State],  
+    d.sName [City],  
+    a.BuildingSegment,  
+    a.LeadNo EnquiryNoProposalNo,  
+    a.ClientsType ClientType,  
+    a.[Address],  
+    a.MobileNo,  
+    a.L2ContactNo,  
+    L2RelationshipwithCustomer,  
+    a.GSTNo,  
+    a.PanNo,  
+    a.Email,  
+    a.CustomerID,  
+    e.sName [Contact Name],a.fSubTotal [Price],(HCGSTTaxAmount+TaxAmount+a.fIGSTTaxAmount) [Taxes (GST 18%)],a.LicenseCharges [License Charges],(GrossMinusDiscount+HCGSTTaxAmount+TaxAmount+a.fIGSTTaxAmount+LicenseCharges) [TOTAL PRICE],AdvancePayment,BeforeProduction,Completion,Delivery  ,
+    dbo.fCrm_GetNumberListValue('1,CAMC,2,After 1 Year warranty AMC will be 3.5% of basic Cost & CAMAC will be 5.5% of the basic cost',a.ExtraMaintenancePeriodTypeincludedinContract) ExtraMaintenancePeriodTypeincludedinContract,
+    a.ExtraMaintenancePeriodinYearsincludedinContract,a.IntelligentARD	,a.OtherMiscExpensesTransportation,a.ExtraMaintenancePackage,
+    TotalPercentage=CAST(REPLACE(a.AdvancePayment,'%','') as int)+CAST(REPLACE(a.BeforeProduction,'%','') as int)+CAST(REPLACE(a.Completion,'%','') as int),AMCType,a.Remarks
+  from vuCrm_Quote_General_Details a with(nolock)  
+  left join vCore_Account b with(nolock) on a.AccountName=b.iMasterId  
+  left join vCore_State c with (nolock) on a.iState=c.iMasterId  
+  left join vCore_City d with(nolock) on a.iCity=d.iMasterId  
+  left join vCrm_Contacts e with(nolock) on a.ContactName=e.iMasterId 
+  left join vCore_HybonBranch f with(nolock) on a.HybonBranch1=f.iMasterId
+  left join vCrm_Opportunities g with(nolock) on a.iOpportunityId=g.iTransId
+  where a.iTransId>0
+GO
+
+ALTER VIEW [dbo].[nCore_QuoteCarDoorDetails] AS          
+select iTransId, Val, Type          
+from (          
+    select           
+        a.iTransId,          
+        ISNULL(CAST(b.sName AS VARCHAR(100)), '-') [Type of door On Front Side],                  
+        ISNULL(CAST(h.sName AS VARCHAR(100)), '-') [Colour],          
+        ISNULL(CAST(a.xTypeofOpening AS VARCHAR(100)), '-') [Type of Opening],          
+        ISNULL(CAST(c.sName AS VARCHAR(100)), '-') [Door Width Front Side (mm)],          
+        ISNULL(CAST(d.sName AS VARCHAR(100)), '-') [Door Height Front Side (mm)],          
+        ISNULL(CAST(f.sName AS VARCHAR(100)), '-') [Car Door on Other Side],          
+        ISNULL(CAST(g.sName AS VARCHAR(100)), '-') [Type of door On Other Side]  ,
+        ISNULL(CAST(i.sName AS VARCHAR(100)), '-') [Car Door Finish]  
+       
+    from vuCrm_Quote_General_Details a with(nolock)          
+    left join vCore_SpecificationMaster b with(nolock) on a.xTypeofdoorOnFrontSide=b.iMasterId          
+    left join vCore_SpecificationMaster c with(nolock) on a.xDoorWidthFrontSidemm=c.iMasterId          
+    left join vCore_SpecificationMaster d with(nolock) on a.DoorHeightFrontSidemm=d.iMasterId          
+    left join vCore_SpecificationMaster f with(nolock) on a.OtherSideCarDoorOn=f.iMasterId          
+    left join vCore_SpecificationMaster g with(nolock) on a.xTypeofdoorOnOtherSide=g.iMasterId  
+    left join vCore_SpecificationMaster i with(nolock) on a.xCarDoorPanelFinish=i.iMasterId      
+    
+    left join vCore_Color h with(nolock) on a.Color1=h.iMasterId    
+    where a.iTransId>0       
+) a          
+unpivot (          
+    Val for Type in (                   
+        [Type of Opening],          
+        [Door Width Front Side (mm)],          
+        [Door Height Front Side (mm)], 
+        [Car Door Finish],  
+        [Type of door On Front Side],
+        [Car Door on Other Side], 
+        [Type of door On Other Side]          
+    )          
+) b 
+
+go
+
+ALTER view nCore_QuoteCabinDetails as      
+select iTransId, Val, Type      
+from (      
+    select       
+        a.iTransId,      
+        CAST(b.sName AS VARCHAR(MAX)) [Cabin Width (Mm)],      
+        CAST(c.sName AS VARCHAR(MAX)) [Cabin Depth (Mm)],      
+        CAST(d.sName AS VARCHAR(MAX)) [Cabin Height (Mm)],      
+        CAST(e.sName AS VARCHAR(MAX)) [Cabin Design Model],      
+        CAST(f.sName AS VARCHAR(MAX)) [RH SIDE PANEL FINISH],      
+        CAST(g.sName AS VARCHAR(MAX)) [LH SIDE PANEL FINISH],      
+        CAST(h.sName AS VARCHAR(MAX)) [REAR SIDE PANEL FINISH],      
+        --CAST(i.sName AS VARCHAR(MAX)) [CABIN JAMB POST/ HEADER FINISH],      
+        CAST(j.sName AS VARCHAR(MAX)) [FALSE CEILING],      
+        CAST(k.sName AS VARCHAR(MAX)) [FLOORING],      
+        CAST(a.xLightingSelection AS VARCHAR(MAX)) [Lighting Selection],      
+        CAST(l.sName AS VARCHAR(MAX)) [Fan],      
+        CAST(m.sName AS VARCHAR(MAX)) [Handrail],      
+        CAST(a.xHandrailLocation AS VARCHAR(MAX)) [Handrail Location],  
+        CAST(dbo.fCrm_GetNumberListValue('1,Front Opening,2,L type Opening,3,Reverse Opening,4,Telescopic lift,5,Telescopic right,6,3 Side',a.OpeningofLift1) as VARCHAR(MAX)) [Opening of Lift]
+          
+    from vuCrm_Quote_General_Details a with(nolock)      
+    left join vCore_CabinWidthMm b with(nolock) on a.xCabinWidthMm=b.iMasterId      
+    left join vCore_CabinDepthMm c with(nolock) on a.xCabinDepthMm=c.iMasterId      
+    left join vCore_CabinHeightMm d with(nolock) on a.CabinHeightMm=d.iMasterId      
+    left join vCore_SpecificationMaster e with(nolock) on a.xCabinDesignModel=e.iMasterId      
+    left join vCore_SpecificationMaster f with(nolock) on a.xRHSidePanelFinish=f.iMasterId      
+    left join vCore_SpecificationMaster g with(nolock) on a.xLHSidePanelFinish=g.iMasterId      
+    left join vCore_SpecificationMaster h with(nolock) on a.xRearsidePanelFinish=h.iMasterId      
+    left join vCore_SpecificationMaster i with(nolock) on a.xCabinJambPostHeaderFinish=i.iMasterId      
+    left join vCore_SpecificationMaster j with(nolock) on a.xFalseCeilingType=j.iMasterId      
+    left join vCore_SpecificationMaster k with(nolock) on a.iFlooringType=k.iMasterId      
+    left join vCore_SpecificationMaster l with(nolock) on a.xFanType=l.iMasterId      
+    left join vCore_SpecificationMaster m with(nolock) on a.xHandrail=m.iMasterId      
+    where a.iTransId>0   
+) a      
+unpivot (      
+    Val for Type in (      
+        [Cabin Width (Mm)],      
+        [Cabin Depth (Mm)],      
+        [Cabin Height (Mm)],      
+        [Cabin Design Model],      
+        [RH SIDE PANEL FINISH],      
+        [LH SIDE PANEL FINISH],      
+        [REAR SIDE PANEL FINISH],      
+         
+        [FALSE CEILING],      
+        [FLOORING],      
+        [Lighting Selection],      
+        [Fan],      
+        [Handrail],      
+        [Handrail Location],[Opening of Lift]
+    )      
+) b
+
+go
+ALTER    VIEW nCore_QuoteTechinicalSpecification as      
+SELECT      
+      
+iTransId,sName,      
+    Val,    Type      
+FROM      
+(      
+    SELECT       
+     a.iTransId, a.sName,     
+        CAST(a.xElevatorFunction AS VARCHAR(MAX)) AS [Elevator Function],      
+        CAST(b.sName AS VARCHAR(MAX)) AS [Elevator/Product Type],      
+        CAST(c.sName AS VARCHAR(MAX)) AS [Model Type Code],      
+        CAST(d.sName AS VARCHAR(MAX)) AS [Number.Of Passengers],      
+        CAST(a.xCapacityKG AS VARCHAR(MAX)) AS [Capacity (Kgs)],  -- Cast to varchar directly      
+        CAST(g.sName AS VARCHAR(MAX)) AS [Speed (Mps)],      -- Cast to varchar directly      
+        CAST(e.sName AS VARCHAR(MAX)) AS [Number Of Stops],      
+        CAST(f.sName AS VARCHAR(MAX)) AS [Number Of Openings For Car]  ,
+        ISNULL(CAST(a.xFinish as varchar(max)),'-') [Floor Markings] 
+    FROM vuCrm_Quote_General_Details a WITH(NOLOCK)      
+    LEFT JOIN vCore_SpecificationMaster b WITH(NOLOCK) ON a.xElevatorProductType = b.iMasterId      
+    LEFT JOIN vCore_SpecificationMaster c WITH(NOLOCK) ON a.xModelTypeCode = c.iMasterId      
+    LEFT JOIN vCore_SpecificationMaster d WITH(NOLOCK) ON a.iNumberOfPassengers = d.iMasterId      
+    LEFT JOIN vCore_SpecificationMaster e WITH(NOLOCK) ON a.xNumberOfStops = e.iMasterId      
+    LEFT JOIN vCore_SpecificationMaster f WITH(NOLOCK) ON a.NumberOfOpeningsForCar = f.iMasterId      
+ left join vCore_SpecificationMaster g with(nolock) on a.xSpeedMps=g.iMasterId   
+ --left join vCore_SpecificationMaster h with(nolock) on a.iNumberOfPassengers=h.iMasterId  
+    WHERE a.iTransId>0   
+) AS SourceTable      
+UNPIVOT      
+(      
+    Val FOR Type IN ([Elevator Function], [Elevator/Product Type], [Model Type Code], [Capacity (Kgs)], [Speed (Mps)], [Number Of Stops], [Number Of Openings For Car],[Number.Of Passengers],[Floor Markings])      
+       ) AS UnpivotedData;
+

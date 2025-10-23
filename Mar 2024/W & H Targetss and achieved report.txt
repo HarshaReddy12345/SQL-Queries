@@ -1,0 +1,14 @@
+select b.sName [Month],c.sName [Year],a.TargetValue,e.sName [Sales Person],[Achieved],[Pipeline]
+
+from vuCore_TargetForSalesmen_Target_Details a with(nolock)
+left join vCore_Month b with(nolock) on a.[Month]=b.iMasterId
+left join vCore_Year c with(nolock) on a.[Year]=c.iMasterId
+left join vCrm_Users e on a.SalesPerson=e.iMasterId
+ left join (select  [Month],[Year],CASE WHEN a.iStage=11 then  SUM(fLocalNetAmountNew) end [Achieved],CASE WHEN iStage<>11 then SUM(fLocalNetAmountNew) end [Pipeline],b.sName [Sales Person] from vCrm_Opportunities a with(nolock)
+join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+where a.iTransId>0
+group by b.sName,[Month],[Year],a.iStage
+) d on b.sName=d.[Month] and c.sName=d.[Year] and e.sName=[Sales Person]
+where a.iMasterId>0 
+
+

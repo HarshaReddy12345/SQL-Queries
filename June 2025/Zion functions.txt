@@ -1,0 +1,56 @@
+ALTER   FUNCTION dbo.fCore_Var3(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')   
+ 
+select top 1 @BlackReading=Counter101 from vCore_TonerCall with(nolock) where Asset=@Asset and Counter101>0 order by iCreatedDate desc  
+  
+return @BlackReading  
+end  
+go
+ALTER   FUNCTION dbo.fCore_Var4(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @MagentaReading=MagentaReading from vCore_TonerCall with(nolock) where Asset=@Asset and MagentaReading>0 order by iCreatedDate desc    
+  
+return @MagentaReading  
+end  
+
+go
+
+ALTER FUNCTION dbo.fCore_Var8(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+  
+select top 1 @CyanReading=CyanReadin from vCore_TonerCall with(nolock) where Asset=@Asset and CyanReadin>0 order by iCreatedDate desc   
+  
+return @CyanReading  
+end  
+
+go
+
+ALTER   FUNCTION dbo.fCore_Var9(@S xml)  
+returns varchar(max)  
+as  
+begin  
+declare @Asset int,@CallDate varchar(max),@CallType int,@BlackReading varchar(max),@MagentaReading varchar(max),@CallRemarks varchar(max),@cpReplaced int,@CallAttended int,@Yellowreading varchar(max),@CyanReading varchar(max),@fRet varchar(max)  
+  
+select @Asset=@s.value('(/Fields/Header/Asset)[1]','int')  
+  
+select top 1 @Yellowreading=YellowReading from vCore_TonerCall with(nolock) where Asset=@Asset and YellowReading>0 order by iCreatedDate desc  
+  
+return @Yellowreading  
+end

@@ -1,0 +1,87 @@
+ ALTER VIEW nCore_AllActivities as
+select (T.iReminderDateTime) [ReminderDateTime],
+M.sName [Modules],U.sName [Owner],FORMAt(dbo.fCore_IntToDate(T.iDueDate),'dd/MM/yyyy') [Due Date],
+T.sSubject,T.iAssignedTo,
+case L.iSalutation when 1 then 'Mr.'
+when 2 then 'Mrs.'
+when 3 then 'Miss'
+when 4 then 'Ms.'
+when 5 then 'Dr.'
+when 6 then 'Prof.'
+when 7 then 'Rev.'
+when 8 then 'Other' end [Saluation],L.sName [Name],ISNULL(Number,0) [Number],'' [Account],L.sFirstName [Contact],
+p.sName [Project],Me.sName [Medium],S.sName [Source],SS.sName [SubSource],
+Case T.ActivityLogs when 1 then 'Connected - Callback Later'
+when 1 then 'Connected - Callback Tomorrow'
+when 1 then 'Connected - I’ll comeback to you'
+when 1 then 'Connected - Schedule Site Visit'
+when 1 then 'Connected - Site Visit Done'
+when 1 then 'Connected - Site Visit Postponed'
+when 1 then 'Connected - Lost Under Enquiry'
+when 1 then 'Connected - Project Details shared'
+when 1 then 'Not Connected - RNR'
+when 1 then 'Not Connected - Switched Off'
+when 1 then 'Not Connected - Not Reachable'
+when 1 then 'Not Connected - Number Doesn’t Exist'
+when 1 then 'Re-enquiry' end 'Activity logs',
+case T.LeadStatus1 when 1 then 'Connected' when 2 then 'Not-Connected' end 'LeadStatus',
+Case T.iReminderType when 1 then 'Alert' when 2 then 'Email' when 3 then 'SMS' end  [iReminderType]
+from vaCrm_Leads L WITH(NOLOCK)
+inner join vCrm_Tasks T WITH(NOLOCK) on L.iTransId=T.iRelatedTo and (iRelatedToType=1792 or iRelatedToType=256 )
+left join vCrm_ModuleTypes M WITH(NOLOCK) on T.iRelatedToType=M.iTypeId 
+and (iRelatedToType=1792 or iRelatedToType=256) 
+left join vCore_ProjectName p WITH(NOLOCK) on L.ProjectName=p.iMasterId
+left join vCore_Medium Me  WITH(NOLOCK) on L.Medium=Me.iMasterId 
+left join vCore_Source S  WITH(NOLOCK) on L.Source=S.iMasterId
+ join vCore_SubSource SS  WITH(NOLOCK) on L.Sub=SS.iMasterId
+ left join vCrm_Users U  WITH(NOLOCK) on T.iAssignedTo=U.iMasterId
+where L.iTransId>0  
+union all
+select (T.iReminderDateTime) [ReminderDateTime],
+M.sName [Modules],U.sName [Owner],FORMAt(dbo.fCore_IntToDate(T.iDueDate),'dd/MM/yyyy') [Due Date],
+T.sSubject,T.iAssignedTo,
+case L.iSalutation when 1 then 'Mr.'
+when 2 then 'Mrs.'
+when 3 then 'Miss'
+when 4 then 'Ms.'
+when 5 then 'Dr.'
+when 6 then 'Prof.'
+when 7 then 'Rev.'
+when 8 then 'Other' end [Saluation],o.sName [Name],ISNULL(Number,0) [Number],A.sName [Account],C.sName [Contact],
+p.sName [Project],Me.sName [Medium],S.sName [Source],SS.sName [SubSource],
+Case T.ActivityLogs when 1 then 'Connected - Callback Later'
+when 1 then 'Connected - Callback Tomorrow'
+when 1 then 'Connected - I’ll comeback to you'
+when 1 then 'Connected - Schedule Site Visit'
+when 1 then 'Connected - Site Visit Done'
+when 1 then 'Connected - Site Visit Postponed'
+when 1 then 'Connected - Lost Under Enquiry'
+when 1 then 'Connected - Project Details shared'
+when 1 then 'Not Connected - RNR'
+when 1 then 'Not Connected - Switched Off'
+when 1 then 'Not Connected - Not Reachable'
+when 1 then 'Not Connected - Number Doesn’t Exist'
+when 1 then 'Re-enquiry' else '' end 'Activity logs',
+case T.LeadStatus1 when 1 then 'Connected' when 2 then 'Not-Connected' else '' end 'LeadStatus',
+Case T.iReminderType when 1 then 'Alert' when 2 then 'Email' when 3 then 'SMS' end  [iReminderType]
+from vCrm_Opportunities o  WITH(NOLOCK)
+left join vCrm_Leads L  WITH(NOLOCK) on o.iLeadId=L.iTransId
+inner join vCrm_Tasks T   WITH(NOLOCK) on o.iTransId=T.iRelatedTo and (iRelatedToType=1792 or iRelatedToType=256 )
+left join vCrm_ModuleTypes M  WITH(NOLOCK) on T.iRelatedToType=M.iTypeId 
+and (iRelatedToType=1792 or iRelatedToType=256) 
+left join vCore_ProjectName p  WITH(NOLOCK) on L.ProjectName=p.iMasterId
+left join vCore_Medium Me  WITH(NOLOCK) on L.Medium=Me.iMasterId 
+left join vCore_Source S  WITH(NOLOCK) on L.Source=S.iMasterId
+ join vCore_SubSource SS  WITH(NOLOCK) on L.Sub=SS.iMasterId
+ left join vCrm_Users U  WITH(NOLOCK) on T.iAssignedTo=U.iMasterId
+ left join vCore_Account A  WITH(NOLOCK) on o.iAccount=A.iMasterId
+ left join vCrm_Contacts C  WITH(NOLOCK) on o.iContactId=C.iMasterId
+where o.iTransId>0 
+
+--select * from nCore_AllActivities a
+--INNER JOIN (SELECT DISTINCT
+--  iMasterIdd sToken
+--FROM tCrm_UserHirearchyDetails AA WITH (NOLOCK)
+--INNER JOIN dbo.fCrm_GetTokens('@USERACCESS', ',') BB
+--  ON AA.iUserId = BB.sToken) emphir
+--  ON emphir.sToken = a.iAssignedTo

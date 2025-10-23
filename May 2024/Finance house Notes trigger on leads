@@ -1,0 +1,26 @@
+CREATE TRIGGER cCrm_Notes_Insert_Update    
+    ON [dbo].[cCrm_Notes]    
+    FOR INSERT, UPDATE    
+    AS    
+    BEGIN    
+    SET NOCOUNT ON    
+    
+   DECLARE @iMemberId INT ,@iNoteId int
+   SELECT @iNoteId = ins.iNoteId,@iMemberId=ins.iTransId FROM INSERTED ins with(nolock)
+
+   Declare @ModifiedTime bigint,@iCreatedTime bigint
+  
+   select @iCreatedTime=iCreatedDate from cCrm_Notes with(nolock) where iNoteId=@iNoteId
+   select @ModifiedTime=iModifiedDate from cCrm_Notes with(nolock) where iNoteId=@iNoteId
+   
+   if(@ModifiedTime>@iCreatedTime)
+   begin
+   UPDATE vaCrm_Leads set LastActivityDateTime=@ModifiedTime where iMemberId=@iMemberId
+   end
+   
+   else 
+   begin
+   UPDATE vaCrm_Leads set LastActivityDateTime=@iCreatedTime where iMemberId=@iMemberId
+   end
+   
+   END

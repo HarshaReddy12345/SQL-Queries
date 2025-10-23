@@ -1,0 +1,8 @@
+CREATE OR ALTER PROCEDURE udp_UpdateDepositAmountByBookingAmount (@iTransId BIGINT, @iUserId INT)
+AS
+BEGIN
+    SET @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0)
+	UPDATE vuCrm_BookingPaymentSchedule_General_Details set DepositAmount=fAmount where iTransId=@iTransId and sInstallmentName='Booking Amount'
+	end 
+
+

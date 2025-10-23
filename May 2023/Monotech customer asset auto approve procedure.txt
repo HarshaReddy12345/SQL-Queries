@@ -1,0 +1,8 @@
+CREATE OR ALTER PROC udp_UpdateApprovalStatusToApproved(@iTransId bigint=0,@iUserId int =0)
+as
+BEGIN
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+update vCrm_CustAssets set iApprovalStatus=114
+from vCrm_CustAssets 
+where iTransId=@iTransId
+end

@@ -1,0 +1,21 @@
+CREATE FUNCTION dbo.fCore_Var2(@s xml)
+returns varchar(50)
+as 
+begin
+DECLARE @Date int,@Month varchar(50)
+select @Date=@s.value('(/Fields/Header/Date)[1]','int')
+select @Month=DATENAME(YYYY,dbo.fCore_IntToDate([Date])) from vCrm_Opportunities where Date=@Date
+return @Month
+end
+
+--------------------------------------------------------------
+
+CREATE FUNCTION dbo.fCore_Var1(@s xml)
+returns varchar(50)
+as 
+begin
+DECLARE @Date int,@Month varchar(50)
+select @Date=@s.value('(/Fields/Header/Date)[1]','int')
+select @Month=DATENAME(YYYY,dbo.fCore_IntToDate([Date])) from vCrm_Opportunities where Date=@Date
+return @Month
+end

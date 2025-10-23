@@ -1,0 +1,13 @@
+ALTER FUNCTION dbo.fCore_Var007(@s xml)
+returns decimal (18,2)
+as 
+begin
+DECLARE @Output decimal(18,2),@iMasterId int,@starttime int,@endtime int
+select @iMasterId = @s.value('(Fields/Header/CurrentUser)[1]', 'INT')
+ SELECT @starttime = @s.value('(Fields/BodyData/BodyRow/StartTime)[1]', 'INT'),   
+        @endtime = @s.value('(Fields/BodyData/BodyRow/EndTime)[1]', 'INT') 
+
+select @Output=DATEDIFF(MI,dbo.fCore_IntToTime(@starttime),dbo.fCore_IntToTime(@endtime)) from vuCore_ProcessTimeTracker_Timeinfo_Details where iAssignedTo=@iMasterId
+return @Output
+end 
+

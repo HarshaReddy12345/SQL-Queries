@@ -1,0 +1,13 @@
+select * from vCrm_Region r join (
+SELECT
+        iMasterId, ROW_NUMBER() OVER (ORDER BY iMasterId) AS RowNumber
+    FROM
+        vCrm_Region) a on r.iMasterId=a.iMasterId
+
+
+update r set r.Coden=a.RowNumber
+		from vCrm_Region r join (
+SELECT
+        iMasterId, ROW_NUMBER() OVER (ORDER BY iMasterId) AS RowNumber
+    FROM
+        vCrm_Region) a on r.iMasterId=a.iMasterId

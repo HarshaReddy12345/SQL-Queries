@@ -1,0 +1,129 @@
+Create or Alter View nCore_CustomDocumentRpt as
+
+select FileName,
+       iMasterId,
+	   Description,
+	   ModuleName,
+	   Name,
+	   iAssignedTo ,
+	   Account
+	   from 
+(
+select 
+        vCrm_Documents.sFileName FileName,
+		vCrm_Documents.iMasterId iMasterId,
+		vCrm_Documents.sDescription Description,
+        vCrm_ModuleTypes_iRelatedType.sModuleName ModuleName,
+		vCrm_Users_iAssignedTo.sName Name,
+        vCrm_Users_iAssignedTo.iMasterId iAssignedTo ,
+		a.sName [Account]
+from vCrm_Documents 
+inner join vCrm_ModuleTypes vCrm_ModuleTypes_iRelatedType
+on vCrm_Documents.iRelatedType=vCrm_ModuleTypes_iRelatedType.iMasterId  
+and vCrm_ModuleTypes_iRelatedType.iLanguageId=0  
+inner join vCrm_Users vCrm_Users_iAssignedTo 
+on vCrm_Documents.iAssignedTo=vCrm_Users_iAssignedTo.iMasterId  
+inner join vCore_Account a on vCrm_Documents.iRelatedTo=a.iMasterId and iRelatedType=2305
+where vCrm_Documents.iMasterId>0   
+     
+union all
+
+select 
+        vCrm_Documents.sFileName FileName,
+		vCrm_Documents.iMasterId iMasterId,
+		vCrm_Documents.sDescription Description,
+        vCrm_ModuleTypes_iRelatedType.sModuleName ModuleName,
+		vCrm_Users_iAssignedTo.sName Name,
+        vCrm_Users_iAssignedTo.iMasterId iAssignedTo ,
+		b.sName [Account]
+from vCrm_Documents 
+inner join vCrm_ModuleTypes vCrm_ModuleTypes_iRelatedType
+on vCrm_Documents.iRelatedType=vCrm_ModuleTypes_iRelatedType.iMasterId  
+and vCrm_ModuleTypes_iRelatedType.iLanguageId=0  
+inner join vCrm_Users vCrm_Users_iAssignedTo 
+on vCrm_Documents.iAssignedTo=vCrm_Users_iAssignedTo.iMasterId  
+inner join vCrm_Opportunities a on vCrm_Documents.iRelatedTo=a.iTransId and iRelatedType=1792
+inner join vCore_Account b on a.iAccount=b.iMasterId
+where vCrm_Documents.iMasterId>0  
+
+union all
+
+select 
+        vCrm_Documents.sFileName FileName,
+		vCrm_Documents.iMasterId iMasterId,
+		vCrm_Documents.sDescription Description,
+        vCrm_ModuleTypes_iRelatedType.sModuleName ModuleName,
+		vCrm_Users_iAssignedTo.sName Name,
+        vCrm_Users_iAssignedTo.iMasterId iAssignedTo ,
+		b.sName [Account]
+from vCrm_Documents 
+inner join vCrm_ModuleTypes vCrm_ModuleTypes_iRelatedType
+on vCrm_Documents.iRelatedType=vCrm_ModuleTypes_iRelatedType.iMasterId  
+and vCrm_ModuleTypes_iRelatedType.iLanguageId=0  
+inner join vCrm_Users vCrm_Users_iAssignedTo 
+on vCrm_Documents.iAssignedTo=vCrm_Users_iAssignedTo.iMasterId  
+inner join vCrm_SalesOrder a on vCrm_Documents.iRelatedTo=a.iTransId and iRelatedType=3072
+inner join vCore_Account b on a.iAccount=b.iMasterId
+where vCrm_Documents.iMasterId>0  
+
+union all
+
+select 
+        vCrm_Documents.sFileName FileName,
+		vCrm_Documents.iMasterId iMasterId,
+		vCrm_Documents.sDescription Description,
+        vCrm_ModuleTypes_iRelatedType.sModuleName ModuleName,
+		vCrm_Users_iAssignedTo.sName Name,
+        vCrm_Users_iAssignedTo.iMasterId iAssignedTo ,
+		b.sName [Account]
+from vCrm_Documents 
+inner join vCrm_ModuleTypes vCrm_ModuleTypes_iRelatedType
+on vCrm_Documents.iRelatedType=vCrm_ModuleTypes_iRelatedType.iMasterId  
+and vCrm_ModuleTypes_iRelatedType.iLanguageId=0  
+inner join vCrm_Users vCrm_Users_iAssignedTo 
+on vCrm_Documents.iAssignedTo=vCrm_Users_iAssignedTo.iMasterId  
+inner join vCore_ProjectMaster a on vCrm_Documents.iRelatedTo=a.iMasterId and iRelatedType=2478
+inner join vCore_Account b on a.iAccount=b.iMasterId
+where vCrm_Documents.iMasterId>0  
+
+union all
+
+select 
+        vCrm_Documents.sFileName FileName,
+		vCrm_Documents.iMasterId iMasterId,
+		vCrm_Documents.sDescription Description,
+        vCrm_ModuleTypes_iRelatedType.sModuleName ModuleName,
+		vCrm_Users_iAssignedTo.sName Name,
+        vCrm_Users_iAssignedTo.iMasterId iAssignedTo ,
+		b.sName [Account]
+from vCrm_Documents 
+inner join vCrm_ModuleTypes vCrm_ModuleTypes_iRelatedType
+on vCrm_Documents.iRelatedType=vCrm_ModuleTypes_iRelatedType.iMasterId  
+and vCrm_ModuleTypes_iRelatedType.iLanguageId=0  
+inner join vCrm_Users vCrm_Users_iAssignedTo 
+on vCrm_Documents.iAssignedTo=vCrm_Users_iAssignedTo.iMasterId  
+inner join vCore_SubProjectMaster a on vCrm_Documents.iRelatedTo=a.iMasterId and iRelatedType=2479
+inner join vCore_Account b on a.iAccount=b.iMasterId
+where vCrm_Documents.iMasterId>0 
+
+union all
+
+select 
+        vCrm_Documents.sFileName FileName,
+		vCrm_Documents.iMasterId iMasterId,
+		vCrm_Documents.sDescription Description,
+        vCrm_ModuleTypes_iRelatedType.sModuleName ModuleName,
+		vCrm_Users_iAssignedTo.sName Name,
+        vCrm_Users_iAssignedTo.iMasterId iAssignedTo ,
+		b.sName [Account]
+from vCrm_Documents 
+inner join vCrm_ModuleTypes vCrm_ModuleTypes_iRelatedType
+on vCrm_Documents.iRelatedType=vCrm_ModuleTypes_iRelatedType.iMasterId  
+and vCrm_ModuleTypes_iRelatedType.iLanguageId=0  
+inner join vCrm_Users vCrm_Users_iAssignedTo 
+on vCrm_Documents.iAssignedTo=vCrm_Users_iAssignedTo.iMasterId  
+inner join vCore_TaskActivity a on vCrm_Documents.iRelatedTo=a.iMasterId and iRelatedType=2484
+inner join vCore_Account b on a.iAccount=b.iMasterId
+where vCrm_Documents.iMasterId>0
+
+) a

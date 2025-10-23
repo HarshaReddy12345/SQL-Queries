@@ -1,0 +1,24 @@
+select 
+  vuCore_BillingPlan_Details_Details.Month [$Date$Month], 
+  case vuCore_BillingPlan_Details_Details.Regionbillingplan when 1 then N 'East' when 2 then N 'West' when 3 then N 'North' when 4 then N 'South' end [Region], 
+  vCrm_Users_iAssignedTo.sUserName [Owner], 
+  vCrm_Users_iAssignedTo.iMasterId #col2,vCore_Region_Region.sCode [Region code],vCore_Region_Region.iMasterId #col3,vCrm_Users_SalesPerson.sUserName [Sales Person],vCrm_Users_SalesPerson.iMasterId #col4,vuCore_BillingPlan_Details_Details.CustomerName [Customer Name],vuCore_BillingPlan_Details_Details.ProductBP Productbp,vCrm_Opportunities_OpportunityName.sName OpportunityName,vCrm_Opportunities_OpportunityName.iTransId #col7,vCore_Product_Product.sName ProductName,vCore_Product_Product.iMasterId #col8,vuCore_BillingPlan_Details_Details.TotalOpportunityValue [Total Opp Value],vuCore_BillingPlan_Details_Details.TotalAmountWithTax TotalAmountWithTax,vuCore_BillingPlan_Det ails_Details.TotalAmountWithoutTax TotalAmountWithoutTax,vuCore_BillingPlan_Details_Details.BilledduringthemonthINR BilledduringthemonthINR,vuCore_BillingPlan_Details_Details.BalancetobebilledINR BalancetobebilledINR,vuCore_BillingPlan_Details_Details.CumulativeAdvanceReceivedValueinRs CumulativeAdvanceReceivedValueinRs,vuCore_BillingPlan_Details_Details.BalancePaymentDueValueinRs BalancePaymentDueValueinRs,vuCore_BillingPlan_Details_Details.Week1 Week1,vuCore_BillingPlan_Details_Details.Week2 Week2,vuCore_BillingPlan_Details_Details.Week3 Week3,vuCore_BillingPlan_Details_Details.Week4 Week4,vuCore_BillingPlan_Details_Details.Credit Credit,vuCore_BillingPlan_Details_Details.MachineStatus MachineStatus,vuCore_BillingPlan_Details_Details.BillingStatus BillingStatus,vuCore_BillingPlan_Details_Details.Remarks Remarks  from vuCore_BillingPlan_Details_Details left outer join vCrm_Users vCrm_Users_iAssignedTo on vuCore_BillingPlan_Details_Details.iAssignedTo=vCrm_Users_iAssignedTo.iMasterId  left outer join vCore_Region vCore_Region_Region on vuCore_BillingPlan_Details_Details.Region=vCore_Region_Region.iMasterId  left outer join vCrm_Users vCrm_Users_SalesPerson on vuCore_BillingPlan_Details_Details.SalesPerson=vCrm_Users_SalesPerson.iMasterId  left outer join vCrm_Opportunities vCrm_Opportunities_OpportunityName on vuCore_BillingPlan_Details_Details.OpportunityName=vCrm_Opportunities_OpportunityName.iTransId  left outer join vCore_Product vCore_Product_Product on vuCore_BillingPlan_Details_Details.Product=vCore_Product_Product.iMasterId
+  INNER JOIN (
+    select 
+      distinct iMasterIdd 
+    from 
+      [tCrm_UserHirearchyDetails] AA with(nolock) 
+      inner join dbo.fCrm_GetTokens('@USERACCESS', ',') BB on AA.iUserId = BB.sToken
+  ) emphir ON emphir.iMasterIdd = vCrm_Users_SalesPerson.iMasterId 
+where 
+  vuCore_BillingPlan_Details_Details.iMasterId > 0 
+  and (
+    vuCore_BillingPlan_Details_Details.Month between @STARTDATE 
+    and @ENDDATE
+  ) 
+  and vCrm_Users_SalesPerson.iMasterId = IIF(
+    @User > 0, @User, vCrm_Users_SalesPerson.iMasterId
+  ) 
+  and vCore_Region_Region.iMasterId = IIF(
+    @Region > 0, @Region, vCore_Region_Region.iMasterId
+  )

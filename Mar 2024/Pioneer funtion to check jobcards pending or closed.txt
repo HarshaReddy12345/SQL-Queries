@@ -1,0 +1,23 @@
+CREATE or ALTER FUNCTION dbo.fCore_Var007(@s xml)    
+RETURNS INT    
+AS    
+BEGIN    
+    DECLARE @Result INT,@Id int;    
+    
+   select @Id=@s.value('(/Fields/Header/TransId)[1]', 'INT')  
+    IF EXISTS (    
+        SELECT 1    
+        FROM vCore_JobCard a with(nolock) WHERE  JobStatusM <>17  and EstimationNo=@Id  
+    )    
+    BEGIN    
+        SET @Result = 0;   
+    END    
+    ELSE    
+    BEGIN    
+        SET @Result = 1;   
+    END    
+    
+    RETURN @Result;    
+END;    
+    
+  

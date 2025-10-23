@@ -1,0 +1,19 @@
+select tp.TotalTarget,
+       tp.TotalAchieved,
+	   v.sName[Vertical],
+	   u.iMasterId,
+	   dbo.fCore_IntToDate(tp.FromDate)[FromDate],
+	   dbo.fCore_IntToDate(tp.ToDate)[ToDate],
+	   u.sName[SalesPerson],
+	   P.sCode[ProductName],
+	   concat(year(dbo.fCore_IntToDate(tp.FromDate)),'-',
+	   year(dbo.fCore_IntToDate(tp.ToDate)))
+from   
+       vuCore_TargetModule_Product_Details tp with(nolock)
+left join
+       vCrm_Users u with(nolock) on tp.Salesperson=u.iMasterId
+left join 
+	   vCore_Product P with(nolock) on tp.ProductName=P.iMasterId
+left join
+       vCrm_Vertical v on tp.Vertical=v.iMasterId
+where tp.Salesperson not in(0)

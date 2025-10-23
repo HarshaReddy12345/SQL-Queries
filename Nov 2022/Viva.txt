@@ -1,0 +1,67 @@
+
+select 'Leads'[Module],C.sName[Campaign],L.iCampaignId,VM.sName[VehicleModel],vL.sName[DelarshipLocation],Count(*)[LeadCount],MONTH(dbo.fCore_IntToDateTime(L.iCreatedDate))[Month],'' [Name] from vaCrm_Leads L WITH(NOLOCK)
+inner join vCrm_Campaigns C WITH(NOLOCK) on L.iCampaignId=C.iMasterId
+inner join vCrm_VehicleModel VM WITH(NOLOCK) on VM.iMasterId=L.VehicleModel
+inner join vCore_Location vL WITH(NOLOCK) on vL.iMasterId=L.iLocationId
+group by C.sName,VM.sName,vL.sName,L.iCreatedDate,L.iCampaignId
+
+union all
+
+select 'ConvertedLeads'[Module],C.sName[Campaign],L.iCampaignId,vm.sName[VehicleModel],ll.sName[DelarshipLocation],Count(*)[Convertedleads],MONTH(dbo.fCore_IntToDateTime(L.iConvertedDateTime)),''[name] from  tCrm_ConvertedLeads L WITH(NOLOCK)
+inner join vCrm_Leads vL WITH(NOLOCK) on L.iTransId=vL.iTransId
+left join vCrm_Campaigns C WITH(NOLOCK) on L.iCampaignId=C.iMasterId
+left join vCrm_VehicleModel vm WITH(NOLOCK) on vL.VehicleModel=vm.iMasterId
+left join vCore_Location ll WITH(NOLOCK) on vL.iLocationId=ll.iMasterId
+group by C.sName,vm.sName,ll.sName,L.iCampaignId,L.iConvertedDateTime
+
+
+union all
+
+select 'AppointmentScheduled'[Module],C.sName[Campaign],L.iCampaignId,VM.sName[VehicleModel],vL.sName[DelarshipLocation],Count(App.iStatus)[AppointmentCompleted],MONTH(dbo.fCore_IntToDateTime(App.iCreatedDate))[Month],Opp.sName from  vCrm_Opportunities Opp WITH(NOLOCK)
+inner join tCrm_ConvertedLeads CL WITH(NOLOCK) on Opp.iTransId=CL.iTransId
+left join vaCrm_Leads L WITH(NOLOCK) on CL.iTransId=L.iTransId
+left join vCrm_Campaigns C WITH(NOLOCK) on L.iCampaignId=C.iMasterId
+left join vCrm_VehicleModel VM WITH(NOLOCK)  on VM.iMasterId=L.VehicleModel
+left join vCore_Location vL WITH(NOLOCK)  on vL.iMasterId=L.iLocationId
+left join vCrm_Appointments App WITH(NOLOCK)  on App.Opportuinties=Opp.iTransId 
+left join vCrm_TaskStatus TS WITH(NOLOCK)  on TS.iTransId=App.iTransId
+where App.iStatus=47
+group by C.sName,VM.sName,vL.sName,App.iCreatedDate,L.iCampaignId,Opp.sName
+union all
+
+select 'AppointmentCompleted'[Module],C.sName[Campaign],L.iCampaignId,VM.sName[VehicleModel],vL.sName[DelarshipLocation],Count(App.iStatus)[AppointmentCompleted],MONTH(dbo.fCore_IntToDateTime(App.iCreatedDate))[Month],Opp.sName from  vCrm_Opportunities Opp WITH(NOLOCK)
+inner join tCrm_ConvertedLeads CL on Opp.iTransId=CL.iTransId
+left join vaCrm_Leads L WITH(NOLOCK) on CL.iTransId=L.iTransId
+left join vCrm_Campaigns C WITH(NOLOCK) on L.iCampaignId=C.iMasterId
+left join vCrm_VehicleModel VM WITH(NOLOCK)  on VM.iMasterId=L.VehicleModel
+left join vCore_Location vL WITH(NOLOCK)  on vL.iMasterId=L.iLocationId
+left join vCrm_Appointments App WITH(NOLOCK)  on App.Opportuinties=Opp.iTransId 
+left join vCrm_TaskStatus TS WITH(NOLOCK)  on TS.iTransId=App.iTransId
+where App.iStatus=48
+group by C.sName,VM.sName,vL.sName,App.iCreatedDate,L.iCampaignId,Opp.sName
+union all
+select 'TestDriveScheduled'[Module],C.sName[Campaign],L.iCampaignId,VM.sName[VehicleModel],vL.sName[DelarshipLocation],Count(App.iStatus)[TestDriveScheduled],MONTH(dbo.fCore_IntToDateTime(TD.iCreatedDate))[Month],Opp.sName from vCrm_TestDrive TD WITH(NOLOCK)
+left join vCrm_Opportunities Opp WITH(NOLOCK) on TD.Opportunity    =Opp.iTransId
+left join tCrm_ConvertedLeads CL WITH(NOLOCK)  on Opp.iTransId=CL.iTransId
+left join vaCrm_Leads L WITH(NOLOCK) on CL.iTransId=L.iTransId
+left join vCrm_Campaigns C WITH(NOLOCK) on L.iCampaignId=C.iMasterId
+left join vCrm_VehicleModel VM WITH(NOLOCK)  on VM.iMasterId=L.VehicleModel
+left join vCore_Location vL WITH(NOLOCK)  on vL.iMasterId=L.iLocationId
+left join vCrm_Appointments App WITH(NOLOCK)  on App.Opportuinties=Opp.iTransId 
+left join vCrm_TaskStatus TS WITH(NOLOCK)  on TS.iTransId=App.iTransId
+where TD.TDStatus=1
+group by C.sName,VM.sName,vL.sName,TD.iCreatedDate,L.iCampaignId,Opp.sName
+
+union all
+
+select 'TestDriveCompleted'[Module],C.sName[Campaign],L.iCampaignId,VM.sName[VehicleModel],vL.sName[DelarshipLocation],Count(App.iStatus)[TestDriveScheduled],MONTH(dbo.fCore_IntToDateTime(TD.iCreatedDate))[Month],Opp.sName from vCrm_TestDrive TD WITH(NOLOCK)
+left join vCrm_Opportunities Opp WITH(NOLOCK) on TD.Opportunity    =Opp.iTransId
+left join tCrm_ConvertedLeads CL WITH(NOLOCK)  on Opp.iTransId=CL.iTransId
+left join vaCrm_Leads L WITH(NOLOCK) on CL.iTransId=L.iTransId
+left join vCrm_Campaigns C WITH(NOLOCK) on L.iCampaignId=C.iMasterId
+left join vCrm_VehicleModel VM WITH(NOLOCK)  on VM.iMasterId=L.VehicleModel
+left join vCore_Location vL WITH(NOLOCK)  on vL.iMasterId=L.iLocationId
+left join vCrm_Appointments App WITH(NOLOCK)  on App.Opportuinties=Opp.iTransId 
+left join vCrm_TaskStatus TS WITH(NOLOCK)  on TS.iTransId=App.iTransId
+where TD.TDStatus=4
+group by C.sName,VM.sName,vL.sName,TD.iCreatedDate,L.iCampaignId,Opp.sName

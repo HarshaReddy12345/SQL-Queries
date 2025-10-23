@@ -1,0 +1,14 @@
+CREATE or ALTER PROC udp_UpdateLastJobCardOnCustomer @iTransId bigint,@iUserId int=0
+as
+begin
+      select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+         Declare @LastJobCard int,@Customer int,@iCreatedDate bigint
+
+             select @Customer=Customer,@iCreatedDate=iCreatedDate from vCore_Jobcard with(nolock) where iMasterId=@iTransId
+
+      select top 1 @LastJobCard=iMasterId from vCore_Jobcard with(nolock) where iMasterId<@iTransId  and Customer=@Customer order by iCreatedDate desc
+
+update vCore_Jobcard set LastJobCard =@LastJobCard where iMasterId=@iTransId
+end
+

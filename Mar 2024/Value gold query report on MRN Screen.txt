@@ -1,0 +1,5 @@
+select a.sName [MRN No],d.sName [User],a.TotalGrossWeight,ROUND(a.TotalFineWeight,2) [TotalFineWeight] from vCore_MRN a with(nolock) 
+left join vCore_Account c with(nolock) on a.Customer=c.iMasterId
+left join tCrm_Leads b with(nolock) on c.sName=b.sCompany
+inner join vCrm_Leads e with(nolock) on b.iTransId=e.iTransId
+left join vCrm_Users d with(nolock) on b.iAssignedTo=d.iMasterId

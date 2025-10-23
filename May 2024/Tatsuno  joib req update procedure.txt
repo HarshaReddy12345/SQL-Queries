@@ -1,0 +1,66 @@
+      ALTER VIEW nCore_CallToSLA  
+as  
+select   
+  sum(TimeHrs1) TimeHrs1,sum(TimeHrs2) TimeHrs2,iMasterId,DistanceFrom,DistanceTo,TimeFrom,TimeTo,iTransId   
+from   
+  (  
+    select   
+      CASE WHEN TypeSLA = 1 THEN TimeHrs END TimeHrs1,   
+      CASE WHEN TypeSLA = 2 THEN TimeHrs END TimeHrs2,   
+      iMasterId,DistanceFrom,DistanceTo,   
+      dbo.fCore_IntToTime(TimeFrom) TimeFrom,   
+      dbo.fCore_IntToTime(TimeTo) TimeTo,   
+      b.iTransId   
+    from   
+      udv_CalculateTimeDifference a WITH (NOLOCK)   
+      inner join vCrm_Calls b  WITH (NOLOCK)  on a.iMasterId = b.SLANumber   
+    where   
+      DistancefromCompany  between DistanceFrom and DistanceTo   and b.sName='2024-05-E-00223'
+      and b.iCreatedDate between dbo.fCore_DateTimeToInt(dbo.fCore_IntIntToDateTime(dbo.fCrm_DateFromBigInt(b.iCreatedDate),TimeFrom))   
+      and dbo.fCore_DateTimeToInt(  
+        DATEADD(hh,a.time_difference_in_ms,dbo.fCore_IntIntToDateTime(dbo.fCrm_DateFromBigInt(b.iCreatedDate),TimeFrom)))   
+  
+    union all   
+  
+    select   
+      CASE WHEN TypeSLA = 1 THEN TimeHrs END TimeHrs1,   
+      CASE WHEN TypeSLA = 2 THEN TimeHrs END TimeHrs2,   
+      iMasterId, DistanceFrom,DistanceTo,   
+      dbo.fCore_IntToTime(TimeFrom),   
+      dbo.fCore_IntToTime(TimeTo),   
+      b.iTransId   
+    from   
+      udv_CalculateTimeDifference a WITH (NOLOCK)   
+      join vCrm_Calls b  WITH (NOLOCK)  on a.iMasterId = b.SLANumber   
+    where   
+     DistancefromCompany  between DistanceFrom and DistanceTo and b.sName='2024-05-E-00223'  
+   and b.iCreatedDate between dbo.fCore_DateTimeToInt(dbo.fCore_IntIntToDateTime(dbo.fCrm_DATEADD(1,dbo.fCrm_DateFromBigInt(b.iCreatedDate),-1),TimeFrom))   
+      and dbo.fCore_DateTimeToInt( DATEADD( hh,a.time_difference_in_ms,dbo.fCore_IntIntToDateTime(dbo.fCrm_DATEADD(1, dbo.fCrm_DateFromBigInt(b.iCreatedDate), -1 ),   
+      TimeFrom ) ))  
+  ) a   
+where   
+  a.iTransId>0  
+group by   
+  iMasterId,   
+  DistanceFrom,   
+  DistanceTo,   
+  TimeFrom,   
+  TimeTo,   
+  iTransId  
+  
+  ---------------------------------------------------------------------
+  CREATE   PROCEDURE udp_JobReqF (@iTransId BIGINT, @iUserId INT = 0)    
+AS    
+BEGIN    
+    
+    SELECT @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0)    
+    
+    
+    update a set a.SLAReportandAttendTimeHours=b.TimeHrs1,a.SLAResolveTimeHours=b.TimeHrs2    
+ from vCrm_Calls a with(nolock)    
+ join nCore_CallToSLA b with(nolock) on a.SLANumber=b.iMasterId    
+ where a.iTransId=@iTransId    
+    
+END 
+
+exec udp_JobReqF 270215979789727703,0
