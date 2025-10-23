@@ -1,0 +1,51 @@
+
+EXEC sp_configure 'Ole Automation Procedures';
+GO
+sp_configure 'show advanced options', 1;
+GO
+RECONFIGURE;
+GO
+sp_configure 'Ole Automation Procedures', 1;
+GO
+RECONFIGURE;
+GO
+
+create function SendGetRequest(@url varchar(8000)) returns varchar(8000) 
+as 
+BEGIN 
+	DECLARE @win int DECLARE @hr int DECLARE @text varchar(8000)
+	EXEC @hr = sp_OACreate 'WinHttp.WinHttpRequest.5.1', @win OUT IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Open', NULL, 'GET',@url,'false' IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Send' IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAGetProperty @win,'ResponseText',@text OUTPUT IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OADestroy @win IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	RETURN @text 
+END
+
+
+
+--Get CurrentStock
+CREATE function dbo.fCore_Var8082(@s xml)
+returns decimal(18,2)
+as
+begin
+	declare @fret decimal(18,2)
+
+	declare @sDate varchar(20) = convert(varchar(20),dbo.fCore_DateToInt(getdate()))
+	declare @iProdId int,@iWh int,@sCode varchar(300);
+	select @iProdId = @s.value('(Fields/BodyData/BodyRow/iProductId)[1]','int');
+	select @iProdId = @s.value('(Fields/Header/Division)[1]','int');
+
+	select @sCode= sCode from vCore_Product with(nolock) where iMasterId=@iProdId;
+
+	declare @iMasterid varchar(200) 
+	select top 1 @iMasterid=iMasterId from Focus82O0..vCore_Product where sCode=@sCode 
+	select @fret=Focus82O0.[dbo].[fCore_Var0](@sDate,@iMasterid,@fromDiv) 
+
+	return @fret
+end

@@ -1,0 +1,49 @@
+CREATE FUNCTION dbo.fCore_Var18(@s XML)
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @fRet BIT = 0;
+    DECLARE @Owner INT, @Role INT;
+    DECLARE @CreatedDate DATETIME;
+
+    -- Get Assigned User ID from XML
+    SELECT @Owner = @s.value('(/Fields/Header/iAssignedTo)[1]', 'int');
+
+    -- Get User Role
+    SELECT @Role = iCRMRole FROM vCrm_Users WHERE iMasterId = @Owner;
+
+    -- Proceed only if Role is 7
+    IF @Role = 7
+    BEGIN
+        -- Get Created Date from transaction
+        SELECT TOP 1 @CreatedDate = dbo.fCore_IntToDateTime(iCreatedDate)
+        FROM vCore_GC
+        WHERE iAssignedTo = @Owner;
+
+        -- Rule 1: Cannot edit a transaction more than 4 days old
+        IF DATEDIFF(DAY, @CreatedDate, GETDATE()) > 4
+        BEGIN
+            SET @fRet = 1;
+            RETURN @fRet;
+        END
+
+        -- Rule 2: Cannot enter previous month entry after 3rd day of current month
+        IF MONTH(@CreatedDate) = MONTH(DATEADD(MONTH, -1, GETDATE())) 
+           AND YEAR(@CreatedDate) = YEAR(GETDATE())
+           AND DAY(GETDATE()) > 3
+        BEGIN
+            SET @fRet = 1;
+            RETURN @fRet;
+        END
+
+        -- Rule 3: Cannot edit transaction more than 3 days old
+        IF DATEDIFF(DAY, @CreatedDate, GETDATE()) > 3
+        BEGIN
+            SET @fRet = 1;
+            RETURN @fRet;
+        END
+    END
+
+    RETURN @fRet;
+END
+======================================================================================

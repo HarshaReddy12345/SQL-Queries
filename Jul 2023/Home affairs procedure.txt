@@ -1,0 +1,69 @@
+
+
+
+CREATE procedure [dbo].[nsp_UpdateInventoryDetails]
+@iTransId bigint=0,
+@UserId int=0
+as
+begin
+    select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+    if(@iTransId>0)
+    begin
+        declare @iBodyId int,@iProduct int,@iQty int,@Warehouse int,@balQty int,@IssueQty int,@MaxBodyId int,@iSequence int,@AvlQty int
+        declare s1 cursor for select iBodyId from vuCrm_SalesOrder_General_Details where iTransId=@iTransId
+        open s1;
+        fetch next from s1 into @iBodyId;
+
+        WHILE @@FETCH_STATUS = 0    
+        BEGIN    
+            select @iProduct=iProductId,@iQty=iQuantity from vuCrm_SalesOrder_General_Details with(nolock) where iTransId=@iTransId and iBodyId=@iBodyId
+            if(@iQty>0)
+            Begin
+                declare s2 cursor for select Warehouse from nCore_AvailableStock with(nolock) where iProductName=@iProduct order by iSequenceId asc
+                open s2;
+                fetch next from s2 into @Warehouse;
+                WHILE @@FETCH_STATUS = 0    
+                BEGIN   
+                    set @AvlQty=(select [Avl Qty] from  nCore_AvailableStock with(nolock) where iProductName=@iProduct and Warehouse=@Warehouse)
+                    if(@AvlQty>0)
+                    Begin
+                        set @IssueQty=case when (@AvlQty-@iQty)=0 then @iQty when (@AvlQty-@iQty)>0 then @iQty else @AvlQty End
+                        if(@IssueQty>=0)
+                        Begin
+                            set @MaxBodyId=(select max(iBodyId)+1 from tuCrm_SalesOrder_Inventory_Details with(nolock))
+                            set @iSequence=isnull((select max(iSequence)-1 from tuCrm_SalesOrder_Inventory_Details with(nolock) where iTransId=@iTransId),0)
+                            insert into tuCrm_SalesOrder_Inventory_Details(iBodyId,iTransId,iSequence,iProductName,ReservationQty,PickUpLocation)
+                            values(@MaxBodyId,@iTransId,@iSequence,@iProduct,@IssueQty,@Warehouse)
+                            set @balQty=@iQty-@IssueQty
+                        End
+                    End
+                end
+                if(@balQty>0)
+                Begin
+                    FETCH NEXT FROM s2 INTO @Warehouse    
+                End
+                CLOSE s2;    
+                DEALLOCATE s2;
+            end
+            FETCH NEXT FROM s1 INTO @iBodyId    
+        END     
+        CLOSE s1;    
+        DEALLOCATE s1; 
+    End
+END
+
+create view nCore_AvailableStock
+as
+select [Avl Qty],Warehouse,iProductName,iSequenceId from (
+select isnull(sum(PlusQty),0)+isnull(sum(Release),0)-isnull(sum(MinusQty),0)-isnull(sum(ReservedQty),0) [Avl Qty],Warehouse,iProductName,b.iSequenceId from vCore_Inventory a with(nolock) 
+inner join vCore_Warehouse b with(nolock) on a.Warehouse=b.iMasterId
+where a.iMasterId>0
+group by Warehouse,iProductName,b.iSequenceId)a
+
+select * from nCore_AvailableStock
+
+select * from tuCrm_SalesOrder_Inventory_Details
+
+
+select * from vCore_Warehouse
+

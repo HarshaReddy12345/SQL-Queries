@@ -1,0 +1,137 @@
+ALTER VIEW [dbo].[vCore_ibals_0]
+AS
+SELECT
+  iProduct,
+  iDate,
+  iTransactionId,
+  iInvTag,
+  SUM(IssuesVal) fQiss,
+  SUM(RctVal) fQrec,
+  SUM(mStockValue) mVal,
+  0 fAltQty,
+  0 fQCQty
+FROM (SELECT
+  iDate,
+  iProduct,
+  iInvTag,
+  c.fQuantity,
+  c.fQuantityinBase,
+  b.iTransactionId,
+  CASE
+    WHEN c.fQuantityInBase < 0 THEN fQuantityInBase
+    ELSE 0
+  END IssuesVal,
+  CASE
+    WHEN c.fQuantityInBase > 0 THEN fQuantityInBase
+    ELSE 0
+  END RctVal,
+  CASE
+    WHEN fQuantityInBase > 0 THEN mStockValue
+    ELSE 0
+  END mStockValue
+FROM tCore_Header_0 a WITH (READUNCOMMITTED)
+JOIN tCore_Data_0 b WITH (READUNCOMMITTED)
+  ON a.iHeaderId = b.iHeaderId
+JOIN tCore_Indta_0 c WITH (READUNCOMMITTED)
+  ON b.iBodyId = c.iBodyId
+WHERE bUpdateStocks = 1
+AND bSuspended = 0
+AND iAuthStatus < 2
+AND bSuspendUpdateStocks = 0) a
+GROUP BY iDate,
+         iProduct,
+         iInvTag,
+         iTransactionId
+GO
+=========================================================================================================================
+
+ALTER FUNCTION [dbo].[avgrate] (@hd integer, @dt integer, @tag integer, @rateonly integer, @returnwhat integer)
+RETURNS float(53)
+AS
+BEGIN
+  DECLARE @iss float(53),
+          @rate float(53)
+  DECLARE @qty float(53),
+          @tmval float(53)
+  SET @iss = 0.0
+  SET @rate = 0.0
+  SET @tmval = 0.0
+  SET @qty = 0.0
+  SELECT
+    @tmval = @tmval + mval,
+    @iss =
+          CASE
+            WHEN @qty < 0 THEN fqiss + @qty
+            ELSE fqiss
+          END,
+    @qty =
+          CASE
+            WHEN @qty < 0 THEN fqrec
+            ELSE @qty + fqrec
+          END,
+    @rate =
+           CASE
+             WHEN @qty > 0 AND
+               @tmval > 0 THEN @tmval / @qty
+             ELSE CASE
+                 WHEN @qty > 0 AND
+                   @tmval = 0 THEN 0.0
+                 ELSE @rate
+               END
+           END,
+    @tmval = @tmval + @rate * (CASE
+      WHEN @rateonly = 0 OR
+        idate < @dt THEN (CASE
+          WHEN @qty >= -@iss THEN @iss
+          ELSE CASE
+              WHEN @qty > 0 THEN -@qty
+              ELSE 0.0
+            END
+        END)
+      ELSE 0.0
+    END),
+    @qty = @qty + (CASE
+      WHEN @rateonly = 0 OR
+        idate < @dt THEN @iss
+      ELSE 0.0
+    END),
+    @tmval =
+            CASE
+              WHEN @rateonly > 0 AND
+                (@tmval <= 0.0 OR
+                @qty <= 0.0) THEN @rate
+              ELSE @tmval
+            END,
+    @qty =
+          CASE
+            WHEN @rateonly > 0 AND
+              (@tmval <= 0.0 OR
+              @qty <= 0.0) THEN 1
+            ELSE @qty
+          END
+  FROM vCore_ibals_0
+  WHERE iproduct = @hd
+  AND idate <= @dt
+  AND (@tag = 0
+  OR iinvtag = @tag)
+  AND (fqiss <> 0
+  OR fqrec <> 0)
+  ORDER BY iTransactionId, idate, iinvtag
+  IF @rateonly = 1
+    AND (@tmval <= 0.0
+    OR @qty < 0.0)
+  BEGIN
+    SET @tmval = @rate
+    SET @qty = 1;
+  END
+  SET @tmval =
+              CASE
+                WHEN @returnwhat = 0 THEN CASE
+                    WHEN @qty = 0.0 THEN 0.0
+                    ELSE @tmval / @qty
+                  END
+                WHEN @returnwhat = 1 THEN @qty
+                ELSE @tmval
+              END
+  RETURN @tmval
+END

@@ -1,0 +1,22 @@
+
+
+
+
+
+create function dbo.fCore_Var1002(@s xml)
+returns varchar(max)
+as
+begin
+	declare @sRet varchar(max)
+	--select @sRet =   SelectPlan from vCore_Planner
+	if (datename(DAY,getdate()))>=2 and (datename(DAY,getdate()))<=24 
+		return 'UnPlanned|3'
+	else
+		return 'UnPlanned|3,Planned|1'
+	return ''
+end
+
+
+&{SQLFCITEMS1002}
+
+select * from vCore_PlanMaster

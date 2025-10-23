@@ -1,0 +1,20 @@
+select 
+       v.sName[Project],
+       b.sName[Block/Villa],
+	   f.sName[Floor],
+	   count(p.iMasterId)[No.of Flats/Office ],
+	   case p.iStatusId when 167 then Count(p.iStatusId) else 0 end [Vaccant],
+	   case iStatusId when 168 then COUNT(p.iStatusId) else 0 end [Occupied],
+	   case iStatusId when 169 then COUNT(p.iStatusId) else  0 end [Reserve],
+	   case iStatusId when 170 then COUNT(p.iStatusId) else  0 end [sold]
+	   from vCrm_PMSUnits p WITH(NOLOCK)
+left join vCrm_Ventures v WITH(NOLOCK) on p.iVentureId=v.iMasterId
+left join vCrm_Blocks b WITH(NOLOCK) on p.iBlockId=b.iMasterId
+left join vCrm_Floors f WITH(NOLOCK) on p.iFloorId=f.iMasterId
+left join vCore_Division d WITH(NOLOCK) on v.Division=d.iMasterId
+where p.iMasterId>0 
+and (( 0 in (@Division) and isnull(d.iMasterId,0)  = isnull(d.iMasterId,0) ) or 
+(0 not in (@Division) and isnull(d.iMasterId,0)   in ( @Division )))
+and (( 0 in (@Project) and isnull(v.iMasterId,0)  = isnull(v.iMasterId,0) ) or 
+(0 not in (@Project) and isnull(v.iMasterId,0)   in ( @Project )))
+group by v.sName,b.sName,f.sName,v.TotalNoofPlots,p.iStatusId

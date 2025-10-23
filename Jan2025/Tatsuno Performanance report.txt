@@ -1,0 +1,45 @@
+select 
+       [State],
+	   [Avg Age],
+	   [Total Du],
+	   [UnPlanned Jobs],
+	   ([UnPlanned Jobs]/[Avg Age]) [Avg Per Month],
+	   [Fixed Ratio],
+	   [Target],
+	   [Actual],
+	   [Op Hours],
+	   [Down Time]
+from
+(
+select 
+       [State],
+	   (SUM([Comm Months])/COUNT([Comm Months])) [Avg Age],
+	   (COUNT(Asset)) [Total Du],SUM([UnPlanned Jobs])[UnPlanned Jobs],
+	   COUNT([Fixed Ratio]) [Fixed Ratio],
+       (SUM(SLAResolveTimeHours)/COUNT(SLAResolveTimeHours)) [Target],
+	   (SUM(SLAReportandAttendTimeHours)/COUNT(SLAReportandAttendTimeHours)) [Actual],
+	   SUM([Op Hours]) [Op Hours],
+	   SUM([Down Time]) [Down Time]
+from 
+(
+select 
+       a.sName [Req Cnt],
+	   ISNULL(b.sName,'') Asset,
+	   c.sName [State],b.iTransId [AssetId] ,
+	   DATEDIFF(MM,dbo.fCore_IntToDate(b.ItemCommissioningDate),GETDATE()) [Comm Months],
+	   CASE WHEN a.iStatusId in (59,60) then 1 else 0 end [UnPlanned Jobs],
+	   (select COUNT(iMasterId) [Serv Cnt] from vCore_DUBreakdown where iMasterId>0 and JobRequestNumber=a.iTransId  group by JobRequestNumber having COUNT(iMasterId)=1) [Fixed Ratio],
+	   a.SLAResolveTimeHours,
+	   a.SLAReportandAttendTimeHours,
+	  dbo.fCrm_DATEDIFF(4,(a.iCreatedDate),
+	  b.ItemCommissioningDate) [Op Hours],
+	  dbo.fCrm_DATEDIFF(4,a.expectedcompletiondateandtime,a.JobRequestCompletionDateTime) [Down Time]
+from 
+	vCrm_Calls a with(nolock)
+	left join vCrm_CustAssets b with(nolock) on a.iCustAssetId=b.iTransId
+	left join vCore_State c with(nolock) on a.State=c.iMasterId
+	left join vCrm_RequestStatus d with (nolock) on a.iStatusId=d.iTransId
+
+where a.iTransId>0
+     )a group by [State]
+)b

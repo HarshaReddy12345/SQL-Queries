@@ -1,0 +1,20 @@
+CREATE FUNCTION dbo.fCore_Var1 (@s xml)
+Returns Decimal(18,2)
+as 
+BEGIN
+DECLARE @Qty int,@Product int
+SELECT @Product= @s.value('(Fields/BodyData/BodyRow/iProductName)[1]','int')
+select @Qty=sum(PlusQty) from vCore_Inventory WITH(NOLOCK) where iProductName=@Product
+Return @Qty
+end 
+
+
+CREATE FUNCTION dbo.fCore_Var2 (@s xml)
+Returns Decimal(18,2)
+as 
+BEGIN
+DECLARE @Qty int,@Product int
+SELECT @Product= @s.value('(Fields/BodyData/BodyRow/iProductName)[1]','int')
+select @Qty=sum(MinusQty) from vCore_Inventory WITH(NOLOCK) where iProductName=@Product
+Return @Qty
+end 

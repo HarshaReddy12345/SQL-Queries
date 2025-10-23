@@ -1,0 +1,307 @@
+select dbo.fCore_DateToInt(concat(year(getdate()),'-04-01'))
+select dbo.fCore_DateToInt(concat(year(getdate())+1,'-03-31'))
+
+
+
+ concat(year(dbo.fCore_IntToDate(tp.FromDate)),'-',
+ year(dbo.fCore_IntToDate(tp.ToDate)))
+ 
+ 
+====================================================================================================
+GETTING DATE FROM GIVEN RANGE OF VALUES
+====================================================================================================
+with dates ([Date]) as (
+    Select convert(date,'2000-01-01') as [Date] -- Put the start date here
+
+    union all 
+
+    Select dateadd(day, 1, [Date])
+    from dates
+    where [Date] <= '2000-12-31' -- Put the end date here 
+)
+
+select [Date]
+from dates
+option (maxrecursion 32767) -- Don't forget to use the maxrecursion option!
+=====================================================================================
+FILTER FOR MULTI SELCTION IN REPORT
+======================================================================================
+and (( 0 in (@Region) and isnull(iRegion,0)  = isnull(iRegion,0) ) or (0 not in (@Region) and isnull(iRegion,0)   in ( @Region )))
+
+=====================================================================
+USER ACCESS QUERY
+======================================================================
+
+INNER JOIN (SELECT DISTINCT
+  iMasterIdd sToken
+FROM tCrm_UserHirearchyDetails AA WITH (NOLOCK)
+INNER JOIN dbo.fCrm_GetTokens('@USERACCESS', ',') BB
+  ON AA.iUserId = BB.sToken) emphir
+  ON emphir.sToken = tp.Salesperson
+
+==============================================
+DATE TO WEEKDAY CONVERTION FORMULA
+==============================================
+DateName(WeekDay,dbo.fCore_IntToDate(Date))
+================================
+insert into cCrm_LayoutActions values(95,2,0,2483,1,1,1,1,NULL,3,NULL,NULL,0)  ---Costing Sheet
+
+insert into cCrm_LayoutActions values(95,2,0,2497,1,1,1,1,NULL,1,NULL,NULL,0)
+==========================================================
+
+SELECT 'IN' + RIGHT('00' + CAST(ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS NVARCHAR(5)), 3) AS CurrentAlphanumericValue--incremental number with specific code
+
+select (ROW_NUMBER() OVER (ORDER BY (SELECT NULL))),* from vCore_Account--incremental number starting with 1
+
+=========================================================
+
+Chr(252)---wingdings(font) for rightmark
+chr(88)----Arial (font) for wrong mark
+ChrW(8226) bullet points in crystal report
+Hollow Circle Bullet (○): ChrW(9675)
+
+CRYSTAL REPORT RUNNING TOTALS
+
+ff_Reset_Total  ------------page header
+
+whileprintingrecords;
+numbervar PageTotl;
+PageTotl:=0;
+ff_Current_Total
+
+whileprintingrecords;------page footer
+numbervar PageTotl;
+PageTotl;
+ff_Add_Record
+Priya@2025
+whileprintingrecords;---------Detail Section
+numbervar PageTotl;
+PageTotl:=PageTotl + {TheField};
+
+------------------------------------------------------------------------------------------------
+IMAGES FETCHING FROM DRIVE
+
+ LEFT JOIN (SELECT
+  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,
+  iModuleTypeId,
+  iDocumentId,
+  sFileName,
+  iRelatedTo,
+  iIndex
+FROM vCrm_Documents WITH (NOLOCK)
+WHERE iModuleTypeId = 2306
+AND iFieldId = 302625) Docs
+  ON Docs.iRelatedTo = c.iMasterId
+
+CONCAT('D:\apache-tomcat-9.0.12_J8\webapps\streamline\WEB-INF\user-resource\Documents\090\',iModuleTypeId,'_',iDocumentId,'_',sFileName) sImageUrl
+
+CONCAT('http://localhost:8181/ResourceFromCRM/getres?cc=02K80&docid=',iDocId) sImageUrl
+
+http://localhost:8080/ResourceFromCRM/getres?cc=02K80&docid=180355093474836495
+
+D:\apache-tomcat-9.0.12_J8\webapps\streamline\WEB-INF\user-resource
+
+
+-----------------------------------------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------------
+
+update old records by procedure through backend 
+
+select CONCAT_WS(' ','exec udp_UpdateActivityStreamAddressToEnggLoc',iMasterId,',0'),EngineerLocation,* from vCore_DailyExecutedTasks where iMasterId>0
+
+===================================================================
+update tCrm_ModuleAuditCount set iRejectedCount=0,iSavedCount=0,iDeletedCount=0,iApproveCount=0
+=======================================
+update mSec_Users set sPassword='0074',sLoginName='su' where iUserId=1
+==============================================================================
+delete from tCore_MasterAuditLog where iMasterTypeId=3050
+delete from cCore_MasterView where iMasterId=3050
+delete from cCore_MasterFields where iTableId in (select iTableId from cCore_MasterTables where iTabId in (select iTabId from cCore_MasterTabs where iMasterId=3050))
+delete from cCore_MasterTables where iTabId in (select iTabId from cCore_MasterTabs where iMasterId=3050)
+delete from cCore_MasterTabs where iMasterId=3050
+delete from cCore_TreeCustomization where iMasterTypeId=3050
+delete from cCore_TreeView where iMasterTypeId=3050
+delete from cCore_MasterDef where iMasterTypeId=3050
+==========================================================================================
+EXEC sp_configure 'Ole Automation Procedures';
+GO
+sp_configure 'show advanced options', 1;
+GO
+RECONFIGURE;
+GO
+sp_configure 'Ole Automation Procedures', 1;
+GO
+RECONFIGURE;
+GO
+
+create function SendGetRequest(@url varchar(8000)) returns varchar(8000) 
+as 
+BEGIN 
+	DECLARE @win int DECLARE @hr int DECLARE @text varchar(8000)
+	EXEC @hr = sp_OACreate 'WinHttp.WinHttpRequest.5.1', @win OUT IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Open', NULL, 'GET',@url,'false' IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Send' IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAGetProperty @win,'ResponseText',@text OUTPUT IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OADestroy @win IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	RETURN @text 
+END
+go
+-------------------------------------------------------
+Alter Table mCrm_Users add dLongitude decimal (10,2)
+Alter Table mCrm_Users add dLaitude decimal (10,2)
+-------------
+(DATEDIFF(MINUTE,dbo.fCore_IntToTime(f.iStartTime),dbo.fCore_IntToTime(f.iEndTime))) [Minutes Taken],
+CONCAT(
+    FLOOR(DATEDIFF(MINUTE, dbo.fCore_IntToTime(f.iStartTime), dbo.fCore_IntToTime(f.iEndTime)) / 1440), ' Days and ',
+    FLOOR((DATEDIFF(MINUTE, dbo.fCore_IntToTime(f.iStartTime), dbo.fCore_IntToTime(f.iEndTime)) % 1440) / 60), ' Hours and ',
+    (DATEDIFF(MINUTE, dbo.fCore_IntToTime(f.iStartTime), dbo.fCore_IntToTime(f.iEndTime)) % 60), ' Minutes'
+) [Time Taken]
+------------------------------------------------------------
+update Query in the cCore_RD_Query_0
+-------------------------------------------------------------------
+SET QUOTED_IDENTIFIER OFF;
+
+declare @sReportName nvarchar(200)='Showroom Sales Data Profile';
+declare @iReportId nvarchar(200)='';
+declare @sSQlQry nvarchar(max)=''
+
+select top 1 @iReportId = iReportId from cCore_Reports_0 where sReportName = @sReportName;
+--select @sSQlQry = sSqlQuery from cCore_RDQuery_0 where iReportId=@iReportId
+--print @sSQlQry
+
+declare @sQry nvarchar(max)=""
+
+update cCore_RDQuery_0 set sSqlQuery = @sQry where iReportId = @iReportId
+
+SET QUOTED_IDENTIFIER ON;
+========================
+	DATABASE COMPATABILITY CHECK
+	
+	SELECT name, compatibility_level 
+FROM sys.databases 
+WHERE name = 'Focus802GY0'
+
+ALTER DATABASE Focus802GY0
+SET COMPATIBILITY_LEVEL = 130
+=========================================
+3 to 9 barcode formula
+
+"*" + {Command.Inward Name} + "*"
+============================================
+centracrm.crystalreport.print=true
+=======================
+Shared numberVar myValue1 :=screen field-- write formula field and drag that field in any section and then supreess then only it will be allows to print value int main report otherwise it will show "0.00"
+Shared NumberVar myValue1;
+myValue1
+
+======================================
+Meera@143
+SELECT 
+    CONCAT(SUM(MinutesTotal) / 60,':',RIGHT('0' + CAST(SUM(MinutesTotal) % 60 AS VARCHAR), 2)) AS TotalTime
+FROM (
+    SELECT 
+        CAST(LEFT(TimeStr, 2) AS INT) * 60 + CAST(RIGHT(TimeStr, 2) AS INT) AS MinutesTotal
+    FROM 
+    (VALUES ('09:30'), ('10:15'), ('13:20')) AS Times(TimeStr)
+  ) AS TimeWithMinutes;
+-----------------------------------------------------------------------
+QUERY REPORT Update from BackEnd QUERY
+-----------------------------------------------------------------------
+CREATE TABLE [dbo].[cCore_RDQuery_0](
+	[iReportId] [int] NOT NULL,
+	[sSqlQuery] [nvarchar](max) NULL,
+	[sConnection] [nvarchar](max) NULL,
+	[iModuleType] [int] NULL,
+ CONSTRAINT [pk_cCore_RDQuery_0] PRIMARY KEY CLUSTERED 
+(
+	[iReportId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[cCore_RDQuery_0]  WITH CHECK ADD  CONSTRAINT [fk_iModuleType_cCore_RDQuery_0] FOREIGN KEY([iModuleType])
+REFERENCES [dbo].[cCrm_ModuleTypes] ([iTypeId])
+GO
+
+ALTER TABLE [dbo].[cCore_RDQuery_0] CHECK CONSTRAINT [fk_iModuleType_cCore_RDQuery_0]
+GO
+
+ALTER TABLE [dbo].[cCore_RDQuery_0]  WITH CHECK ADD  CONSTRAINT [fk_iReportId_cCore_RDQuery_0] FOREIGN KEY([iReportId])
+REFERENCES [dbo].[cCore_Reports_0] ([iReportId])
+GO
+
+ALTER TABLE [dbo].[cCore_RDQuery_0] CHECK CONSTRAINT [fk_iReportId_cCore_RDQuery_0]
+GO
+===================================================
+sqlcmd.exe -S DESKTOP-HARSHA\SQLDEV -U sa -P 123 -d Focus8060 -i C:\Users\Admin\OneDrive\Documents\script.sql -o C:\Users\Admin\OneDrive\Documents\Focus8060.txt
+===================================================
+XML Function Format
+===================================================
+CREATE function [dbo].[fCore_Var100](@s xml)
+returns decimal(18,2)
+as
+begin
+declare @iProductId int
+declare @result decimal(18,2)
+
+select @iProductId=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')
+ select @result=dbo.Fn_GetSellingPrice(@iProductId)
+return @result
+end
+===========================================
+Ask YourDatabase connector pattern
+===========================================
+Data Source=DESKTOP-HARSHA\SQLDEV,1433;Initial Catalog=Focus8010;User ID=sa;Password=123
+==========================================================
+dbo.fCore_TimeToInt(RIGHT('0' + CAST((CAST(LEFT(dbo.fCore_IntToTime(@Duration), 2) AS INT) + (CAST(SUBSTRING(dbo.fCore_IntToTime(@Duration), 4, 2) AS INT) / 60)) AS VARCHAR), 2) + ':' +RIGHT('0' + CAST((CAST(SUBSTRING(dbo.fCore_IntToTime(@Duration), 4, 2) AS INT) % 60) AS VARCHAR), 2) + ':' +RIGHT('0' + CAST(CAST(RIGHT(dbo.fCore_IntToTime(@Duration), 2) AS INT) AS VARCHAR), 2))
+========================================================================
+Color Coding for alternate Line Items of Body Grid in Crystal reports
+========================================================================
+If RecordNumber Mod 2 = 0 Then
+    Color(240, 240, 240)  // Light Gray for even rows
+Else
+    Color(255, 255, 255)  // White for odd rows
+	
+===================================================================
+arrow symbols in crystal report
+===================================================================
+Formula for Arrow (→ ← ↑ ↓) font Wingdings
+
+ChrW(224)   // →
+ChrW(223)  // ←
+ChrW(225)  // ↑
+ChrW(226)  // ↓
+=====================================================
+If InStr({Command.Quote Group}, ".") > 0 Then
+    Trim(Mid({Command.Quote Group}, InStr({Command.Quote Group}, ".") + 1))
+Else
+    {Command.Quote Group}
+=========================================================
+BACK Tracking FORMULA QUERY --[$MType_MRN_Name$], a.iMasterId [$DTransId$]
+=========================================================
+ select a.iTransId,a.sName,b.sName Make,c.sName [Product Name],iQuantity,a.fSalesPrice [Unit Price],(a.iQuantity*a.fSalesPrice) TotalAmt,a.GrossMinusDiscount, ROW_NUMBER() OVER (PARTITION BY iTransId ORDER BY iTransId) AS 
+[S.no] from vuCrm_Quote_General_Details a with(nolock) join vCore_Brands b with (nolock) on a.Brand=b.iMasterId join vCore_Product c with(nolock) on a.iProductId=c.iMasterId where a. iTransId>0
+
+select DENSE_RANK() over(order by iTransId) [RN],*  from nCore_QuoteGridRpt
+-----------------------------------------------------------------------------------------
+GET LIST OF FUNCTIONS IN DATABASE
+---------------------------------------------------------------------------------------
+SELECT 
+    name, 
+    type_desc, 
+    create_date, 
+    modify_date
+FROM sys.objects
+WHERE type IN ('FN', 'IF', 'TF')  -- FN=Scalar, IF=Inline table, TF=Table-valued
+ORDER BY modify_date DESC;
+
+--GET PARTICULAR FUNCTION SCRPIT 
+
+SELECT OBJECT_DEFINITION(OBJECT_ID('dbo.fCore_GetLevelMaster3223'));
+

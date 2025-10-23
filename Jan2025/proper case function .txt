@@ -1,0 +1,30 @@
+CREATE FUNCTION dbo.ProperCase (@InputString NVARCHAR(MAX))
+RETURNS NVARCHAR(MAX)
+AS
+BEGIN
+    DECLARE @Result NVARCHAR(MAX) = ''
+    DECLARE @Index INT = 1
+    DECLARE @Char NVARCHAR(1)
+    DECLARE @PrevChar NVARCHAR(1) = ' '
+
+    WHILE @Index <= LEN(@InputString)
+    BEGIN
+        SET @Char = SUBSTRING(@InputString, @Index, 1)
+
+        -- Check if the previous character is a space
+        IF @PrevChar = ' '
+        BEGIN
+            SET @Result = @Result + UPPER(@Char)
+        END
+        ELSE
+        BEGIN
+            SET @Result = @Result + LOWER(@Char)
+        END
+
+        SET @PrevChar = @Char
+        SET @Index = @Index + 1
+    END
+
+    RETURN @Result
+END
+GO

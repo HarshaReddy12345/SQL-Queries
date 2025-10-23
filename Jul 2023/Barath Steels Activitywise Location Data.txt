@@ -1,0 +1,54 @@
+CREATE VIEW nCore_LocationWiseActivityData as
+SELECT 
+    vusers.sName [Executive],
+    a.iEndDateTime [$Datetime$Event Datetime],
+    CASE 
+        WHEN lt.iEventType IN (0, 17) THEN lt.sIdleTime 
+        ELSE NULL 
+    END AS [Spend Time],
+    CASE 
+        WHEN lt.iEventType = 0  THEN 'Location'
+        WHEN lt.iEventType = 12 THEN 'Inaccurate Location'
+        WHEN lt.iEventType = 1  THEN 'Wifi On'
+        WHEN lt.iEventType = 2  THEN 'Wifi Off'
+        WHEN lt.iEventType = 3  THEN 'GPS On'
+        WHEN lt.iEventType = 4  THEN 'GPS Off'
+        WHEN lt.iEventType = 5  THEN 'Switch Off'
+        WHEN lt.iEventType = 6  THEN 'Device Reboot'
+        WHEN lt.iEventType = 7  THEN 'Uninstall'
+        WHEN lt.iEventType = 8  THEN 'Photo Tag'
+        WHEN lt.iEventType = 9  THEN 'Wifi Unavailable'
+        WHEN lt.iEventType = 10 THEN 'Mobile Data On'
+        WHEN lt.iEventType = 11 THEN 'Mobile Data Off'
+        WHEN lt.iEventType = 15 THEN 'Login'
+        WHEN lt.iEventType = 16 THEN 'Logout'
+        WHEN lt.iEventType = 17 THEN 'Activity Start'
+        WHEN lt.iEventType = 18 THEN 'Activity End'
+    END AS EventType,
+    lt.sAddress [Area],
+    CASE WHEN lt.iAttendanceId > 0 THEN vcl.sName
+        WHEN tca.iRelatedTo > 0 THEN (SELECT dbo.fCrm_GetMasterName(tca.iRelatedToType, '' + tca.iRelatedTo, 1))
+        WHEN va.iMasterId > 0 THEN clt.sTagName
+        ELSE '' END AS [Customer Name],
+
+    CASE  WHEN lt.iEventType = 18 THEN tca.sSubject  ELSE '' END AS [OutCome of Visit],lt.iDate,lt.iUserId
+FROM (
+    SELECT 
+        MAX(iTransId) AS iTransId,SUM(tlt.fDistance) AS fTotalDistance,MIN(iDateTime) AS iStartDateTime,MAX(iDateTime) AS iEndDateTime
+    FROM vCrm_LocationTracker tlt with(NOLOCK)
+    INNER JOIN vCrm_Users vusers with(NOLOCK) ON tlt.iUserId = vusers.iMasterId
+
+    GROUP BY tlt.iGroupId
+) a
+INNER JOIN vCrm_LocationTracker lt with(NOLOCK) ON a.iTransId = lt.iTransId
+INNER JOIN vCrm_Users vusers with(NOLOCK) ON lt.iUserId = vusers.iMasterId
+LEFT JOIN cCrm_LocationTags clt with(NOLOCK) ON clt.iAddressId = lt.iAddressId AND clt.iAccountId > 0 AND lt.iTrackModuleId <> 1536 
+   AND clt.iTagId IN (
+        SELECT TOP 1 clt2.iTagId FROM cCrm_LocationTags clt2 WHERE clt2.iAddressId = lt.iAddressId ORDER BY clt2.iTagId DESC
+    )
+LEFT JOIN vCore_Account va with(NOLOCK) ON va.iMasterId = clt.iAccountId
+LEFT JOIN tCrm_Activities tca with(NOLOCK) ON tca.iTransId = lt.iTrackTransId AND lt.iTrackModuleId = 1536
+LEFT JOIN vCore_Account va2 with(NOLOCK) ON va2.iMasterId = tca.iRelatedTo
+LEFT JOIN tCrm_UserAttendance tua with(NOLOCK) ON tua.iTransId = lt.iAttendanceId
+LEFT JOIN vCore_Location vcl with(NOLOCK) ON vcl.iMasterId = tua.iLocationId
+

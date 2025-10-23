@@ -1,0 +1,22 @@
+CREATE PROC udp_EventAttendee(@iTransId bigint,@iUserId int=0)
+AS
+BEGIN
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+DECLARE @AttendFlag int
+select @AttendFlag=iAttendanceflag from vCore_EventAttendees with(nolock) where iMasterId=@iTransId
+ if (@AttendFlag=3) 
+begin
+update a set  a.MaladCount=(b.maladcount+1),a.TMMCount=(b.TMMCount+1)  from vCore_EventAttendees a with(nolock)
+join vCore_DonorAccounts b with(nolock) on a.DonarAccount=b.iMasterId where a.iMasterId=@iTransId
+end
+else if(@AttendFlag in(1,2))
+begin
+update a set a.MaladCount=(b.maladcount),a.TMMCount=(b.TMMCount) from vCore_EventAttendees a with(nolock)
+join vCore_DonorAccounts b with(nolock) on a.DonarAccount=b.iMasterId where a.iMasterId=@iTransId
+end
+else 
+begin
+update a set a.MaladCount=(a.MaladCount-1),a.TMMCount=(a.TMMCount-1) from vCore_EventAttendees a with(nolock)
+join vCore_DonorAccounts b with(nolock) on a.DonarAccount=b.iMasterId where a.iMasterId=@iTransId
+end
+END

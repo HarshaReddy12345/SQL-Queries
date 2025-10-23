@@ -1,0 +1,83 @@
+CREATE FUNCTION dbo.ProperCase (@InputString NVARCHAR(MAX))
+RETURNS NVARCHAR(MAX)
+AS
+BEGIN
+    DECLARE @Result NVARCHAR(MAX) = ''
+    DECLARE @Index INT = 1
+    DECLARE @Char NVARCHAR(1)
+    DECLARE @PrevChar NVARCHAR(1) = ' '
+
+    WHILE @Index <= LEN(@InputString)
+    BEGIN
+        SET @Char = SUBSTRING(@InputString, @Index, 1)
+
+        -- Check if the previous character is a space
+        IF @PrevChar = ' '
+        BEGIN
+            SET @Result = @Result + UPPER(@Char)
+        END
+        ELSE
+        BEGIN
+            SET @Result = @Result + LOWER(@Char)
+        END
+
+        SET @PrevChar = @Char
+        SET @Index = @Index + 1
+    END
+
+    RETURN @Result
+END
+GO
+-----------------------------------------------------------------
+ALTER VIEW [dbo].[nCore_ProjectReportGrid] as  
+  
+select a.iMasterId,b.sName ProjectStage,c.sName ProjectSubStage,a.iWeightage Weightage,a.bMilestone MileStone,  
+case iSubStageStatus when 1 then 'Not Yet Started' when 2 then 'In Progress' when 3 then 'Completed' end [Status],  
+(a.iAllotedTimeinHrs*2) AllotedTimeinHrs,a.iUtilizedTimeinHrs UtilizedTimeinHrs,(a.iBalanceTimeinHrs*2) BalanceTimeinHrs,  
+case when a.iStartDate>0 then convert(varchar(10),dbo.fCore_IntToDate(a.iStartDate),103) else '' end [StartDate],  
+case when a.iLastActivityDate>0 then convert(varchar(10),dbo.fCore_IntToDate(a.iLastActivityDate),103) else '' end [LastActivityDate]   
+from vuCore_ProjectId_ProjectDetails_Details a with(nolock)  
+inner join vCore_ProjectStageMaster b with(nolock) on a.iProjectStage=b.iMasterId  
+inner join vCore_ProjectSubStageMaster c with(nolock) on a.iProjectSubStage=c.iMasterId  
+where a.iMasterId>0  and iWeightage>0
+-----------------------------------------------------------------
+CREATE VIEW nCore_ProjectModuleDetails as
+select 
+       a.iMasterId,
+	   b.sName [Module],
+	   dbo.fCrm_GetNumberListValue ('1,Not Yet Started,2,In Progress,3,Completed',a.iModuleStatus) [Module Status],
+	   CASE WHEN iModuleFirstActivityDate is  null or len(iModuleFirstActivityDate)<>9 then  '' else FORMAT(dbo.fCore_IntToDate(iModuleFirstActivityDate),'dd/MM/yyyy') end [ModuleFirstActivityDate],
+	   CASE WHEN iModuleLastActivityDate is  null or len(iModuleLastActivityDate)<>9 then '' else FORMAT(dbo.fCore_IntToDate(iModuleLastActivityDate),'dd/MM/yyyy') end ModuleLastActivityDate,
+	   c.sName [LastSubActivity] 
+	   from vuCore_ProjectId_ModuleDetails_Details a with(nolock)
+left join vCore_Product b with(nolock) on a.iModule=b.iMasterId
+left join vCore_ProjectSubStageMaster c with(nolock) on a.iLastSubActivity=c.iMasterId
+where a.iMasterId>0
+----------------------------------------------------------------------
+ ALTER VIEW nCore_ProjectReportHeader as  
+  
+select a.iMasterId,a.sName [Project Id],convert(varchar(10),a.iProjectDate,103) ProjectDate,  
+dbo.ProperCase(b.sName) [Owner],c.sName [Location],d.sName [ProjectReq],e.sName [Currency],f.sName [Module],a.fConversionAED ConversionAED,a.iProjectCategoryName [Category],(a.iStdManDays*2) StdHours,a.iTypeofProductName [Product],a.fSaleImplPrice SaleImplPrice,a.fSaleImplPriceAED SaleImplPriceAED,a.fSaleLicensePrice SaleLicensePrice,a.fSaleLicensePriceAED SaleLicensePriceAED,a.fTaxAmt TaxAmt,a.fTaxAmtAED TaxAmtAED,a.fOrderValueAED TotalNetAmtLocalAED,a.fOrderValueLocal TotalLocalNet,  
+CEILING(a.iTotalHours) TotalHours,a.iUsedHours Used,CEILING(a.iBalanceHours) Us,a.fProjectCompletionPerc ProjectCompletionPerc,a.fBalanceProjectPerc BalanceProjectPerc,i.sName [Account],CONCAT(j.sName,' ',j.sLastName) [Contact Name],j.sEmail,j.sMobile,j.sPhone,l.sName [Sales Manager],l.sEmail [Sales Manager Email],ISNULL(l.sMobile,l.sPhone) [Sales Manager Mobile],n.sName [CAM Manager],n.sEmail [CAM Manager Email],ISNULL(n.sMobile,n.sPhone) [CAM Manager Mobile],o.sName [Parent User],o.sEmail [Parent User Email],ISNULL(o.sMobile,o.sPhone) [Parent User Mobile],b.sEmail [Owner Mail],ISNULL(b.sMobile,b.sPhone) [Owner Mobile],p.sName [Owner Role],q.sName [Parent User Role] ,j.Designation ,
+FORMAT(GETDATE(),'dd/MM/yyyy') [Current Date]
+from  vaCore_ProjectId a with(nolock)  
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId  
+left join vCore_Location c with(nolock) on a.iLocation=c.iMasterId  
+left join vCore_ProjectRequestNew d with(nolock) on a.iProjectRequest=d.iMasterId  
+left join vCrm_Currency e with(nolock) on a.iCurrency=e.iMasterId  
+left join vCore_Product f with(Nolock) on a.iModuleName=f.iMasterId  
+left join vCore_Account i with(nolock) on a.iCustomer=i.iMasterId 
+left join vCrm_Contacts j with(nolock) on i.iMasterId=j.iAccountId
+left join vCrm_Opportunities k with(nolock) on a.iOpportunity=k.iTransId
+left join vCrm_Users l with(nolock) on k.iAssignedTo=l.iMasterId
+left join vCore_CSTask m with(nolock) on a.iCustomer=m.iAccount and a.iModuleName=iProduct
+left join vCrm_Users n with(nolock) on m.iAssignedTo=n.iMasterId
+left join vCrm_Users o with(nolock) on b.iParentId=o.iMasterId
+left join vCrm_Roles p with(nolock) on b.iCRMRole=p.iMasterId
+left join vCrm_Roles q with(nolock) on o.iCRMRole=q.iMasterId
+where a.iMasterId>0 
+
+
+---------------------------------------------------------------------------
+
+

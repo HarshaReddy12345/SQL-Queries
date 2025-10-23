@@ -1,0 +1,56 @@
+  use Focus801BS0
+go
+  
+  
+ALTER FUNCTION [dbo].[fCore_Var1003] (@s xml)       
+RETURNS nvarchar(max)       
+AS       
+BEGIN        
+DECLARE @ActionStatus int,@StatusWorkLog int,@iCRMRole int,@CurrentUser int         
+SET @ActionStatus = @s.value('(/Fields/Header/ActionTIPLStatus)[1]', 'int')         
+SET @StatusWorkLog = @s.value('(/Fields/Header/JobTIPLStatus)[1]', 'int')         
+SET @CurrentUser = @s.value('(/Fields/Header/CurrentUser)[1]', 'int')         
+--select @StatusWorkLog=iStatusId from vCrm_Calls       
+SELECT     @iCRMRole = iCRMRole   FROM vCrm_Users with(nolock) where iMasterId=@CurrentUser         
+if (@iCRMRole=1)           
+RETURN 'Un Assigned|1,Closed By Phone|3,Actual Complaint Captured|2,In Progress|5,Pending|9,Completed|10,To Be Approved|6,Rejected|4,Approved|7,Not Approved|7,Closed|11'         
+ELSE        
+begin           
+IF (@StatusWorkLog = 1 AND  (@iCRMRole in (2,4,7,20,19)))           
+RETURN 'Closed By Phone|3,Actual Complaint Captured|2,In Progress|5'         
+ELSE   IF ((@StatusWorkLog = 2) AND (@iCRMRole in (4,7,20,19)))           
+RETURN 'Pending|9,In Progress|5'       
+ELSE   IF ((@StatusWorkLog in (3,4)) AND (@iCRMRole = 7))           
+RETURN ''         
+ELSE   IF ((@StatusWorkLog = 5) AND (@iCRMRole in (4,5,7,11,12,19,20) ))           
+RETURN 'Completed|10,To Be Approved|6,In Progress|5,Rejected|4,Pending|9'         
+ELSE   IF ((@StatusWorkLog = 6) AND (@iCRMRole in (4,7,19,20)))           
+RETURN 'Approved|7,Not Approved|8'         
+ELSE   IF ((@StatusWorkLog = 7) AND (@iCRMRole in (4,19,7,19,20)))           
+RETURN 'Actual Complaint Captured|2,In Progress|5'         
+ELSE   IF ((@StatusWorkLog = 8) AND (@iCRMRole in(20,4,7,19,20)))           
+RETURN 'Rejected|4'         
+ELSE   IF ((@StatusWorkLog = 9) AND (@iCRMRole in (4,7,11,5,12,19,20)))          
+RETURN 'Completed|10,To Be Approved|6,In Progress|5,Rejected|4,Pending|9,Closed|11'         
+ELSE   IF ((@StatusWorkLog = 10) and @iCRMRole in (12,5,4,7,11,12,19,20))         
+  RETURN 'Pending|9,Closed|11'         
+ELSE   IF ((@StatusWorkLog = 11) and @iCRMRole in(3,4,7,19,20))           
+RETURN ''             
+end      
+RETURN @ActionStatus       
+END  
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ALTER FUNCTION [dbo].[fCore_Var1004] (@s xml)       
+RETURNS nvarchar(max)       
+AS       
+BEGIN        
+DECLARE @ActionStatus int,@StatusWorkLog int,@iCRMRole int,@CurrentUser int,@JobTIPLStatus nVarchar(Max)
+SET @ActionStatus = @s.value('(/Fields/Header/ActionTIPLStatus)[1]', 'int')         
+SET @StatusWorkLog = @s.value('(/Fields/Header/JobTIPLStatus)[1]', 'int')         
+SET @CurrentUser = @s.value('(/Fields/Header/CurrentUser)[1]', 'int')              
+SELECT     @iCRMRole = iCRMRole   FROM vCrm_Users with(nolock) where iMasterId=@CurrentUser         
+select  @JobTIPLStatus = coalesce(@JobTIPLStatus+',','')+CONCAT(sName,'|',iMasterId)
+from vuCore_TIPLJobStatus_Roles_Details where Roles=@iCRMRole and iMasterId in 
+(select c.iMasterId from vCore_TIPLJobStatus c join [dbo].[mCore_TIPLJobStatus_MultiHeader] a on c.FilterStatus=a.iMultiId join [mCore_TIPLJobStatus_MultiValues] b on a.iMultiId=b.iMultiId)
+RETURN @JobTIPLStatus       
+END

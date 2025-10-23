@@ -1,0 +1,16 @@
+ALTER PROC udp_AllDatesAgeing
+as
+begin
+--select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+
+update a set DesignAgeing=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate(b.[Date]),GETDATE()),' ','Days'),a.DesignDate=b.[Date] from vCrm_Opportunities a with(nolock) join vCore_Design b with(nolock) on a.iTransId=b.FactFindingNo where iTransId>0
+update a set PricingAgeing=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate(b.[Date]),GETDATE()),' ','Days'),a.PricingDate=b.[Date] from vCrm_Opportunities a with(nolock) join vCrm_Quote b with(nolock) on a.iTransId=b.iOpportunityId where a.iTransId>0
+update a set FollowUpAgeing=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate(b.[Date]),GETDATE()),' ','Days'),a.FollowUpDate=b.[Date] from vCrm_Opportunities a with(nolock) join vCore_FollowUp b with(nolock) on a.iTransId=b.FactFindingno where iTransId>0
+update a set ATOAgeing=CONCAT(ISNULL(DATEDIFF(dd,dbo.fCore_IntToDate(b.[Date]),GETDATE()),'0'),' ','Days'),a.ATODate=b.[Date] from vCrm_Opportunities a with(nolock) join vCrm_SalesOrder b with(nolock) on a.iTransId=b.iOpportunityId where a.iTransId>0
+update a set InvoiceAgeing=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate(b.[Date]),GETDATE()),' ','Days'),a.InvoiceDate=b.[Date] from vCrm_Opportunities a with(nolock) join vCore_Invoice b with(nolock) on a.iTransId=b.OpportunityNo where iTransId>0
+update a set PaymentAgeing=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate(b.[Date]),GETDATE()),' ','Days'),a.PaymentDate=b.[Date] from vCrm_Opportunities a with(nolock) join vCore_Receipt b with(nolock) on a.iTransId=b.OpportunityNo where iTransId>0
+update a set ShopDrawingAgeing=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate(b.[Date]),GETDATE()),' ','Days'),a.ShopDrawingDate=b.[Date] from vCrm_Opportunities a with(nolock) join vCore_ShopDrawings b with(nolock) on a.iTransId=b.iOpportunityId where iTransId>0
+update a set HandoverAgeing=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate(b.[Date]),GETDATE()),' ','Days'),a.HandoverDate=b.[Date] from vCrm_Opportunities a with(nolock) join vCore_Handover b with(nolock) on a.iTransId=b.iOpportunityId where iTransId>0
+end
+
+--exec udp_AllDatesAgeing

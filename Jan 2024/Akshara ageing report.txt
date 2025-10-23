@@ -1,0 +1,63 @@
+CREATE VIEW  nCore_AgeingReport as
+SELECT top 100 percent
+  usr.sName Owner,
+  a.iTransId,
+  a.sName [Lead],
+  CASE WHEN a.[Date] is null then null else FORMAT(dbo.fCore_IntToDate(a.[Date]),'dd/MM/yyyy') end  [Lead Date],
+  opp.sName Opportunity, 
+ CASE WHEN opp.Date is null then null else FORMAT(dbo.fCore_IntToDate(opp.Date),'dd/MM/yyyy') end [Opportunity Date],
+  CASE WHEN (a.[Date] is null  or opp.[Date] is null) then 0 else  DATEDIFF(dd, dbo.fCore_IntToDate(a.[Date]), dbo.fCore_IntToDate(opp.Date)) end [lead to opportunity Ageing],
+  q.sName Quote,
+  CASE WHEN q.Date is null then null else FORMAT(dbo.fCore_IntToDate(q.Date),'dd/MM/yyyy') end  [Quote Date],
+  CASE WHEN (q.[Date] is null  or opp.[Date] is null) then 0 else DATEDIFF(dd, dbo.fCore_IntToDate(opp.Date), dbo.fCore_IntToDate(q.[Date])) end [opportunity to quote Ageing],
+  so.sName SalesOrder,
+  CASE WHEN so.Date is null then null else FORMAT(dbo.fCore_IntToDate(so.Date),'dd/MM/yyyy') end  [SalesOrder Date],
+  CASE WHEN (q.[Date] is null  or so.[Date] is null) then 0 else DATEDIFF(dd, dbo.fCore_IntToDate(q.Date), dbo.fCore_IntToDate(so.[Date])) end [Quote to SalesOrder Ageing],
+  inv.sName InvoiceName,
+  CASE WHEN inv.Date is null then null else FORMAT(dbo.fCore_IntToDate(inv.Date),'dd/MM/yyyy') end  [Invoice Date],
+  CASE WHEN (so.[Date] is null  or inv.[Date] is null) then 0 else DATEDIFF(dd, dbo.fCore_IntToDate(so.[Date]), dbo.fCore_IntToDate(inv.[Date])) end  [SalesOrder to Invoice Ageing],
+  rec.sName Receipt ,
+  CASE WHEN rec.Date is null then null else FORMAT(dbo.fCore_IntToDate(opp.Date),'dd/MM/yyyy') end [Receipt Date],
+  CASE WHEN (inv.[Date] is null  or rec.[Date] is null) then 0 else DATEDIFF(dd,dbo.fCore_IntToDate(inv.[Date]),dbo.fCore_IntToDate(rec.[Date])) end  [ Invoice to Receipt Ageing]
+FROM vaCrm_Leads a WITH (NOLOCK)
+JOIN vCrm_Opportunities opp WITH (NOLOCK) ON a.iMasterId = opp.iLeadId
+LEFT JOIN (SELECT bActive,b.Date,a.iOpportunityId,a.sName,a.iTransId FROM tCrm_Quote a WITH (NOLOCK)
+JOIN vCrm_Quote b WITH (NOLOCK) ON a.iTransId = b.iTransId
+WHERE a.iTransId > 0) q ON opp.iTransId = q.iOpportunityId
+LEFT JOIN vCrm_SalesOrder so WITH (NOLOCK) ON q.iTransId = so.iQuoteId
+LEFT JOIN vCore_Invoice inv WITH (NOLOCK) ON so.iTransId = inv.SalesOrderNo
+LEFT JOIN vCore_Receipt rec WITH (NOLOCK) ON rec.InvoiceNo = inv.iMasterId
+LEFT JOIN vCrm_Users usr WITH (NOLOCK) on a.iAssignedTo=usr.iMasterId
+WHERE a.iTransId > 0 AND a.iTransId IS NOT NULL
+
+UNION ALL
+
+SELECT top 100 percent
+  usr.sName Owner,
+  0,
+  '',
+  '',
+  a.sName,
+  CASE WHEN a.Date is null then null else FORMAT(dbo.fCore_IntToDate(a.Date), 'dd/MM/yyyy') end  [OppDate],
+  '',
+  b.sName,
+  CASE WHEN b.Date is null then null else FORMAT(dbo.fCore_IntToDate(b.Date), 'dd/MM/yyyy') end [Quote Date],
+  CASE WHEN (a.[Date] is null  or b.[Date] is null) then 0 else DATEDIFF(dd, dbo.fCore_IntToDate(a.Date), dbo.fCore_IntToDate(b.[Date]))  end [opportunity to quote Ageing],
+  so.sName,
+  CASE WHEN so.Date is null then null else FORMAT(dbo.fCore_IntToDate(so.Date), 'dd/MM/yyyy') end [SalesOrder Date],
+  CASE WHEN (b.[Date] is null  or so.[Date] is null) then 0 else DATEDIFF(dd, dbo.fCore_IntToDate(b.Date), dbo.fCore_IntToDate(so.[Date])) end  [Quote to SalesOrder Ageing],
+  inv.sName,
+  CASE WHEN inv .Date is null then null else FORMAT(dbo.fCore_IntToDate(inv.Date), 'dd/MM/yyyy') end [Invoice Date],
+  CASE WHEN (so.[Date] is null  or inv.[Date] is null) then 0 else DATEDIFF(dd, dbo.fCore_IntToDate(so.[Date]), dbo.fCore_IntToDate(inv.[Date]))  end [SalesOrder to Invoice Ageing],
+  rec.sName Receipt,
+  CASE WHEN rec.Date is null then null else FORMAT(dbo.fCore_IntToDate(rec.Date), 'dd/MM/yyyy') end ,
+  CASE WHEN (inv.[Date] is null  or rec.[Date] is null) then 0 else DATEDIFF(dd,dbo.fCore_IntToDate(inv.[Date]),dbo.fCore_IntToDate(rec.[Date])) end 
+FROM vCrm_Opportunities a WITH (NOLOCK)
+JOIN vCrm_Quote b WITH (NOLOCK) ON a.iTransId = b.iOpportunityId
+LEFT JOIN vCrm_SalesOrder so WITH (NOLOCK) ON b.iTransId = so.iQuoteId
+LEFT JOIN vCore_Invoice inv WITH (NOLOCK) ON so.iTransId = inv.SalesOrderNo
+LEFT JOIN vCore_Receipt rec WITH (NOLOCK) ON rec.InvoiceNo = inv.iMasterId
+LEFT JOIN vCrm_Users usr WITH (NOLOCK) on a.iAssignedTo=usr.iMasterId
+WHERE a.iTransId > 0
+AND a.iLeadId NOT IN (SELECT iTransId FROM vCrm_Leads WITH (NOLOCK) WHERE iTransId >0 )
+ORDER BY a.iTransId ASC

@@ -1,0 +1,32 @@
+CREATE or ALTER FUNCTION dbo.fCore_Var1(@s XML)
+RETURNS BIT
+AS
+BEGIN
+    DECLARE @Owner INT, @fRet BIT = 0, @TransId INT
+    DECLARE @StartTime int, @EndTime int,@StartDate int,@EndDate int
+
+    -- Extract values from XML
+    SELECT 
+        @Owner = @s.value('(/Fields/Header/iAssignedTo)[1]', 'int'),
+        @TransId = @s.value('(/Fields/Header/TransId)[1]', 'int'),
+        @StartTime = @s.value('(/Fields/Header/iOFMStartTime)[1]', 'int'),
+        @EndTime = @s.value('(/Fields/Header/iOFMEndTime)[1]', 'int'),
+        @StartDate = @s.value('(/Fields/Header/FromDate)[1]', 'int'),
+        @EndDate = @s.value('(/Fields/Header/EndDate)[1]', 'int')
+
+
+    -- Check for overlap in worklog for same Owner excluding current record
+    IF EXISTS (
+        SELECT 1 FROM vCore_DailyLogSheet WITH (NOLOCK)
+        WHERE iAssignedTo = @Owner AND iMasterId <> @TransId AND (
+        (@StartTime BETWEEN iOFMStartTime AND iOFMEndTime) OR (@EndTime BETWEEN iOFMStartTime AND iOFMEndTime))
+        AND (
+        (@StartDate BETWEEN FromDate AND EndDate) OR (@EndDate BETWEEN FromDate AND EndDate))
+        )
+
+    BEGIN
+        SET @fRet = 1
+    END
+
+    RETURN @fRet
+END

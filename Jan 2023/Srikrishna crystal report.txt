@@ -1,0 +1,174 @@
+select *,(Rs1*5.0/100.00)+Rs1 [Rs] from (
+	 SELECT
+	iMasterId,
+		(
+		(isnull(fPrice,0)+
+		isnull(FloorRaiseAmount,0)+
+		isnull(EastFacingAmount,0)+
+		isnull(PhysicalPlotArea,0)+
+		isnull(ClubHouseCharges,0)+200000
+		)
+		*(isnull(20.0,0)/100)) [Rs1],fPrice,'Booking Advance 20%' [Milestone],20.00 [percentage]
+	 from vCrm_PMSUnits 
+	 union all
+	 select u.iMasterId,
+		(
+		(isnull(u.fPrice,0)+
+		isnull(u.FloorRaiseAmount,0)+
+		isnull(u.EastFacingAmount,0)+
+		isnull(u.PhysicalPlotArea,0)+
+		isnull(u.ClubHouseCharges,0)++200000
+		)
+		*(isnull(sp.fPaymentPercentage,0)/100))[Rs],
+u.fPrice,
+s.sName[Milestone],sp.fPaymentPercentage from vuCrm_PMSStagePlans_StagePlans_Details sp
+	 left join vCrm_PMSUnits u on u.iPropertyId=sp.iPropertyId join vCrm_PMSStages s on sp.iPMSStageId=s.iMasterId
+where u.iMasterId>0 
+	 ) aa
+	 where aa.iMasterId= 3696
+======================================================================
+select u.iMasterId,v.sName [Project],p.sName[Property],u.sName,
+b.sName[Block],u.sName,CRMPlotNo,
+ConCat(fArea,' SQ.FT')[feet],CONCAT(iNoofBedrooms,' BHK') [BHK's],
+format(GETDATE(),'dd/MM/yyyy')[RunDate],
+case u.iFacingId when 1 then 'North'
+when 2 then 'East'
+when 3 then 'West'
+when 4 then 'South'
+when 5 then 'North-East'
+when 6 then 'South-East'
+when 7 then 'North-West'
+when 8 then 'South-West' else '' end Facing,
+u.PlotCutoffChargeSqYd [Cutoff],
+u.fArea*u.PlotCutoffChargeSqYd [UnitPrice],
+u.FloorRaiseAmount,
+u.EastFacingAmount, isnull(u.CrossPlotArea,0) [Corner changes],
+isnull(u.PhysicalPlotArea,0)[Physical charges],u.ClubHouseCharges,
+((isnull(u.fArea*u.PlotCutoffChargeSqYd,0)
+	+isnull(FloorRaiseAmount,0)
+	+isnull(EastFacingAmount,0)
+	+isnull(PhysicalPlotArea,0)
+	+isnull(ClubHouseCharges,0)
+	+200000.00 
+	)*5/100) [Gst 5%],
+(
+	(
+	isnull(u.fArea*u.PlotCutoffChargeSqYd,0)
+	+isnull(FloorRaiseAmount,0)
+	+isnull(EastFacingAmount,0)
+	+isnull(PhysicalPlotArea,0)
+	+isnull(ClubHouseCharges,0)
+	+200000
+	+(
+		(isnull(u.fArea*u.PlotCutoffChargeSqYd,0)
+		+isnull(FloorRaiseAmount,0)
+		+isnull(EastFacingAmount,0)
+		+isnull(PhysicalPlotArea,0)
+		+isnull(ClubHouseCharges,0)
+		++200000.00
+		)*5/100)
+	)
+) [Total],
+AA.Rs [Rs],
+s.sName[Milestone],s.fPaymentPercentage,u.CORPUSFUNDAmount,
+u.AdvanceMaintananceDepositFor24Months,
+u.LegalAndDOCUMENTATIONCHARGES,
+((isnull(u.AdvanceMaintananceDepositFor24Months,0)*18)/100) [GST 18% ON ADVANCE MAINTENANCE DEPOSIT],
+((isNULL(LegalAndDOCUMENTATIONCHARGES,0)*18)/100) [GST 18% ON LegalAndDOCUMENTATIONCHARGES],
+((ISNULL(u.CORPUSFUNDAmount,0)+
+ISNULL(u.AdvanceMaintananceDepositFor24Months,0)+
+ISNULL(u.LegalAndDOCUMENTATIONCHARGES,0)
++((isnull(u.AdvanceMaintananceDepositFor24Months,0)
+*18)/100)
++(
+(isNULL(LegalAndDOCUMENTATIONCHARGES,0)
+*18)/100))
+) [PART B TOTAL],
+
+((((ISNULL(u.fArea*u.PlotCutoffChargeSqYd,0)+
+ISNULL(FloorRaiseAmount,0)+
+ISNULL(EastFacingAmount,0)+
+ISNULL(PhysicalPlotArea,0)+
+ISNULL(ClubHouseCharges,0)*ISNULL(fPaymentPercentage,0)))
++
+(
+((ISNULL(u.CORPUSFUNDAmount,0)+
+ISNULL(u.AdvanceMaintananceDepositFor24Months,0)+
+ISNULL(u.LegalAndDOCUMENTATIONCHARGES,0)+
+((isnull(u.AdvanceMaintananceDepositFor24Months,0)
+*18)/100)+
+((isNULL(LegalAndDOCUMENTATIONCHARGES,0)
+*18)/100)))))) 
+[PART A+PART B]
+from vCrm_PMSUnits u
+left join vCrm_Ventures v on u.iVentureId=v.iMasterId
+left join vCrm_Property p on u.iPropertyId=p.iMasterId
+left join vCrm_Blocks b on u.iBlockId=b.iMasterId
+left join vCrm_PMSStages s on u.iPMSStageId=s.iMasterId
+left join (select iMasterId,SUM(Rs) [Rs] from (
+SELECT
+  *,Rs+GST [Rs2]
+FROM (
+SELECT
+  iMasterId,
+  (
+  (ISNULL(fPrice, 0) +
+  ISNULL(FloorRaiseAmount, 0) +
+  ISNULL(EastFacingAmount, 0) +
+  ISNULL(PhysicalPlotArea, 0) +
+  ISNULL(ClubHouseCharges, 0)+200000.00
+  )
+  * (ISNULL(20.0, 0) / 100)) [Rs],
+  fPrice,
+  'Booking Advance 20%' [Milestone],
+  20.00 [percentage],
+  
+  	 ((isnull(u.fArea*u.PlotCutoffChargeSqYd,0)
+	+isnull(FloorRaiseAmount,0)
+	+isnull(EastFacingAmount,0)
+	+isnull(PhysicalPlotArea,0)
+	+isnull(ClubHouseCharges,0)+200000.00)*5/100)/1+(select COUNT(1) from
+vuCrm_PMSStagePlans_StagePlans_Details sp
+LEFT JOIN vCrm_PMSUnits ut
+  ON ut.iPropertyId = sp.iPropertyId
+JOIN vCrm_PMSStages s
+  ON sp.iPMSStageId = s.iMasterId
+WHERE ut.iMasterId > 0 and ut.iMasterId=u.iMasterId ) [GST]
+FROM vCrm_PMSUnits u
+
+UNION ALL
+
+SELECT
+  u.iMasterId,
+  (
+  (ISNULL(u.fPrice, 0) +
+  ISNULL(u.FloorRaiseAmount, 0) +
+  ISNULL(u.EastFacingAmount, 0) +
+  ISNULL(u.PhysicalPlotArea, 0) +
+  ISNULL(u.ClubHouseCharges, 0)+200000.00
+  )
+  * (ISNULL(sp.fPaymentPercentage, 0) / 100)) [Rs],
+  u.fPrice,
+  s.sName [Milestone],
+  sp.fPaymentPercentage,
+  	 ((isnull(u.fArea*u.PlotCutoffChargeSqYd,0)
+	+isnull(FloorRaiseAmount,0)
+	+isnull(EastFacingAmount,0)
+	+isnull(PhysicalPlotArea,0)
+	+isnull(ClubHouseCharges,0)+200000.00)*5/100)/1+(select COUNT(1) from
+vuCrm_PMSStagePlans_StagePlans_Details sp
+LEFT JOIN vCrm_PMSUnits ut
+  ON ut.iPropertyId = sp.iPropertyId
+JOIN vCrm_PMSStages s
+  ON sp.iPMSStageId = s.iMasterId
+WHERE ut.iMasterId > 0 and ut.iMasterId=u.iMasterId )  [GST]
+FROM vuCrm_PMSStagePlans_StagePlans_Details sp
+LEFT JOIN vCrm_PMSUnits u
+  ON u.iPropertyId = sp.iPropertyId
+JOIN vCrm_PMSStages s
+  ON sp.iPMSStageId = s.iMasterId
+ ) aa WHERE aa.iMasterId>0) a
+group by a.iMasterId) AA on AA.iMasterId=u.iMasterId
+where u.iMasterId>0
+and u.iMasterId={?iTransId}
+

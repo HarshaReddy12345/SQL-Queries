@@ -1,0 +1,20 @@
+select 
+       b.sName [Product],b.sCode [Product Code],
+       c.sName [Creator] ,
+	   a.Quantity [GRN Qty],a.TransferPrice [Rate],
+	   d.DispatchQty [Dispatched Qty],
+	   e.Quantity [Parts Received],e.QuantityDifference [Damaged Qty],
+	   f.NewQuantity [Replaced Qty],
+	   ( e.Quantity-f.NewQuantity) [Current stock at Engg],
+	   g.iQuantity [Parts Return],
+	   ((a.Quantity-d.DispatchQty)+g.iQuantity) [Current Stock],
+	   (( e.Quantity-f.NewQuantity)*a.TransferPrice) [Value]
+	   from 
+vCore_MaterialConsumption a
+join vCore_Product b on a.Item=b.iMasterId
+join vCrm_Users c on a .iAssignedTo=c.iMasterId
+join vuCore_DispensingUnit_General_Details d on a.Item=d.iProductId and a.iAssignedTo=b.iAssignedTo
+join vuCore_DailyActivityPlan_General_Details e on a.Item=e.ProductName and a.iAssignedTo=e.iAssignedTo
+join vuCore_DUBreakdown_PartReplacementInformation_Details f on a.Item=f.NewItemCode and a.iAssignedTo=f.iAssignedTo
+join vuCore_DefectivePartReturn_DefectiveProductInformation_Details g on a.Item=g.iProductId and a.iAssignedTo=g.iAssignedTo
+where a.iMasterId>0

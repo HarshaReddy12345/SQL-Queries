@@ -1,0 +1,74 @@
+HEADER
+
+CREATE VIEW nCore_QuoteHeader as      
+SELECT        
+  a.iTransId,        
+  FORMAT(GETDATE(), 'dd MMMM yyyy') [RUNDATE],        
+  b.sName [ContactName],        
+  b.sLastName,        
+  c.sName [AccountName],        
+  c.sBillingAddress,        
+  c.sBillingCity,        
+  d.sName [Acc Country],        
+  b.sPhone,        
+  b.sEmail,        
+  e.sName [Owner],        
+  e.TelephoneNo,        
+  e.Email [Owner Mail],        
+  f.sName [Opportunity],        
+  a.sName [Quote No],        
+  g.sName [Ship],        
+  h.sName [Brand],        
+  FORMAT(dbo.fCore_IntToDate(a.SailDate), 'dd MMMM yyyy') [SailingDate],        
+  i.sName [Itinerary],                
+  a.Gratuities,a.Message2  ,CONCAT('C:\apache-tomcat-9.0.63_J8\webapps\streamline\WEB-INF\user-resource\Documents\3B0\',iModuleTypeId,'_',iDocumentId,'_',sFileName) sImageUrl,a.AssistCardInfo,      
+c.TRNNumber ,a.ItineraryDescription     
+FROM vCrm_Quote a WITH (NOLOCK)        
+JOIN vCrm_Contacts b WITH (NOLOCK)        
+  ON a.Contact = b.iMasterId        
+JOIN vCore_Account c WITH (NOLOCK)        
+  ON a.Account = c.iMasterId        
+JOIN vCore_Country d WITH (NOLOCK)        
+  ON c.iBillingCountry = d.iMasterId        
+LEFT JOIN vCore_Salesman e WITH (NOLOCK)        
+  ON a.ReservationStaff = e.iMasterId        
+JOIN vCrm_Opportunities f WITH (NOLOCK)        
+  ON a.iOpportunityId = f.iTransId        
+JOIN vCore_Ship g WITH (NOLOCK)        
+  ON a.Ship = g.iMasterId        
+JOIN vCore_Brand h WITH (NOLOCK)        
+  ON g.Brand = h.iMasterId        
+JOIN vCore_Itinerary i WITH (NOLOCK)        
+  ON a.Itinerary = i.iMasterId        
+ LEFT JOIN (SELECT  
+  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,  
+  iModuleTypeId,  
+  iDocumentId,  
+  sFileName,  
+  iRelatedTo,  
+  iIndex  
+FROM vCrm_Documents WITH (NOLOCK)  
+WHERE iModuleTypeId = 2816  
+AND iFieldId = 301378) Docs  
+  ON Docs.iRelatedTo = a.iTransId   
+WHERE a.iTransId>0
+
+-------------------------------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------
+PRODUCT GRID
+   
+  ALTER VIEW nCore_QuoteProductGrid as          
+SELECT          
+  a.iTransId,a.sName,                
+  d.sCode [CatCode],          
+  a.CabinCategoryName,          
+  CabinNo,          
+  a.NoofGuest [Guests],a.NetDueafterVAT,          
+  a.GuestName, a.TotalNetDueafterVAT,         
+  a.iSequence,a.Remarks ,NetCruiseFare,NCCF,Taxes,ServiceCharge,AssistCard,OtherCharge,TotalChargeUSD,(a.AgencyCommissionamount+a.ManagementDiscount) [Agency Commission],a.AgencyCommissionamount,a.ManagementDiscount ,a.AgencyCommissionPercentage,TotalNetCharge,TotalVATAmount
+FROM vuCrm_Quote_General_Details a WITH (NOLOCK)          
+JOIN vCore_Product b WITH (NOLOCK)          
+  ON a.iProductId = b.iMasterId                
+JOIN vCore_CabinCategory d with(NOLOCK)          
+  ON a.CabinCategoryCode=d.iMasterId          
+WHERE a.iTransId>0

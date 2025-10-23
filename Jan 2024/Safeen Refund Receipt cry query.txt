@@ -1,0 +1,22 @@
+select 
+rr.iMasterId,
+rr.sName [Refund Rec No],
+rr.CancellationCharge,
+rr.RefundstoCreditCard,
+rr.Credit,
+rr.OtherAmounts,
+acc.sDescription [Account Remarks],
+opp.sName [Booking Id],
+FORMAT(dbo.fCore_IntToDate(so.SailDate),'dd-MMM-yyyy') [SailingDate],
+rr.AmountReceived,
+rr.CancellationCharges,
+rr.RefundtoCreditCard,
+rr.OtherAmount,
+rr.NetDue,
+usr.sName [Reservation Staff]
+from vuCore_RefundReceipt_Product_Details rr with(nolock)
+left join vCore_Account acc with(nolock) on rr.Accountname=acc.iMasterId
+left join vCrm_SalesOrder so with(nolock) on rr.OfferLetterID=so.iTransId  
+left join vCrm_Opportunities opp with(nolock) on rr.OpportunityID=opp.iTransId
+left join vCrm_Users usr with(nolock) on rr.Users=usr.iMasterId
+where rr.iMasterId>0 and rr.iMasterId=9

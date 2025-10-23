@@ -1,0 +1,188 @@
+USE [Focus8FZ0]
+GO
+/****** Object:  StoredProcedure [dbo].[xsp_TaxInvoucePrintLayout]    Script Date: 12-01-2023 17:51:46 ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER procedure [dbo].[xsp_TaxInvoucePrintLayout]
+(@iTransId int)
+as
+begin
+  declare @cnt int =0
+select @cnt=CustomerCategory from vCore_ServiceInvoice where iMasterId = @iTransId
+select 
+@cnt [cnt],
+jc.iMasterId iTransId,
+jc.sName [Name]
+,ac.sName [Account]
+,con.sName [ContactPerson]
+,ucon.sEmail[ContactEmail]
+,ucon.sMobile[ContactMob]
+,ucon.sMailingAddress[ContactAdress]
+,vmk.sName[Make]
+,mdl.sName[Model]
+,ymk.sName[VehicleYearModel]
+,ujc.ChassisNo
+,ujc.MileageOut
+,dbo.IntToDate(ujc.InvoiceDate) [JCDate]
+--,job
+,uen.EntityGroup[Entity]
+,en.sName [EntityName]
+
+,uen.Address[EnAdress]
+,uen.POBox[EnPO]
+,uen.Email[EnEmail]
+,uen.Fax[EnFax]
+,uen.Telephone[EnTel]
+,uen.Website[EnWeb]
+--,ujc.Document
+--,ujc.DocumentName
+,pr.sName[Product]
+,djc.ItemDescription
+,djc.Rate
+,djc.TotalDiscountAmt
+,djc.AmountAftDisc
+,djc.NetAmount
+,djc.Quantity
+--,djc.TaxCode
+,djc.TotalAmount
+,djc.Quantity * djc.Rate [Gross]
+,cas.sName[PlateNo]
+,s.sDescription[Note]
+,djc.VATAmount
+,uac.TRNNo
+,ujc.Odometer[MileageIn]
+,case when icat.iMasterId in(1,3,4) then'Parts' else'Labor' end [ItemCategory]
+,case when icat.iMasterId in(1,3,4) then djc.Quantity * djc.Rate else 0 end  [PartAmount]
+,case when icat.iMasterId in(1,3,4) then 0 else djc.Quantity * djc.Rate end  [LaborAmount]
+,rm.sName[ServiceAdvisor]
+,act.iMasterId [CustomerType]
+,ujc.JobCardNo
+,djc.VAT
+,case when ujc.PaymentMode=1 then 'Cash' when ujc.PaymentMode=2 then 'Card' when ujc.PaymentMode=3 then 'Cash/Card' end PaymentMode
+,ujc.CashAmount
+,ujc.CardAmount
+,ujc.CCAvenue
+,ujc.Spotti
+,ujc.Banktransfer
+,ujc.ChequeCredit
+
+from  
+
+mCore_ServiceInvoice jc WITH(NOLOCK) inner join muCore_ServiceInvoice ujc WITH(NOLOCK) on jc.iMasterId=ujc.iMasterId
+LEFT join tCrm_Calls s WITH(NOLOCK) on s.iTransId=ujc.JobCardNo
+left join mCore_Account ac WITH(NOLOCK) on ujc.iAccountId=ac.iMasterId
+left join muCore_Account uac WITH(NOLOCK) on uac.iMasterId=ac.iMasterId
+left join mCrm_Contacts con WITH(NOLOCK) on con.iMasterId=ujc.iContactId
+left join muCrm_Contacts ucon WITH(NOLOCK) on ucon.iMasterId=con.iMasterId
+left join mCore_ResourceMaster rm WITH(NOLOCK) on rm.iMasterId=ujc.ServiceAdvisor
+left join mCore_CustomerType act WITH(NOLOCK) on act.iMasterId=ujc.CustomerType
+
+left join(select Item,ItemCategory,ItemDescription, iMasterId iTransId,Quantity,Rate,TotalAmount,TotalDiscountAmt,AmountAfterDiscount AmountAftDisc,NetAmount,VAT,VATAmount from muCore_ServiceInvoice_ServiceContractItems_Details union all
+select
+JCItem[Item],JCMaincategory ItemCategory,JCItemDescription ItemDescription,iMasterId iTransId,JCQty Quantity,JCPrice Rate,JCTotalAmount[TotalAmount],JCDiscountAmt TotalDiscountAmt,JCAmountAftDisc [AmountAftDisc],JCNetAmt[NetAmount],JCVAT VAT,JCVATAmt VATAmount from muCore_ServiceInvoice_JobCardItems_Details)djc 
+ on djc.iTransId=jc.iMasterId
+--left join tuCrm_Calls_JobCardItems_Details djobc on djobc.iTransId=jc.iTransId
+left join mCore_Product pr WITH(NOLOCK) on pr.iMasterId=djc.Item
+left join mCore_VehicleMake vmk WITH(NOLOCK) on vmk.iMasterId=VehicleMake
+
+left join mCore_YearMake ymk WITH(NOLOCK) on ymk.iMasterId=ujc.VehicleYearModel
+left join mCore_Entitymaster en WITH(NOLOCK) on en.iMasterId=ujc.Entity
+left join muCore_Entitymaster uen WITH(NOLOCK) on uen.iMasterId=en.iMasterId
+left join mCore_ItemMainCategory  icat WITH(NOLOCK) on icat.iMasterId=djc.ItemCategory
+left join tCrm_CustAssets cas WITH(NOLOCK) on cas.iTransId=ujc.iCustAssetId
+left join vCrm_CustAssets vcas WITH(NOLOCK) on vcas.iTransId=cas.iTransId
+left join mCore_VehicleModel mdl WITH(NOLOCK) on mdl.iMasterId=vcas.VehicleModel
+
+where jc.iMasterId=@iTransId
+end
+==========================================================================================================================================
+ALTER   procedure [dbo].[xsp_JobCardPrintLayout]
+(@iTransId int)
+as
+begin
+declare @cnt int =0
+select @cnt=CustomerCategory from vCrm_Calls where iTransId = @iTransId
+
+select 
+@cnt [cnt],
+jc.iTransId,
+jc.sName [Name]
+,jc.sDescription
+,ac.sName [Account]
+,con.sName [ContactPerson]
+,ucon.sEmail[ContactEmail]
+,ucon.sMobile[ContactMob]
+,ucon.sMailingAddress[ContactAdress]
+,vmk.sName[Make]
+,mdl.sName[Model]
+,ym.sName[VehicleYearModel]
+,Acc.sBillingAddress[Address]
+,Acc.TRNNo[VAT num]
+,ujc.ChassisNo
+,ujc.MileageOut
+,dbo.IntToDate(jc.iDueDate) [JCDate]
+--,job
+,uen.EntityGroup [Entity]
+,uen.Address[EnAdress]
+,uen.POBox[EnPO]
+,uen.Email[EnEmail]
+,uen.Fax[EnFax]
+,uen.Telephone[EnTel]
+,uen.Website[EnWeb]
+,ujc.Document
+,ujc.DocumentName
+,pr.sName[Product]
+,djc.ItemDescription
+,djc.Rate
+, djc.AmountAftDisc 
+,djc.NetAmount
+,djc.Quantity
+--,djc.TaxCode
+,djc.TotalAmount
+,ujc.DriverName
+,djc.ItemCategory
+, djc.VATAmount
+,uac.TRNNo
+,ujc.Odometer[MileageIn]
+,jc.sSubject [customerconcern]
+,rm.sName[ServiceAdvisor]
+,cas.sName [plateNo]
+,djc.itemcode [itemcode]
+,yk.sName[YearMake]
+,djc.Discount
+,djc.Quantity*djc.Rate[Gross]
+,djc.JCTotalDisCount
+,djc.TotalDiscountAmt
+,djc.LaborTotal
+,djc.PartsTotal
+from  
+
+tCrm_Calls jc WITH(NOLOCK) inner join vCrm_Calls ujc WITH(NOLOCK) on jc.iTransId=ujc.iTransId
+left join mCore_Account ac WITH(NOLOCK) on jc.iAccountId=ac.iMasterId
+left join muCore_Account uac WITH(NOLOCK) on uac.iMasterId=ac.iMasterId
+left join vCore_Account Acc WITH(NOLOCK) on Acc.iMasterId=jc.iAccountId
+left join mCrm_Contacts con WITH(NOLOCK) on con.iMasterId=jc.iContactId
+left join muCrm_Contacts ucon WITH(NOLOCK) on ucon.iMasterId=con.iMasterId
+
+left join mCore_ResourceMaster rm WITH(NOLOCK) on rm.iMasterId=ujc.ServiceAdvisor
+left join(select Item,ItemDescription,ItemCode itemcode,0 LaborTotal,0 [VehicleYearModel],0 PartsTotal,0 JCTotalDisCount,TotalDiscountAmt,ItemCategory,'' yearmake,0[Discount],''Price,iTransId,Quantity,Rate,TotalAmount,TotalDiscountAmt AmountAftDisc,NetAmount,VATAmount from tuCrm_Calls_ServiceContractItems_Details union all
+select
+JCItem[Item],JCItemDescription ItemDescription,JCItemCode itemcode,LWLaborTotal,VehicleYearModel,LWPartsTotal,JCTotalDiscount[TotalDisCount],JCDiscountAmt,JCMaincategory[ItemCategory],YearMake,AllowedDiscAmt ,JCPrice [price], iTransId,JCQty Quantity,JCPrice,JCTotalAmount[TotalAmount],JCAmountAftDisc [AmountAftDisc],JCNetAmt[NetAmount],JCVATAmt VATAmount from vuCrm_Calls_JobCardItems_Details)djc
+ on djc.iTransId=jc.iTransId
+LEFT join vCore_YearMake ym WITH(NOLOCK) on ym.iMasterId=djc.VehicleYearModel
+--left join tuCrm_Calls_JobCardItems_Details djobc on djobc.iTransId=jc.iTransId
+left join mCore_Product pr WITH(NOLOCK) on pr.iMasterId=djc.Item
+left join mCore_VehicleMake vmk WITH(NOLOCK) on vmk.iMasterId=VehicleMake
+left join mCore_VehicleModel mdl WITH(NOLOCK) on mdl.iMasterId=VehicleModel
+left join mCore_Entitymaster en WITH(NOLOCK) on en.iMasterId=ujc.Entity
+left join muCore_Entitymaster uen WITH(NOLOCK) on uen.iMasterId=en.iMasterId
+left join tCrm_CustAssets cas WITH(NOLOCK) on cas.iTransId=jc.iCustAssetId
+left join mCore_YearMake yk WITH(NOLOCK) on yk.iMasterId=djc.yearmake
+--left join mCore_ResourceMaster ser on ser.iMasterId=ujc.iTransId
+where jc.iTransId=@iTransId
+end
+
+

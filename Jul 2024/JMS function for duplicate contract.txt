@@ -1,0 +1,29 @@
+CREATE FUNCTION dbo.fCore_Var24(@s xml)
+returns bit 
+as 
+begin 
+DECLARE @Output decimal(18,2),@iUnitId int,@starttime int,@endtime int
+select @iUnitId = @s.value('(Fields/Header/UnitHeader)[1]', 'INT')
+ SELECT @starttime = @s.value('(Fields/Header/iLeaseStartDate)[1]', 'INT'),   
+        @endtime = @s.value('(Fields/Header/iLeaseEndDate)[1]', 'INT') 
+
+		
+
+		IF EXISTS (
+        SELECT 1 
+        FROM vCrm_PMSContract with(nolock)
+        WHERE UnitHeader = @iUnitId 
+          AND (
+              (@starttime >= iLeaseStartDate AND @endtime <= iLeaseEndDate)
+          )
+    )
+    BEGIN
+        SET @Output = 1
+    END
+    ELSE
+    BEGIN
+        SET @Output = 0
+    END
+    
+    RETURN @Output
+END

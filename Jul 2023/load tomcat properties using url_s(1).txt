@@ -1,0 +1,7 @@
+http://localhost:8080/streamline/crmhome!reloadConfig.do?type=1&logLevel=info --reload log4j config for a logger, addtion paramters
+
+http://localhost:8080/streamline/crmhome!reloadConfig.do?type=2 -- reload crm config properties
+
+http://localhost:8080/streamline/crmhome!reloadConfig.do?type=3 -- reload cache data folder of the Company
+
+http://localhost:8080/streamline/crmhome!reloadConfig.do?type=4 --- del cache struct folder of the Company

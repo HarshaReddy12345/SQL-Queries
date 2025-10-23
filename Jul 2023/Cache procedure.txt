@@ -1,0 +1,60 @@
+ALTER PROC udp_UpdateStage (@iTransId bigint,  
+@iUserId int = 0)  
+AS  
+BEGIN  
+  DECLARE @iStage int,@EscTime int , @STAGE1 int=14400,@Diff int,@TT int,@STAGE2 int=28800
+  SELECT  
+    @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0)  
+  SELECT  
+    @iStage = iStage FROM vCrm_Opportunities WHERE iTransId = @iTransId  
+  
+  IF ((@iStage = 1) AND CAST(DATEADD(HH,4,GETDATE()) AS datetime) < 
+  (CONVERT(datetime,CONVERT(varchar(10), CAST(GETDATE() AS date), 120) +' '+ CONVERT(varchar(12), '18:00:00.000', 114))))  
+  BEGIN  
+    UPDATE vCrm_Opportunities SET EscalationDateandTime = dbo.fCore_DateTimeToInt( DATEADD(HH, 4, GETDATE())) 
+	WHERE iTransId = @iTransId  
+	
+  END  
+
+  ELSE  
+  IF ((@iStage = 1) AND CAST(DATEADD(HH,4,GETDATE()) AS datetime) >
+  (CONVERT(datetime,CONVERT(varchar(10), CAST(GETDATE() AS date), 120) +' '+ CONVERT(varchar(12), '18:00:00.000', 114))))  
+  BEGIN  
+    
+     SET @EscTime =  DATEDIFF(SS, CAST(GETDATE() AS time), CAST('18:00:00.000' AS time)) 
+	 set  @TT=(@STAGE1-@EscTime)
+    UPDATE vCrm_Opportunities SET EscalationDateandTime = dbo.fCore_DateTimeToInt( DATEADD(SECOND,ABS(@TT),
+	CAST(CONVERT(datetime,CONVERT(  varchar(10), DATEADD(DAY, 1, CAST(GETDATE() AS date)),120) + ' 09:00:00.000') AS datetime)))
+	WHERE iTransId = @iTransId  
+	
+  END  
+
+  IF( (@iStage = 7) AND CAST(DATEADD(HH,8,GETDATE()) AS datetime) < 
+  (CONVERT(datetime,CONVERT(varchar(10), CAST(GETDATE() AS date), 120) +' '+ CONVERT(varchar(12), '18:00:00.000', 114))))  
+  BEGIN  
+    UPDATE vCrm_Opportunities SET EscalationDateandTime = dbo.fCore_DateTimeToInt( DATEADD(HH, 8, GETDATE()))
+	WHERE iTransId = @iTransId  
+	
+  END  
+
+  ELSE  
+  IF ((@iStage = 7) AND CAST(DATEADD(HH,8,GETDATE()) AS datetime) > 
+  (CONVERT(datetime,CONVERT(varchar(10), CAST(GETDATE() AS date), 120) +' '+ CONVERT(varchar(12), '18:00:00.000', 114))))  
+  BEGIN  
+    SET @EscTime = DATEDIFF(SS, CAST(GETDATE() AS time), CAST('18:00:00.000' AS time))  
+	set  @TT=(@STAGE2-@EscTime)
+    UPDATE vCrm_Opportunities SET EscalationDateandTime = dbo.fCore_DateTimeToInt( DATEADD(SECOND,ABS(@TT),
+	CAST(CONVERT(datetime,CONVERT(varchar(10), DATEADD(DAY, 1, CAST(GETDATE() AS date)),120) + ' 09:00:00.000') AS datetime)))
+	WHERE iTransId = @iTransId  
+	
+  END  
+
+  IF (@iStage = 3)   
+  BEGIN  
+    UPDATE vCrm_Opportunities SET EscalationDateandTime = dbo.fCore_DateTimeToInt( DATEADD(DD, 15, GETDATE()))
+	WHERE iTransId = @iTransId  
+  
+  END  
+    
+END
+GO

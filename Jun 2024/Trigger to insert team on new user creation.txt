@@ -1,0 +1,62 @@
+ALTER TRIGGER mSec_Users_Insert_Update
+ON [dbo].[mSec_Users]
+FOR INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @iUserId INT;
+    DECLARE @TeamId INT;
+
+    -- Select the UserId from the inserted table
+    SELECT @iUserId = iUserId FROM inserted WITH(NOLOCK)
+
+    -- Check if the user does not exist in tCrm_Teams
+    IF NOT EXISTS (
+        SELECT 1 
+        FROM tCrm_Teams a WITH(NOLOCK)
+        JOIN vCrm_Users b WITH(NOLOCK) ON a.iCreatedBy = b.iCreatedBy
+        WHERE iMasterId = @iUserId
+    )
+    BEGIN
+        -- Get the maximum iTeamId and increment by 1
+        SELECT @TeamId = ISNULL(MAX(iTeamId), 0) + 1 FROM tCrm_Teams WITH (NOLOCK);
+
+        -- Insert the user into tCrm_Teams
+        INSERT INTO tCrm_Teams 
+        (iTeamId,sTeamName,bAccessType,sDescription,iCreatedDate,iModifiedDate,iCreatedBy,iModifiedBy,iHeadedBy,sTeamCode)
+        	select 	@TeamId,CONCAT(b.sUserName, ' and Queue '),0,'',dbo.fCore_IntIntToBigInt(b.iCreatedDate,b.iCreatedTime),dbo.fCore_IntIntToBigInt(b.iModifiedDate,b.iModifiedTime),b.iCreatedBy,b.iModifiedBy,iUserId,CONCAT(b.sUserName, ' and Queue ')
+        FROM 
+          
+		  mSec_Users b with(nolock) 
+		where iUserId=@iUserId
+
+		INSERT tCrm_TeamUsers(iTeamId,iUserId) values(@TeamId,4)
+
+		INSERT tCrm_TeamUsers(iTeamId,iUserId)
+		select a.iTeamId,@iUserId from tCrm_Teams a with(nolock)
+		--join vCrm_Users b on a.iCreatedBy=b.iCreatedBy
+		where iTeamId=@TeamId
+    END
+END
+
+--select * from tCrm_Teams
+--select * from vCrm_Users
+--declare @TeamId int
+--SELECT @TeamId = ISNULL(MAX(iTeamId), 0) + 1 FROM tCrm_Teams;
+--  INSERT INTO tCrm_Teams 
+--        (iTeamId,sTeamName,bAccessType,sDescription,iCreatedDate,iModifiedDate,iCreatedBy,iModifiedBy,iHeadedBy,sTeamCode)
+		
+
+--	select 	@TeamId,CONCAT(a.sUserName, ' and Queue '),0,'',dbo.fCore_IntIntToBigInt(b.iCreatedDate,b.iCreatedTime),dbo.fCore_IntIntToBigInt(b.iModifiedDate,b.iModifiedTime),b.iCreatedBy,b.iModifiedBy,iMasterId,CONCAT(a.sCode, ' and Queue ')
+--        FROM 
+--         vCrm_Users a WITH (NOLOCK) 
+--		 join mSec_Users b with(nolock) on a.iMasterId=b.iUserId 
+--		where iMasterId=51
+
+--		INSERT tCrm_TeamUsers(iTeamId,iUserId)
+--		select a.iTeamId,52 from tCrm_Teams a with(nolock)
+--		--left join vCrm_Users b on a.iCreatedBy=b.iCreatedBy
+--		where iTeamId=34
+
+

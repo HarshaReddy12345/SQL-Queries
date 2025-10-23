@@ -1,0 +1,70 @@
+CREATE FUNCTION [dbo].[fCore_Var1003](@s xml)
+RETURNS nvarchar(max)
+AS
+BEGIN
+ DECLARE @StatusWorkLog int,@iCRMRole int
+     set @StatusWorkLog=@s.value('(/Fields/Header/iStatusId)[1]','int')
+     set @iCRMRole=@s.value('(/Fields/Header/iAssignedRoleId)[1]','int')
+     select @iCRMRole=iCRMRole from vCrm_Users a
+     join vCrm_Roles b on a.iCRMRole=b.iMasterId
+     if(@iCRMRole=2 or @iCRMRole=4 or @iCRMRole=7)
+     return 'Un Assigned|132'
+     else if(@iCRMRole=4 or @iCRMRole=7)
+     return 'Actual Complaint Captured|20015,In Progress|57,Closed By Phone|20014,To Be Approved|20016,Approved|20017,Not Approved|20018'
+     else if (@iCRMRole=7)
+     return 'Rejected|20013'
+     else if (@iCRMRole=4 or @iCRMRole=5 or @iCRMRole=7)
+     return 'Pending|58'
+     else if (@iCRMRole=3 or @iCRMRole=4 or @iCRMRole=7)
+     return 'Closed|60'
+     return @StatusWorkLog 
+     END
+==========================================================================
+Alter FUNCTION [dbo].[fCore_Var1002](@s xml)
+RETURNS nvarchar(max)
+AS
+BEGIN
+ DECLARE
+    @ActionStatus varchar (max), 
+    @StatusWorkLog int 
+    set @ActionStatus=@s.value('(/Fields/Header/ActionStatus)[1]','int')
+    set @StatusWorkLog=@s.value('(/Fields/Header/iStatusId)[1]','int')
+    --select @StatusWorkLog=iStatusId from vCrm_Calls
+if(@StatusWorkLog=132)
+return 'Closed By Phone|20014,Actual Complaint Captured|20015,In Progress|57'
+else if (@StatusWorkLog=20015)
+return 'Closed By Phone|20014,In Progress|57' 
+else if (@StatusWorkLog=20014 or @StatusWorkLog= 20013)
+ return ''
+else if (@StatusWorkLog=57)
+return 'Completed|59,To Be Approved|20016,In Progress|57,Rejected|20013'  
+else if (@StatusWorkLog=20016)
+return 'Approved|20017,Not Approved|20018' 
+else if (@StatusWorkLog=20017)
+return 'Actual Complaint Captured|20015,In Progress|57' 
+else if(@StatusWorkLog=20018)
+return 'Rejected|20013' 
+else if (@StatusWorkLog=58)
+return 'Completed|59,To Be Approved|20016,In Progress|57,Rejected|20013'
+else if (@StatusWorkLog=59)
+return 'Pending|58,Closed|60'
+else if (@StatusWorkLog=60)
+return ''
+RETURN @ActionStatus
+END
+==========================================================================
+DECLARE @xml XML;
+
+SET @xml = '<Fields>
+                <Header>
+                    <ModuleId>3840</ModuleId>
+                    <TransId>0</TransId>
+                    <CurrentUser>5</CurrentUser>
+                    <iStatusId>0</iStatusId>
+                    <iDueDate></iDueDate>
+                    <iAssignedRoleId>5</iAssignedRoleId>
+                    <ActionStatus></ActionStatus>
+                </Header>
+            </Fields>';
+
+SELECT dbo.fCore_Var1003(@xml);

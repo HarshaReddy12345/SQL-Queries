@@ -1,0 +1,138 @@
+    
+      
+ALTER procedure [dbo].[CheckDuplicateCriteria] (@iTransId bigint,@UserId int)      
+as      
+begin      
+ select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0);      
+ if(@iTransId>0)      
+ Begin      
+  --print @iTransId    
+  declare @ProductType int,@EIDNumber nvarchar(100),@Mobile nvarchar(20),@Email nvarchar(100),@ModifiedDate bigint,@Output nvarchar(10),@DuplicateLeadName nvarchar(250),@DuplicateText nvarchar(200)='Duplicate Lead:  Company Name' ,@Entity int,@Text varchar(max)  ,@EidNum nvarchar(30),@Mob nvarchar(20)   
+  select @ProductType=ProductType,@EIdNumber=EIDNumber,@Mobile=sMobile,@Email=sEmail,@ModifiedDate=ISNULL(iModifiedDate,0),@Entity=Entity
+  
+  from vaCrm_Leads with(nolock) where iMasterId=@iTransId      
+      
+  if(ISNULL(@ModifiedDate,0)=0)      
+  begin   
+  select @EidNum = CASE WHEN EIDNumber LIKE '784%' AND LEN(EIDNumber) = 18 THEN EIDNumber ELSE '' END,
+           @Mob = CASE WHEN sMobile LIKE '05%' AND LEN(sMobile) = 10 THEN sMobile ELSE '' END from vaCrm_Leads where iMasterId=@iTransId
+  IF(@Mob='')
+  begin
+  set @Text='Invalid Mobile Format'
+  RAISERROR('%s:- %s',16,1,@Text)
+  end
+  else if (@EIdNumber<>@EidNum)
+  begin
+  set @Text='Invalid EIDNumber Format'
+  RAISERROR('%s:- %s',16,1,@Text)
+  end
+   IF EXISTS (  
+SELECT 1 FROM vaCrm_Leads with(nolock) WHERE ProductType = @ProductType  
+AND ((EIDNumber = @EIDNumber and EIDNumber!='') OR (sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))  
+AND LeadStage in(3,4,5,6) and iMasterId<>@iTransId  
+)  
+BEGIN  
+if exists(SELECT 1 FROM vaCrm_Leads with(nolock) WHERE ProductType = @ProductType  
+AND ((EIDNumber = @EIDNumber and EIDNumber!='') )  
+AND LeadStage in(3,4,5,6) and iMasterId<>@iTransId )  
+begin  
+set @DuplicateLeadName=(select top 1 sCompany from vaCrm_Leads with(nolock) WHERE ProductType = @ProductType  
+AND ((EIDNumber = @EIDNumber and EIDNumber!=''))  
+AND LeadStage in(3,4,5,6) and iMasterId<>@iTransId)  
+set @DuplicateText='Duplicate Lead: Company Name '  
+set @Text=CONCAT(@DuplicateText,' : ',@DuplicateLeadName, ',' ,' based on EID')  
+RAISERROR('%s:- %s',16,1,@Text,@EIDNumber)  
+End  
+else if exists(SELECT 1 FROM vaCrm_Leads with(nolock) WHERE ProductType = @ProductType  
+AND ((sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))  
+AND LeadStage in(3,4,5,6) and iMasterId<>@iTransId )  
+begin  
+set @DuplicateLeadName=(select top 1 sCompany from vaCrm_Leads with(nolock) WHERE ProductType = @ProductType  
+AND ((sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))  
+AND LeadStage in(3,4,5,6) and iMasterId<>@iTransId)  
+set @DuplicateText='Duplicate Lead : Company Name'  
+set @Text=CONCAT(@DuplicateLeadName, ' ,' ,' based on mobile : ',@Mobile, ' & email : ',@Email)  
+RAISERROR('%s:- %s',16,1,@DuplicateText,@Text)    
+   END      
+   END  
+   else IF EXISTS (      
+   SELECT 1      
+   FROM vaCrm_Leads with(nolock)      
+   WHERE ProductType = @ProductType      
+   AND ((EIDNumber = @EIDNumber and EIDNumber!='') OR (sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))      
+   AND LeadStage = 2      
+   AND DATEADD(DAY, 30, dbo.fCore_IntToDate(LeadFailDate)) > GETDATE() and iMasterId<>@iTransId      
+   )      
+   BEGIN      
+    set @DuplicateLeadName=(select top 1 sCompany FROM vaCrm_Leads with(nolock)      
+    WHERE ProductType = @ProductType      
+    AND ((EIDNumber = @EIDNumber and EIDNumber!='') OR (sMobile = @Mobile and sMobile!='' and sEmail = @Email and sEmail!=''))      
+    AND LeadStage = 2      
+    AND DATEADD(DAY, 30, dbo.fCore_IntToDate(LeadFailDate)) > GETDATE() and iMasterId<>@iTransId)      
+    RAISERROR('%s:- %s',16,1,@DuplicateText,@DuplicateLeadName);      
+   END      
+   else if exists(select * from vaCrm_Leads with(nolock) where isnull(@ProductType,0)=0 and iMasterId=@iTransId)    
+   Begin    
+    declare @BlankProduct nvarchar(100)='Product is blank or Product doesnt exists in CRM',@IncorrectProduct nvarchar(100)='.'    
+    RAISERROR('%s:- %s',16,1,@BlankProduct,@IncorrectProduct);      
+   End    
+   else      
+   Begin      
+    --print 'Inside Update'    
+    ---Update Sub Type based on the Product------------------------      
+    Update a set a.iSubTypeId=b.SubType  from vCrm_Leads a with(nolock) join vCore_Product b with(nolock) on a.ProductType=b.iMasterId  where a.iTransId>0 and  ISNULL(DontUpdateSubType,0)=0 and a.iTransId=@iTransId       
+    ----------------------------------------------------------------      
+          
+    ----Insert into the audit Table      
+    exec dbo.udp_AS_logPickAndRelease @iTransId,@UserId,1      
+    ----------------------------------------------------------------      
+    ---updating Company name by Firstname and last name    
+    
+    update vCrm_Leads set sCompany=CONCAT(sFirstName,' ',sLastName) where iTransId=@iTransId and CustomerType=4    
+    ----------------------------------------------------------------------------------------    
+    --Update the Owner as Super User if the Owner is blank during import    
+    update tCrm_CampaignLeads set iAssignedTo=1 where iLeadId=@iTransId and isnull(iAssignedTo,0)=0    
+    ----Update Last Activity Date in the Lead----------      
+   update vCrm_Leads set LastActivityDateTime=iCreatedDate where iTransId=@iTransId      
+   ------Update API MemberId    
+   --update a set a.CustomMemberId=dbo.fCrm_getAPITransId(b.iMemberId,256,0) from tuCrm_Leads a with(nolock) inner join tCrm_CampaignLeads b with(nolock) on a.iTransId=b.iLeadId where a.iTransId=@iTransId    
+    
+   --update vaCrm_Leads set CustomMemberId=dbo.fCrm_getAPITransId(iMemberId,256,0)  where iMasterId=@iTransId     
+   if exists  
+(  
+select 1  
+from vCore_Account a with (nolock)  
+join vCrm_Leads b with (nolock) on a.Entity =b.Entity and (a.EIDNo =@EIDNumber or (a.sPhone =@Mobile and a.sEmail =@Email))  
+where b.iTransId=@iTransId  
+)  
+begin  
+update b set b.ExistingCustomerID = iMasterId,b.CIF=a.sCode from vCore_Account a with (nolock)  
+join vCrm_Leads b with (nolock) on a.Entity =b.Entity and (a.EIDNo =@EIDNumber or (a.sPhone =@Mobile and a.sEmail =@Email))  
+where b.iTransId=@iTransId  
+end  
+DECLARE @ECustId int,@ELCustId int  
+select @ECustId=iMasterId from vCore_Account a with(nolock) where  a.Entity =@Entity and (a.EIDNo =@EIDNumber or (a.sPhone =@Mobile and a.sEmail =@Email))  
+select @ELCustId=ExistingCustomerID from vCrm_Leads where iTransId=@iTransId  
+update b set   
+b.sCompany=a.sName,  
+--b.iCountry=a.iBillingCountry,  
+b.sEmail=a.sEmail,  
+--b.sFax=a.sFax,  
+b.sFirstName=a.sName,b.sMobile=a.sPhone from vCore_Account a with (nolock) --where a.iMasterId=  
+join tCrm_Leads b with (nolock) on @ECustId=@ELCustId  
+where b.iTransId=@iTransId and a.iMasterId=@ECustId  
+  
+  
+   End      
+  END      
+  else    
+  Begin    
+   update vCrm_Leads set LastActivityDateTime=dbo.fCore_DateTimeToInt(getdate()) where iTransId=@iTransId      
+  End    
+ End      
+ --return @iTransId      
+End      
+  
+    
+    
+    

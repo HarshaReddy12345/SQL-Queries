@@ -1,0 +1,101 @@
+CREATE or ALTER VIEW nCore_UserWiseReport as
+
+WITH 
+
+MEM AS (
+  SELECT iAssignedTo, iMasterId FROM vCore_Member2 WITH(NOLOCK) WHERE iAssignedTo > 0
+),
+
+MEM_AGG AS (
+  SELECT iAssignedTo,COUNT(DISTINCT iMasterId) AS Members FROM MEM
+  GROUP BY iAssignedTo
+),
+
+TASK_AGG AS (
+  SELECT m.iAssignedTo, COUNT(*) AS Tasks FROM vCrm_Tasks t WITH(NOLOCK)
+  JOIN MEM m ON t.iRelatedTo = m.iMasterId AND t.iRelatedToType = 2485
+  WHERE t.iAssignedTo = m.iAssignedTo
+  GROUP BY m.iAssignedTo
+),
+
+APPT_AGG AS (
+  SELECT m.iAssignedTo,
+    SUM(CASE WHEN a.iAppointmentType = 1 THEN 1 ELSE 0 END) AS Appointment,
+    SUM(CASE WHEN a.iAppointmentType = 2 THEN 1 ELSE 0 END) AS [Event],
+    SUM(CASE WHEN a.iAppointmentType = 3 THEN 1 ELSE 0 END) AS [Meeting]
+  FROM vCrm_Appointments a WITH(NOLOCK)
+  JOIN MEM m WITH(NOLOCK) ON a.iRelatedTo = m.iMasterId AND a.iRelatedToType = 2485
+  WHERE a.iAssignedTo = m.iAssignedTo
+  GROUP BY m.iAssignedTo
+),
+
+PLAN_AGG AS (
+  SELECT m.iAssignedTo, COUNT(*) AS [Plan] FROM vCrm_Plans p WITH(NOLOCK)
+  JOIN MEM m ON p.iRelatedTo = m.iMasterId AND p.iRelatedToType = 2485
+  WHERE p.iAssignedTo = m.iAssignedTo
+  GROUP BY m.iAssignedTo
+),
+
+OPP_STAGE_AGG AS (
+  SELECT iAssignedTo,
+    SUM(CASE WHEN iStage = 4  THEN 1 ELSE 0 END) AS [Enquiry Analysis],
+    SUM(CASE WHEN iStage = 13 THEN 1 ELSE 0 END) AS [Quote],
+    SUM(CASE WHEN iStage = 8  THEN 1 ELSE 0 END) AS [Negotiation],
+    SUM(CASE WHEN iStage = 9  THEN 1 ELSE 0 END) AS [Commitment to Buy],
+    SUM(CASE WHEN iStage = 11 THEN 1 ELSE 0 END) AS [Closed Won],
+    SUM(CASE WHEN iStage = 12 THEN 1 ELSE 0 END) AS [Closed Lost],
+    COUNT(*) AS Enquiry,
+    MIN(iCreatedDate) [Created On]
+  FROM vCrm_Opportunities WITH(NOLOCK)
+  GROUP BY iAssignedTo
+),
+
+ENQ_TASK_AGG AS (
+  SELECT o.iAssignedTo, COUNT(*) AS [Enquiry Tasks] FROM vCrm_Tasks t WITH(NOLOCK)
+  JOIN vCrm_Opportunities o WITH(NOLOCK)
+    ON t.iRelatedTo = o.iTransId AND t.iRelatedToType = 1792
+  WHERE t.iAssignedTo = o.iAssignedTo
+  GROUP BY o.iAssignedTo
+),
+
+ENQ_APPT_AGG AS (
+  SELECT o.iAssignedTo,
+    SUM(CASE WHEN a.iAppointmentType = 1 THEN 1 ELSE 0 END) AS [Enquiry Appointment],
+    SUM(CASE WHEN a.iAppointmentType = 2 THEN 1 ELSE 0 END) AS [Enquiry Event],
+    SUM(CASE WHEN a.iAppointmentType = 3 THEN 1 ELSE 0 END) AS [Enquiry Meeting]
+  FROM vCrm_Appointments a WITH(NOLOCK)
+  JOIN vCrm_Opportunities o WITH(NOLOCK)
+    ON a.iRelatedTo = o.iTransId AND a.iRelatedToType = 1792
+  WHERE a.iAssignedTo = o.iAssignedTo
+  GROUP BY o.iAssignedTo
+),
+
+ENQ_PLAN_AGG AS (
+  SELECT o.iAssignedTo, COUNT(*) AS [Enquiry Plan] FROM vCrm_Plans p WITH(NOLOCK)
+  JOIN vCrm_Opportunities o WITH(NOLOCK)
+    ON p.iRelatedTo = o.iTransId AND p.iRelatedToType = 1792
+  WHERE p.iAssignedTo = o.iAssignedTo
+  GROUP BY o.iAssignedTo
+)
+
+SELECT 
+  u.sName AS [User],
+  ISNULL(mg.Members, 0) AS [Members],ISNULL(tg.Tasks, 0)  AS [Tasks],ISNULL(ag.Appointment, 0) AS [Appointment],ISNULL(ag.[Event], 0) AS [Event],
+  ISNULL(ag.[Meeting], 0) AS [Meeting],ISNULL(pg.[Plan], 0) AS [Plan],ISNULL(oa.[Enquiry Analysis], 0) AS [Enquiry Analysis],
+  ISNULL(oa.[Quote], 0) AS [Quote],ISNULL(oa.[Negotiation], 0) AS [Negotiation],ISNULL(oa.[Commitment to Buy], 0) AS [Commitment to Buy],
+  ISNULL(oa.[Closed Won], 0) AS [Closed Won],ISNULL(oa.[Closed Lost], 0) AS [Closed Lost],ISNULL(oa.Enquiry, 0) AS [Enquiry],
+  ISNULL(ot.[Enquiry Tasks], 0) AS [Enquiry Tasks],ISNULL(op.[Enquiry Appointment], 0) AS [Enquiry Appointment],
+  ISNULL(op.[Enquiry Event], 0) AS [Enquiry Event],ISNULL(op.[Enquiry Meeting], 0) AS [Enquiry Meeting],
+  ISNULL(opl.[Enquiry Plan], 0) AS [Enquiry Plan],
+  ISNULL(dbo.fCrm_DateFromBigInt([Created On]),0) [$Date$ Created On]
+FROM vCrm_Users u WITH(NOLOCK)
+LEFT JOIN MEM_AGG mg WITH(NOLOCK) ON u.iMasterId = mg.iAssignedTo
+LEFT JOIN TASK_AGG tg WITH(NOLOCK) ON u.iMasterId = tg.iAssignedTo
+LEFT JOIN APPT_AGG ag WITH(NOLOCK) ON u.iMasterId = ag.iAssignedTo
+LEFT JOIN PLAN_AGG  pg WITH(NOLOCK) ON u.iMasterId = pg.iAssignedTo
+LEFT JOIN OPP_STAGE_AGG oa WITH(NOLOCK) ON u.iMasterId = oa.iAssignedTo
+LEFT JOIN ENQ_TASK_AGG ot WITH(NOLOCK) ON u.iMasterId = ot.iAssignedTo
+LEFT JOIN ENQ_APPT_AGG op WITH(NOLOCK) ON u.iMasterId = op.iAssignedTo
+LEFT JOIN ENQ_PLAN_AGG opl WITH(NOLOCK) ON u.iMasterId = opl.iAssignedTo
+WHERE u.iMasterId > 0
+

@@ -1,0 +1,63 @@
+ALTER PROC udp_UpdateFieldsOnSameModule(@iTransId bigint,@iUserId int=0)
+as
+begin
+DECLARE @warrantyexpiryDate int,@RequestType int,@Today varchar(20) = convert(varchar(20),dbo.fCore_DateToInt(getdate()))
+DECLARE @AMC bit,@ContractPeriod int,@PmScheduler bit,@RetailOutlet int,@TypeofAMC int
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+select @RequestType=RequestType from vCrm_Calls where iTransId=@iTransId
+select @warrantyexpiryDate=WarrantyExpiryDate from vCrm_Calls where iTransId=@iTransId
+select @ContractPeriod=ContractExpiryDate from vCrm_Calls where iTransId=@iTransId
+select @RetailOutlet=DistancefromCompany from vCrm_Calls where iTransId=@iTransId
+select @TypeofAMC=TypeofAMC from vCrm_Calls where iTransId=@iTransId
+
+IF(@warrantyexpiryDate>= @Today and @RequestType=1)
+BEGIN
+UPDATE tuCrm_Calls set tuCrm_Calls.ActivityCode=1,tuCrm_Calls.Billable=2 where tuCrm_Calls.iTransId=@iTransId 
+UPDATE tCrm_Calls SET iCustAssetId=0 where tCrm_Calls.iTransId=@iTransId
+END
+ELSE IF (@warrantyexpiryDate< @Today and @RequestType=1 and @AMC=1 and @ContractPeriod>=@Today)
+BEGIN
+UPDATE tuCrm_Calls set ActivityCode=2,Billable=2  where iTransId=@iTransId
+UPDATE tCrm_Calls set iCustAssetId=0 where iTransId=@iTransId
+END
+ELSE IF(@warrantyexpiryDate< @Today and @RequestType=1 and @AMC=1 and @ContractPeriod<@Today)
+BEGIN
+UPDATE tCrm_Calls set iStatusId=20016,iCustAssetId=0,iLocationId=0 where iTransId=@iTransId
+UPDATE tuCrm_Calls set ActivityCode=3,Billable=1,ApprovalRequiredFrom=2 where iTransId=@iTransId
+END
+ELSE IF(@warrantyexpiryDate>=@Today and  @PmScheduler=1 and @ContractPeriod>=@Today)
+BEGIN
+UPDATE tuCrm_Calls set ActivityCode=4,Billable=2 where iTransId=@iTransId
+UPDATE tCrm_Calls set iCustAssetId=0 where iTransId=@iTransId
+END
+ELSE IF (@warrantyexpiryDate<@Today and  @PmScheduler=1 and @ContractPeriod>=@Today)
+BEGIN
+UPDATE tuCrm_Calls set ActivityCode=5,Billable=2 where iTransId=@iTransId
+UPDATE tCrm_Calls set iCustAssetId=0 where iTransId=@iTransId
+END
+ELSE IF (@RequestType=2)
+BEGIN
+UPDATE tuCrm_Calls set ActivityCode=6,Billable=2 where iTransId=@iTransId
+END
+ELSE IF (@RequestType=3)
+BEGIN 
+UPDATE tuCrm_Calls set ActivityCode=7,Billable=1 where iTransId=@iTransId
+UPDATE tCrm_Calls set iAssignedTo=0,iLocationId=0,iStatusId=20016 where iTransId=@iTransId
+END
+ELSE IF(@RetailOutlet>100)
+BEGIN
+UPDATE tCrm_Calls set iStatusId=20016 where iTransId=@iTransId
+UPDATE tuCrm_Calls set ApprovalRequiredFrom=1 where iTransId=@iTransId
+END
+ELSE IF (@TypeofAMC=2)
+BEGIN
+UPDATE tuCrm_Calls set Billable=2 where iTransId=@iTransId
+END
+ELSE IF (@TypeofAMC=1)
+BEGIN
+UPDATE tuCrm_Calls set Billable=1 where iTransId=@iTransId
+END
+ELSE
+UPDATE tuCrm_Calls set Billable=0,ActivityCode=0 where iTransId=@iTransId
+end
+

@@ -1,0 +1,47 @@
+
+ALTER VIEW nCore_OppToSaleOrder as
+SELECT
+  a.iTransId,
+  a.sName [Opportunity],
+  a.iCreatedDate [$Datetime$Opportunity Created Date],
+  b.sName [Division],
+  c.sName [Region],
+  d.sName [Location],
+  e.sName [Campaign Name],
+  CASE iOpportunityType WHEN 1 THEN 'New Business' WHEN 2 THEN 'Existing Business' WHEN 3 THEN 'Competition' WHEN 4 THEN 'Partner Sale'
+  END [Opportunity Type],
+  f.sName [Owner],
+  g.sName [Account Name],
+  h.sName [Product Model],
+  i.sName [Pipeline Silo],
+  a.iQuantity,
+  a.fSalesPrice [List Price],
+  j.sName [Stage],
+  k.sName [Quote Name],
+  CASE WHEN k.Date IS NOT NULL then k.[Date] END [$Date$Quote Created Date],
+  CASE WHEN k.Date IS NOT NULL THEN l.[Date] END [$Date$OFM Created Date],
+  l.sName [OFM No],
+  CASE l.Company WHEN 1 THEN 'Aquarius Engineers Pvt Ltd' WHEN 2 THEN 'Putzmeister India Pvt. Ltd' END [Company],
+  m.sName [OFM Product Model],
+  l.Quantity [OFM Quantity],
+  l.DispatchClearance,
+  l.BasicPriceINR,
+  n.sName [Sales Order],
+  n.TaxInvoiceNo,
+  CASE WHEN n.TaxInvoiceDate IS NOT NULL THEN n.TaxInvoiceDate END [$Date$TaxInvoice Date],
+  a.iCreatedDate,a.iAssignedTo
+FROM vuCrm_Opportunities_General_Details a WITH (NOLOCK)
+LEFT JOIN vCore_Division b WITH (NOLOCK) ON a.DivisionH = b.iMasterId
+LEFT JOIN vCore_Region c WITH (NOLOCK)ON a.Region = c.iMasterId
+LEFT JOIN vCore_Location d WITH (NOLOCK) ON a.iLocationId = d.iMasterId
+LEFT JOIN vCrm_Campaigns e WITH (NOLOCK) ON a.iCampaign = e.iMasterId
+LEFT JOIN vCrm_Users f WITH (NOLOCK) ON a.iAssignedTo = f.iMasterId
+LEFT JOIN vCore_Account g WITH (NOLOCK) ON a.iAccount = g.iMasterId
+LEFT JOIN vCore_ProductModel h WITH (NOLOCK) ON a.ProductModel = h.iMasterId
+LEFT JOIN vCore_PipelineSilo i WITH (NOLOCK) ON a.PipelineSilo = i.iMasterId
+LEFT JOIN vCrm_SalesStages j WITH (NOLOCK) ON a.iStage = j.iMasterId
+LEFT JOIN vCrm_Quote k WITH (NOLOCK) ON a.iTransId = k.iOpportunityId
+LEFT JOIN vCore_OFMTechnicalandCommercial l WITH (NOLOCK) ON a.iTransId = l.Opportunity
+LEFT JOIN vCore_ProductModel m WITH (NOLOCK) ON l.Productmodel = m.iMasterId
+LEFT JOIN vCrm_SalesOrder n WITH (NOLOCK) ON a.iTransId = n.iOpportunityId
+WHERE a.iTransId > 0 

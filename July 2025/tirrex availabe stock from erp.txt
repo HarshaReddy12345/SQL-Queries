@@ -1,0 +1,66 @@
+EXEC sp_configure 'Ole Automation Procedures';
+GO
+sp_configure 'show advanced options', 1;
+GO
+RECONFIGURE;
+GO
+sp_configure 'Ole Automation Procedures', 1;
+GO
+RECONFIGURE;
+GO
+
+create or alter function SendGetRequest(@url varchar(8000)) returns varchar(8000) 
+as 
+BEGIN 
+	DECLARE @win int DECLARE @hr int DECLARE @text varchar(8000)
+	EXEC @hr = sp_OACreate 'WinHttp.WinHttpRequest.5.1', @win OUT IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Open', NULL, 'GET',@url,'false' IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Send' IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAGetProperty @win,'ResponseText',@text OUTPUT IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OADestroy @win IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	RETURN @text 
+END
+
+--go
+
+CREATE or ALTER function dbo.fCore_Var1(@s xml)
+returns decimal(18,2)
+as
+begin
+	declare @fret decimal(18,2)
+	declare @sUrl varchar(max)='http://13.71.43.37/focus8api/GetExecSqlScalar?sCompCode=050&SqlCommand=';
+
+	
+	declare @iProdId int,@sCode varchar(max),@Location int,@StockCode varchar(max),@iDate int= dbo.DateToInt(getdate());
+
+	select @iProdId = @s.value('(Fields/BodyData/BodyRow/iProductId)[1]','int');
+
+	select @Location = @s.value('(Fields/BodyData/BodyRow/WareHouse)[1]','int');
+
+	select @sCode= sCode from vCore_Product with(nolock) where iMasterId=@iProdId;
+
+	select @StockCode= sCode from vCore_Warehouse with(nolock) where iMasterId=@Location;
+
+	--set @sUrl = @sUrl+'declare @fret decimal(18,2),@iMasterid int=0,@Wh int=0
+	--select top 1 @iMasterid=iMasterId from vCore_Product with(nolock) where sCode='''+@sCode+'''
+	--select top 1 @Wh=iMasterId from vCore_Warehouse with(nolock) where sCode='''+@StockCode+'''
+	--select @fret=dbo.[udf_ProdBalQtyWH](@iDate,@iMasterid,@Wh) select @fret';
+	 
+	 set @sUrl = @sUrl + 
+    'declare @fret decimal(18,2),@iMasterid int=0,@Wh int=0; ' +
+    'select top 1 @iMasterid=iMasterId from vCore_Product with(nolock) where sCode=''' + @sCode + '''; ' +
+    'select top 1 @Wh=iMasterId from vCore_Warehouse with(nolock) where sCode=''' + @StockCode + '''; ' +
+    'select @fret=dbo.udf_ProdBalQtyWH(' + cast(@iDate as varchar) + ',@iMasterid,@Wh); ' +
+    'select @fret';
+
+	select @fret=convert(decimal(18,2),value) from OPENJSON(dbo.SendGetRequest(@sUrl)) 
+	with (url varchar(max) '$.url',data2 nvarchar(max) '$.data' as JSON, result int '$.result')
+	cross apply openjson(data2) with (Obj1 nvarchar(max) '$' as json)
+	cross apply openjson(Obj1) 
+	return @fret
+end

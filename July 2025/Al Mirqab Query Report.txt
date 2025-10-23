@@ -1,0 +1,72 @@
+SELECT 
+    dbo.fCrm_GetNumberListValue('1,Al Mirqab Holding,2,Al Mirqab Private,3,Third Party', b.PropertyType1) AS [Property Company],
+    c.sCode AS PropertyOwner,
+    b.sCode AS PropertyCode,
+    b.sName AS PropertyName,
+    d.sCode AS BuildingCode,
+    a.sName AS AsOnTheDoor,
+    ISNULL(a.NoofBedroomsNew, 0) AS NoofBedrooms,
+    e.sName AS UnitType,
+    f.sName AS UnitStatus,
+    ISNULL(g.sName, '') AS [Contract],
+    dbo.fCrm_GetNumberListValue('1,Commercial,2,Residential,3,Mixed Use,4,School', b.PropertyCategory) AS [Property Category],
+    
+    CASE 
+        WHEN LEN(iLeaseStartDate) = 9 THEN FORMAT(dbo.fCore_IntToDate(g.iLeaseStartDate), 'dd/MM/yyyy') 
+        ELSE '' 
+    END AS [Contract Start Date],
+
+    CASE 
+        WHEN LEN(iLeaseEndDate) = 9 THEN FORMAT(dbo.fCore_IntToDate(g.iLeaseEndDate), 'dd/MM/yyyy') 
+        ELSE '' 
+    END AS [Contract End Date],
+
+    ISNULL(g.fAmountJH, a.fPrice) AS [Total Amount],
+    ISNULL(g.fRentPerPeriod, 0.00) AS [Total Proposed Discount Rent],
+    ISNULL(g.fAdvancePayment, 0.00) AS [Sub Total]
+
+FROM vCrm_PMSUnits a WITH (NOLOCK)
+
+JOIN vCrm_Property b WITH (NOLOCK) 
+    ON a.iPropertyId = b.iMasterId
+
+JOIN vCore_Organization c WITH (NOLOCK) 
+    ON b.PropertyOwner = c.iMasterId
+
+JOIN vCore_Buildingmaster d WITH (NOLOCK) 
+    ON a.BuildingMasters = d.iMasterId
+
+JOIN vCore_UnitType e WITH (NOLOCK) 
+    ON a.UnitType2 = e.iMasterId
+
+JOIN vCrm_PropertyStatus f WITH (NOLOCK) 
+    ON a.iUnitStatus = f.iTransId
+
+LEFT JOIN vCrm_PMSContract g WITH (NOLOCK) 
+    ON a.iMasterId = g.Unitforprint 
+    AND a.iPropertyId = g.Property 
+    AND a.BuildingMasters = g.BuildingMasters 
+    AND iContractStatus = 186
+
+WHERE 
+    a.iMasterId > 0 
+
+    AND (
+        (0 IN (@Status) AND ISNULL(iUnitStatus, 0) = ISNULL(iUnitStatus, 0)) 
+        OR (0 NOT IN (@Status) AND ISNULL(iUnitStatus, 0) IN (@Status))
+    )
+
+    AND (
+        (0 IN (@Property) AND ISNULL(b.iMasterId, 0) = ISNULL(b.iMasterId, 0)) 
+        OR (0 NOT IN (@Property) AND ISNULL(b.iMasterId, 0) IN (@Property))
+    )
+
+    AND (
+        (0 IN (@BuildingCode) AND ISNULL(d.iMasterId, 0) = ISNULL(d.iMasterId, 0)) 
+        OR (0 NOT IN (@BuildingCode) AND ISNULL(d.iMasterId, 0) IN (@BuildingCode))
+    )
+
+    AND (
+        (0 IN (@UnitCode) AND ISNULL(a.iMasterId, 0) = ISNULL(a.iMasterId, 0)) 
+        OR (0 NOT IN (@UnitCode) AND ISNULL(a.iMasterId, 0) IN (@UnitCode))
+    )

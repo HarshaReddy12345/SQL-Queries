@@ -1,0 +1,129 @@
+Function to filter the dropdown based on Project and ProductType given in PM project in FSNPL
+==============================================================================================
+CREATE OR ALTER PROC udp_LoadSummaryFeatureDetails
+    @iTransId BIGINT,
+    @iUserId INT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+ 
+    SET @iTransId = dbo.fCrm_IntToAPITransId(@iTransId, 0);
+    DECLARE @GeneralModule INT = 3175;
+    DECLARE @CurrentRowIndex INT = 0;
+ 
+    -- Clear old data
+    DELETE FROM muCore_PMWBD_DetailedFeatureList_Details WHERE iMasterId = @iTransId;
+ 
+    -------------------------
+    -- Helper to insert a feature
+    -------------------------
+    DECLARE @Feature TABLE (FeatureId INT);
+    -- Step 1: Insert Module-specific Features
+    DECLARE cur CURSOR FOR
+        SELECT Module, Screen, Configuration, Approvals, Automation, Importing, Integrations, PrintLayout, SocialIntegrations, Templates, Validation
+        FROM vuCore_PMWBD_SummaryFeatureDetails_Details WITH (NOLOCK)
+        WHERE iMasterId = @iTransId AND Module <> @GeneralModule;
+ 
+    DECLARE @ModuleId INT, @Screen INT, @Configuration BIT, @Approvals BIT, @Automation BIT, @Importing BIT, 
+            @Integrations BIT, @PrintLayout BIT, @SocialIntegrations BIT, @Templates BIT, @Validation BIT;
+ 
+    OPEN cur;
+    FETCH NEXT FROM cur INTO @ModuleId, @Screen, @Configuration, @Approvals, @Automation, @Importing, @Integrations, @PrintLayout, @SocialIntegrations, @Templates, @Validation;
+ 
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        INSERT INTO @Feature (FeatureId)
+        SELECT FeatureId FROM (
+            SELECT 432 FeatureId WHERE @Configuration = 1 UNION ALL
+            SELECT 78  WHERE @Approvals = 1 UNION ALL
+            SELECT 434 WHERE @Automation = 1 UNION ALL
+            SELECT 441 WHERE @Importing = 1 UNION ALL
+            SELECT 436 WHERE @Integrations = 1 UNION ALL
+            SELECT 260 WHERE @PrintLayout = 1 UNION ALL
+            SELECT 438 WHERE @SocialIntegrations = 1 UNION ALL
+            SELECT 439 WHERE @Templates = 1 UNION ALL
+            SELECT 440 WHERE @Validation = 1
+        ) f WHERE FeatureId IS NOT NULL;
+ 
+        INSERT INTO muCore_PMWBD_DetailedFeatureList_Details (iMasterId, ModuleName, ScreenName, Feature, iRowIndex)
+        SELECT @iTransId, @ModuleId, @Screen, FeatureId, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) + @CurrentRowIndex
+        FROM @Feature;
+ 
+        SET @CurrentRowIndex += (SELECT COUNT(*) FROM @Feature);
+        DELETE FROM @Feature;
+ 
+        FETCH NEXT FROM cur INTO @ModuleId, @Screen, @Configuration, @Approvals, @Automation, @Importing, @Integrations, @PrintLayout, @SocialIntegrations, @Templates, @Validation;
+    END
+    CLOSE cur; DEALLOCATE cur;
+ 
+    -------------------------
+    -- Step 2: Insert General Features for All Modules
+    -------------------------
+    SELECT TOP 1 @Screen = Screen FROM vuCore_PMWBD_SummaryFeatureDetails_Details WITH (NOLOCK)
+    WHERE iMasterId = @iTransId AND Module = @GeneralModule;
+ 
+    IF @Screen IS NOT NULL
+    BEGIN
+        SELECT TOP 1
+            @Configuration = Configuration,
+            @Approvals = Approvals,
+            @Automation = Automation,
+            @Importing = Importing,
+            @Integrations = Integrations,
+            @PrintLayout = PrintLayout,
+            @SocialIntegrations = SocialIntegrations,
+            @Templates = Templates,
+            @Validation = Validation
+        FROM vuCore_PMWBD_SummaryFeatureDetails_Details WITH (NOLOCK)
+        WHERE iMasterId = @iTransId AND Module = @GeneralModule;
+ 
+        DECLARE curGen CURSOR FOR
+            SELECT Module FROM vuCore_PMWBD_SummaryFeatureDetails_Details WITH (NOLOCK)
+            WHERE iMasterId = @iTransId AND Module <> @GeneralModule;
+ 
+        OPEN curGen;
+        FETCH NEXT FROM curGen INTO @ModuleId;
+ 
+        WHILE @@FETCH_STATUS = 0
+        BEGIN
+            INSERT INTO @Feature (FeatureId)
+            SELECT FeatureId FROM (
+                SELECT 432 FeatureId WHERE @Configuration = 1 UNION ALL
+                SELECT 78  WHERE @Approvals = 1 UNION ALL
+                SELECT 434 WHERE @Automation = 1 UNION ALL
+                SELECT 441 WHERE @Importing = 1 UNION ALL
+                SELECT 436 WHERE @Integrations = 1 UNION ALL
+                SELECT 260 WHERE @PrintLayout = 1 UNION ALL
+                SELECT 438 WHERE @SocialIntegrations = 1 UNION ALL
+                SELECT 439 WHERE @Templates = 1 UNION ALL
+                SELECT 440 WHERE @Validation = 1
+            ) f WHERE FeatureId IS NOT NULL;
+ 
+            INSERT INTO muCore_PMWBD_DetailedFeatureList_Details (iMasterId, ModuleName, ScreenName, Feature, iRowIndex)
+            SELECT @iTransId, @ModuleId, @Screen, FeatureId, ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) + @CurrentRowIndex
+            FROM @Feature;
+ 
+            SET @CurrentRowIndex += (SELECT COUNT(*) FROM @Feature);
+            DELETE FROM @Feature;
+ 
+            FETCH NEXT FROM curGen INTO @ModuleId;
+        END
+        CLOSE curGen; DEALLOCATE curGen;
+    END
+END
+==============================================================================
+XML Function to filter dropdown on screen master from PM Screen Master Module
+===============================================================================
+CREATE or ALTER FUNCTION dbo.fCore_Var109(@s xml)
+returns varchar(max)
+as
+begin
+declare @iProductType int
+declare @result varchar(max),@iPMProject int
+   
+
+    SELECT @iProductType = @s.value('(/Fields/Header/ProductType)[1]', 'int')
+select @result=coalesce(@result+',','')+concat(sName,'|',iMasterId) from vCore_PMScreenMaster with(nolock) 
+where ProductType=@iProductType 
+return @result
+end

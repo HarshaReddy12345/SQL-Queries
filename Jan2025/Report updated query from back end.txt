@@ -1,0 +1,19 @@
+
+SET QUOTED_IDENTIFIER OFF;
+
+declare @sReportName nvarchar(200)='Stock Detailed Report';
+declare @iReportId nvarchar(200)='';
+declare @sSQlQry nvarchar(max)=''
+
+select top 1 @iReportId = iReportId from cCore_Reports_0 where sReportName = @sReportName;
+--select @sSQlQry = sSqlQuery from cCore_RDQuery_0 where iReportId=@iReportId
+--print @sSQlQry
+
+declare @sQry nvarchar(max)="SELECT * FROM [Focus50FA].[dbo].[Stock_View] where ((@Product='' and 1=1) or (lower(Product)=lower(@Product))) and 
+((@Warehouse='' and 1=1) or (lower(Warehouse)=lower(@Warehouse)))
+and dbo.udf_DatetoCRM(CONVERT(date, Date, 103)) between @STARTDATE and @ENDDATE
+and (( 0 in (@CRMProducts) and isnull([ProductId],0)  = isnull([ProductId],0) ) or (0 not in (@CRMProducts) and isnull([ProductId],0) in ( @CRMProducts )))"
+
+update cCore_RDQuery_0 set sSqlQuery = @sQry where iReportId = @iReportId
+
+SET QUOTED_IDENTIFIER ON;

@@ -1,0 +1,40 @@
+ALTER VIEW nCore_SEOKeyWordGroup AS    
+SELECT *     
+FROM (    
+    SELECT TOP 100 PERCENT    
+        iMasterId, sName [Record Name], Clicks, Impressions, NewUsers, ActiveUsers, TotalUsers, AverageEngagementTime, [Month] [$Date$Month],    
+            
+        ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY sName ORDER BY [Month]) = 1 THEN 0 
+            ELSE Clicks - LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Month]) END, 0) AS [Difference For Clicks],    
+            
+        CAST(ISNULL(CASE WHEN LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Month]) IS NULL OR LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Month]) = 0 THEN 0    
+                ELSE (Clicks - LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Month])) * 100.0 / LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Month]) END, 0) AS DECIMAL(18,2)) AS [Clicks Percentage],    
+            
+        ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY sName ORDER BY [Month]) = 1 THEN 0 ELSE Impressions - LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Month]) END, 0) AS [Difference For Impressions],    
+            
+        CAST(ISNULL(CASE WHEN LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Month]) IS NULL OR LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Month]) = 0 THEN 0    
+                ELSE (Impressions - LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Month])) * 100.0 / LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Month])    
+            END, 0) AS DECIMAL(18,2)) AS [Impressions Percentage],    
+            
+        ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY sName ORDER BY [Month]) = 1 THEN 0 ELSE NewUsers - LAG(NewUsers) OVER (PARTITION BY sName ORDER BY [Month]) END, 0) AS [Difference For NewUsers],    
+            
+        CAST(ISNULL(CASE WHEN LAG(NewUsers) OVER (PARTITION BY sName ORDER BY [Month]) IS NULL OR LAG(NewUsers) OVER (PARTITION BY sName ORDER BY [Month]) = 0 THEN 0    
+                ELSE (NewUsers - LAG(NewUsers) OVER (PARTITION BY sName ORDER BY [Month])) * 100.0 / LAG(NewUsers) OVER (PARTITION BY sName ORDER BY [Month]) END, 0) AS DECIMAL(18,2)) AS [NewUsers Percentage],    
+            
+        ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY sName ORDER BY [Month]) = 1 THEN 0 ELSE ActiveUsers - LAG(ActiveUsers) OVER (PARTITION BY sName ORDER BY [Month]) END, 0) AS [Difference For ActiveUsers],    
+            
+        CAST(ISNULL(CASE WHEN LAG(ActiveUsers) OVER (PARTITION BY sName ORDER BY [Month]) IS NULL OR LAG(ActiveUsers) OVER (PARTITION BY sName ORDER BY [Month]) = 0 THEN 0    
+                ELSE (ActiveUsers - LAG(ActiveUsers) OVER (PARTITION BY sName ORDER BY [Month])) * 100.0 / LAG(ActiveUsers) OVER (PARTITION BY sName ORDER BY [Month])    
+            END, 0) AS DECIMAL(18,2)) AS [ActiveUsers Percentage],    
+            
+        ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY sName ORDER BY [Month]) = 1 THEN 0 ELSE TotalUsers - LAG(TotalUsers) OVER (PARTITION BY sName ORDER BY [Month]) END, 0) AS [Difference For TotalUsers],    
+            
+        CAST(ISNULL(CASE WHEN LAG(TotalUsers) OVER (PARTITION BY sName ORDER BY [Month]) IS NULL OR LAG(TotalUsers) OVER (PARTITION BY sName ORDER BY [Month]) = 0 THEN 0    
+                ELSE (TotalUsers - LAG(TotalUsers) OVER (PARTITION BY sName ORDER BY [Month])) * 100.0 / LAG(TotalUsers) OVER (PARTITION BY sName ORDER BY [Month])    
+            END, 0) AS DECIMAL(18,2)) AS [TotalUsers Percentage]    
+            
+    FROM vuCore_SEOKeyWordGroup_KeyWord_Details WITH (NOLOCK)    
+    WHERE iMasterId > 0    
+    ORDER BY sName, [Month], Clicks, Impressions, NewUsers, ActiveUsers, TotalUsers, AverageEngagementTime    
+) a;
+ 

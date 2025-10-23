@@ -1,0 +1,29 @@
+CREATE or ALTER VIEW nCore_LeadToInv as
+
+select a.iTransId,a.sCompany,a.sFirstName,a.Designationn,c.sName [Service],d.sName [lead Source],e.sName [Employee],f.sName [Customer],
+g.sName [Professional Intermeditory],h.sName [Lead State],a.ReasonForLost,i.sName [Opportunity],j.sName [Account],
+k.sName [Company],l.sName [Division],m.sName [Sales Executive],n.sName [Director],o.sName [Product],p.sName [Quotation No],p.TaxableAmount,p.VATAmount,
+p.NetAmount,q.sName [Sales Order No],r.sName [project Name],s.sName [Sub Project No],t.sName [Sales Order ConFirmation]
+,u.sName [Invoice No],u.InvoiceDate [$Date$Invoice Date],u.TotalNetAmount [Invoice Amount],i.iAccount,i.iCreatedDate
+from vCrm_Leads a with(nolock)
+left join mPay_Designation b with(nolock) on a.Designation=b.iMasterId
+left join vCore_Product c with(nolock) on a.Service=c.iMasterId
+left join vCrm_LeadSource d with(nolock) on a.iLeadSource=d.iTransId
+left join vCrm_Users e with(nolock) on a.iReferedBy=e.iMasterId
+left join vCore_Account f with(nolock) on a.Customer=f.iMasterId
+left join vCore_AgentMaster g with(nolock) on a.ProfessionalIntermeditory=g.iMasterId
+left join vCrm_LeadState h with(nolock) on a.iLeadState=h.iTransId
+left join vuCrm_Opportunities_General_Details i with(nolock) on a.iTransId=i.iLeadId
+left join vCore_Account j with(nolock) on i.iAccount=j.iMasterId
+left join vCore_CompanyMaster k with(nolock) on i.Company=k.iMasterId
+left join vCore_Division l with(nolock) on i.Division=l.iMasterId
+left join vCore_SalesExecutive m with(nolock) on i.SalesExecutive=m.iMasterId
+left join vCore_SalesExecutive n with(nolock) on i.Director=n.iMasterId
+left join vCore_Product o with(nolock) on i.iProductId=o.iMasterId
+left join vuCrm_Quote_General_Details p with(nolock) on i.iTransId=p.iOpportunityId
+left join vCrm_SalesOrder q with(nolock) on i.iTransId=q.iOpportunityId
+left join vCore_Project r with(nolock) on i.iTransId=r.OpportunityNo
+left join vCore_SubProject s with(nolock) on i.iTransId=s.OpportunityNo
+left join vCore_SalesOrderConfirmation t with(nolock) on i.iTransId=t.OpportunityNo
+left join vCore_SalesInvoice u with(nolock) on s.iMasterId=u.SubProjectName
+where a.iTransId>0

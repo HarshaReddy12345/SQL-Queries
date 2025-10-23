@@ -1,0 +1,21 @@
+CREATE PROCEDURE dbo.BackupDatabaseWithCompanyCode
+    @DatabaseName NVARCHAR(128),
+    @CompanyCode NVARCHAR(10)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @BackupFileName NVARCHAR(500);
+    DECLARE @BackupDate NVARCHAR(20);
+    SET @BackupDate = REPLACE(CONVERT(NVARCHAR(20), GETDATE(), 120), ':', '');
+
+    SET @BackupFileName = 'D:\Backups\' + @DatabaseName + '_' + @CompanyCode + '_' + @BackupDate + '.bak';
+
+    BACKUP DATABASE @DatabaseName
+        TO DISK = @BackupFileName
+        WITH FORMAT, COMPRESSION, INIT;
+
+    SELECT @BackupFileName AS BackupFilePath;
+END
+
+exec dbo.BackupDatabaseWithCompanyCode 'FOCUS8010Q0','010Q0'

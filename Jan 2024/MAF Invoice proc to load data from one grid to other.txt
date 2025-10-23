@@ -1,0 +1,116 @@
+USE Focus8010H0
+go
+CREATE or ALTER proc [dbo].[udp_InsertFinanceGrid_new1](@iTransid bigint=0,@iuserid int=0)    
+as     
+begin    
+ select @iTransid = dbo.fCrm_IntToAPITransId(@iTransid,0); 
+
+ if(@iTransid>0)  
+ Begin  
+
+  declare @isMohereType int,@CardType int  
+  delete from muCore_Invoice_Finance_Details where iMasterId=@iTransId  
+  declare @rowCount int = (select count(iRowIndex) from vuCore_Invoice_ServiceGrid_Details where iMasterId=@iTransid )  
+  
+  declare @tmptable table(iMasterId int,iRowIndex int,ServiceCategory int,ItemSer int,AppNo nVarchar(max),AppName nVarchar(max),Account Int,TaxCode decimal(18,2),Gross decimal(18,2)  
+  ,Discount decimal(18,2),Taxable decimal(18,2),Vat decimal(18,2),Net decimal(18,2),CustomerAccount int, JVType int,Qty int,PaymentGatewayCharges decimal(18,2))  
+  declare @i int = 0  
+  
+  WHILE ( @i < @rowCount)  
+  BEGIN  
+   set @CardType=(select CardType from vCore_Invoice with(nolock) where iMasterId=@iTransid)  
+   set @isMohereType=(select IsMohreInvoice from vCore_Invoice with(nolock) where iMasterId=@iTransid)  
+   If(@CardType=1 and @isMohereType!=1)--Amer Card  
+   Begin  
+              
+                    insert into @tmptable            
+                    select * from (  
+      select iMasterId,iRowIndex,ServiceCategory,ItemSer,ReferenceNo AppNo,ApplicationName AppName,  
+      (select WalletCardAccount from vCore_WalletCard where iMasterId=aa.WalletCard) Account,  
+                     1.00 TaxCode,  
+                     GovernmentFeeNontaxable  Gross,  
+                     0.00 Discount,  
+     GovernmentFeeNontaxable  Taxable,  
+     0.00 Vat,  
+     GovernmentFeeNontaxable Net,0 CustomerAccount,0 JVType,Quantity12 Qty,0.00 PaymentGatewayCharges from vuCore_Invoice_ServiceGrid_Details aa 
+
+                    union  
+                    select iMasterId,iRowIndex,ServiceCategory,ItemSer,ReferenceNo AppNo,ApplicationName AppName,
+    (select WalletCardAccount from vCore_WalletCard where iMasterId=aa.WalletCard )Account,  
+                     1.00 TaxCode,  
+                     GovernmentFeeTaxable  Gross,  
+                     0.00 Discount,  
+     GovernmentFeeTaxable  Taxable,  
+     0.00 Vat,  
+     GovernmentFeeTaxable Net,0 CustomerAccount,0 JVType,Quantity12 Qty,0.00 PaymentGatewayCharges  from vuCore_Invoice_ServiceGrid_Details aa  
+
+                    union  
+                    select iMasterId,iRowIndex,ServiceCategory,ItemSer,ReferenceNo AppNo,ApplicationName AppName ,
+     (select WalletCardAccount from vCore_WalletCard where iMasterId=aa.WalletCard) ,  
+                     1.00 TaxCode,  
+                     GovermentFeeVatAmount  Gross,  
+                     0.00 Discount,  
+     GovermentFeeVatAmount  Taxable,  
+     0.00 Vat,  
+     GovermentFeeVatAmount Net,0 CustomerAccount,0 JVType,Quantity12 Qty,0.00 PaymentGatewayCharges  from vuCore_Invoice_ServiceGrid_Details aa  
+
+                    union  
+                    select iMasterId,iRowIndex,ServiceCategory,ItemSer,ReferenceNo AppNo,ApplicationName AppName, 
+     (select RevenueAccount from vCore_Product where iMasterId=aa.ItemSer) Account,2.00 TaxCode,  
+                    ServiceFeeTaxable+AdditionalServiceFee,  
+                    Discount12,  
+     (ServiceFeeTaxable+AdditionalServiceFee)-Discount12, VATAmount,((ServiceFeeTaxable+AdditionalServiceFee)-Discount12)+VATAmount net ,0 CustomerAccount,0 JVType,Quantity12 Qty,PaymentGatewayCharges
+                      from vuCore_Invoice_ServiceGrid_Details aa  
+			
+                      UNION  
+                    select iMasterId,iRowIndex,ServiceCategory,ItemSer,ReferenceNo AppNo,ApplicationName AppName,  
+     (select RevenueAccount from vCore_Product where iMasterId=aa.ItemSer) Account,1.00 TaxCode,  
+                     ServiceFeeNonTaxable+AdditionalOutsideCharges  Gross,  
+                     0.00 Discount,  
+     ServiceFeeNonTaxable+AdditionalOutsideCharges  Taxable,  
+     0.00 Vat,  
+     ServiceFeeNonTaxable Net,0 CustomerAccount,0 JVType,Quantity12 Qty,0.00 PaymentGatewayCharges 
+                      from vuCore_Invoice_ServiceGrid_Details aa 
+					  
+
+     )  
+     BB where iMasterId=@iTransid and ItemSer>0 and iRowIndex=@i and Gross>0  
+                     
+                      
+    END  
+   else if(@CardType=2 or @isMohereType=1)--Customer Card  
+   Begin            
+                    insert into @tmptable    
+                    select * from (  
+                   select iMasterId,iRowIndex,ServiceCategory,ItemSer,ReferenceNo AppNo,ApplicationName AppName,  
+     (select RevenueAccount from vCore_Product where iMasterId=aa.ItemSer) Account,2.00 TaxCode,  
+                    ServiceFeeTaxable+AdditionalServiceFee Gross,  
+                    Discount12,  
+     (ServiceFeeTaxable+AdditionalServiceFee)-Discount12 Taxable, VATAmount,  
+                    ((ServiceFeeTaxable+AdditionalServiceFee)-Discount12)+VATAmount net,0 CustomerAccount,0 JVType,Quantity12 Qty,PaymentGatewayCharges 
+                      from vuCore_Invoice_ServiceGrid_Details aa  
+					  
+                      UNION  
+                    select iMasterId,iRowIndex,ServiceCategory,ItemSer,ReferenceNo AppNo,ApplicationName AppName,  
+     (select RevenueAccount from vCore_Product where iMasterId=aa.ItemSer) Account,1 TaxCode,  
+                     ServiceFeeNonTaxable+AdditionalOutsideCharges  Gross,  
+                     0.00 Discount,  
+     ServiceFeeNonTaxable+AdditionalOutsideCharges  Taxable,  
+     0.00 Vat,  
+     ServiceFeeNonTaxable Net,0 CustomerAccount,0 JVType,Quantity12 Qty,0.00 PaymentGatewayCharges
+                      from vuCore_Invoice_ServiceGrid_Details aa  
+					     
+     )  
+     BB where iMasterId=@iTransid and ItemSer>0 and iRowIndex=@i and Gross>0  
+                  
+   End  
+   SET @i  = @i  + 1  
+  END  
+  declare @iRowMax int=(select max(iRowIndex) from muCore_Invoice_Finance_Details) 
+
+  INSERT INTO [muCore_Invoice_Finance_Details] ( [iRowIndex],[iMasterId],[Service], [Account],[FDTaxcode], [Amount525],[FGDiscount],[FGTaxable],[FGVat], [FGNet], [FGReferenceNo],[FGApplicantName], [FServiceCategory],[FQuantity],[JVtype],[FCreditCardCharges]
+)
+SELECT RN,iMasterId, ItemSer,Account, TaxCode,Gross, Discount,Taxable, Vat, Net, AppNo,AppName, ServiceCategory,Qty,JVType,PaymentGatewayCharges FROM (SELECT ROW_NUMBER() OVER (ORDER BY iRowIndex) RN, * FROM @tmptable) ccc;
+ End  
+end  
+go

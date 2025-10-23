@@ -1,0 +1,210 @@
+ALTER view [dbo].[m_Commercialproposal_withdiscount]      
+as      
+        
+      
+   select top 100 percent q.iTransId,q.iSequence,      
+q.sName,      
+FORMAT(dbo.fCore_IntToDate(q.QuoteDate),'dd MMMM yy') QuoteDate,      
+FORMAT(dbo.fCore_IntToDate(q.QuoteDate),'MMMM yyyy') subQuoteDate,      
+FORMAT(dbo.fCore_IntToDate(q.iExpiryDate),'MMMM dd, yyyy') [Quote Validity],      
+q.sEmail proemail,      
+q.MobileNo promobile,      
+--FORMAT(dbo.fCore_IntToDate(q.Date),'dd/MM/yyyy') Date,      
+--p.sName project,      
+c.sName contactattention,      
+c.sEmail,      
+c.sPhone,      
+c.sMobile,      
+q.ProjectName subject,      
+case when c.iSalutation=1 then 'Mr.'      
+     when c.iSalutation=2 then 'Mrs.'      
+  when c.iSalutation=3 then 'Miss.'      
+  when c.iSalutation=4 then 'Ms.'      
+   when c.iSalutation=5 then 'Dr.'      
+    when c.iSalutation=6 then 'Prof.'      
+    when c.iSalutation=7 then 'Rev.'      
+    when c.iSalutation=8 then 'Other'      
+    when c.iSalutation=8 then 'Eng.'      
+end as Salutation,      
+a.sName amountname,      
+a.sBillingAddress address,      
+a.sCity,      
+a.iBillingCountryName,      
+q.TotalGrossAmount,      
+q.fOverallDiscount,      
+q.fTax,      
+q.fGrandTotal,      
+mpt.sName PaymentTerms,      
+mc.sCode currencycode,      
+ss.sName salesmanname,      
+m.sName MainGroupHeading,sg.sName SubGroupHeading,q.sProdDescription,vm.Model model,      
+pb.sName brandmake,      
+u.sName UOM,      
+q.iQuantity,      
+q.RateP,      
+q.fAmount rownetamount,      
+q.fDiscount,      
+q.TotalDiscountValue,      
+q.TaxValue,      
+q.TaxPer,      
+sl.sName SiteLocation,      
+q.LeadTime [Shipping Time ],      
+q.LeadTime shipp,      
+q.Warranty,      
+tc.sName TermsandConditions,      
+q.PartShipment,      
+st.sName ShippingTerm,      
+q.fTax totaltaxamount,      
+ dbo.fnMoneyToEnglish(q.fGrandTotal,mc.sCode,'Only') Currency,      
+ q.TaxableAmount,      
+  tpc.CurrencyTerms,      
+   vcu.sName usersaccountmanager,      
+ vcu.sEmail useraccountmanageremail,      
+ vcu.sMobile useraccountmobile,      
+ case when c.iSalutation=1 then 'Mr.'      
+ when c.iSalutation=2 then 'Mrs.'      
+ when c.iSalutation=3 then 'Miss'      
+ when c.iSalutation=4 then 'Ms.'      
+ when c.iSalutation=5 then 'Dr.'      
+ when c.iSalutation=6 then 'Prof.'      
+ when c.iSalutation=7 then 'Rev.'      
+ when c.iSalutation=8 then 'Other'      
+ when c.iSalutation=9 then 'Eng.'      
+ end as sal,      
+ q.NetSellingPriceP,    
+  q.TaxableAmountRE,      
+q.RATEPRE,      
+q.ROWNetAmountRegular,      
+q.TaxValueRegular,      
+q.TaxableAmountRegular,      
+q.SpecialInstructions     
+      
+      
+from      
+      
+vuCrm_Quote_General_Details q      
+--LEFT JOIN mCore_Project p on p.iMasterId=q.Project      
+LEFT JOIN vCrm_Contacts c on c.iMasterId=q.iContactId      
+LEFT JOIN vaCore_Account a on a.iMasterId=q.iAccount      
+LEFT JOIN  mCore_Units u on u.iMasterId=q.UOM      
+--LEFT JOIN mCore_DeliveryTerms dt on dt.iMasterId=q.DeliveryTerms      
+--LEFT JOIN vaCore_Salesman vs on vs.iMasterId=q.Salesman      
+LEFT JOIN mCore_Currency mc on mc.iCurrencyId=q.iCurrency      
+left join mCore_SalesMan ss on ss.iMasterId=q.Salesman      
+--LEFT JOIN mCore_DeliveryTerms mdt on mdt.iMasterId=q.DeliveryTerms      
+LEFT JOIN mCore_PaymentTerms mpt on mpt.iMasterId=q.PaymentTerms      
+left join vCore_MainGroupHeading m on m.iMasterId=q.MainGroupHeadingP      
+left join vCore_SubGroupHeading sg on sg.iMasterId=q.SubGroupHeadingP      
+left join vCore_Product vm WITH(NOLOCK) on vm.iMasterId=q.iProductId      
+left join vCore_ProductBrand pb WITH(NOLOCK) on pb.iMasterId=vm.ProductBrand      
+left join vCore_SiteLocation sl on sl.iMasterId=q.SiteLocation      
+left join vCore_TermsandConditions tc on tc.iMasterId=q.TermsandConditions      
+left join vCore_ShippingTerms st on st.iMasterId=q.ShippingTerms      
+left join vCore_TermsAsperCurrency tpc WITH(NOLOCK) on tpc.sCode=mc.sCode      
+left join vCrm_Users vcu on vcu.iMasterId=q.AccountManager      
+where q.iTransId>0--3087       
+order by q.iSequence desc 
+
+go
+
+ALTER view [dbo].[m_Commercialproposal_without_model]  
+as  
+    
+  
+select top 100 percent q.iTransId,q.iSequence,  
+q.sName,  
+FORMAT(dbo.fCore_IntToDate(q.QuoteDate),'dd MMMM yy') QuoteDate,  
+FORMAT(dbo.fCore_IntToDate(q.QuoteDate),'MMMM yyyy') subQuoteDate,  
+FORMAT(dbo.fCore_IntToDate(q.iExpiryDate),'MMMM dd, yyyy') [Quote Validity],  
+q.sEmail proemail,  
+q.MobileNo promobile,  
+--FORMAT(dbo.fCore_IntToDate(q.Date),'dd/MM/yyyy') Date,  
+--p.sName project,  
+c.sName contactattention,  
+c.sEmail,  
+c.sPhone,  
+c.sMobile,  
+q.ProjectName subject,  
+case when c.iSalutation=1 then 'Mr.'  
+     when c.iSalutation=2 then 'Mrs.'  
+  when c.iSalutation=3 then 'Miss.'  
+  when c.iSalutation=4 then 'Ms.'  
+   when c.iSalutation=5 then 'Dr.'  
+    when c.iSalutation=6 then 'Prof.'  
+    when c.iSalutation=7 then 'Rev.'  
+    when c.iSalutation=8 then 'Other'  
+    when c.iSalutation=8 then 'Eng.'  
+end as Salutation,  
+a.sName amountname,  
+a.sBillingAddress address,  
+a.sCity,  
+a.iBillingCountryName,  
+q.TotalGrossAmount,  
+q.fOverallDiscount,  
+q.fTax,  
+q.fGrandTotal,  
+mpt.sName PaymentTerms,  
+mc.sCode currencycode,  
+ss.sName salesmanname,  
+m.sName MainGroupHeading,sg.sName SubGroupHeading,q.sProdDescription,vm.Model model,  
+pb.sName brandmake,  
+u.sName UOM,  
+q.iQuantity,  
+q.RateP,  
+q.fAmount rownetamount,  
+q.fDiscount,  
+q.TotalDiscountValue,  
+q.TaxValue,  
+q.TaxPer,  
+sl.sName SiteLocation,  
+q.LeadTime [Shipping Time ],  
+q.LeadTime shipp,  
+q.Warranty,  
+tc.sName TermsandConditions,  
+q.PartShipment,  
+st.sName ShippingTerm,  
+  
+q.fTax totaltaxamount,  
+ dbo.fnMoneyToEnglish(q.fGrandTotal,mc.sCode,'Only') Currency,  
+  tpc.CurrencyTerms,  
+   vcu.sName usersaccountmanager,  
+ vcu.sEmail useraccountmanageremail,  
+ vcu.sMobile useraccountmobile,  
+   case when c.iSalutation=1 then 'Mr.'  
+ when c.iSalutation=2 then 'Mrs.'  
+ when c.iSalutation=3 then 'Miss'  
+ when c.iSalutation=4 then 'Ms.'  
+ when c.iSalutation=5 then 'Dr.'  
+ when c.iSalutation=6 then 'Prof.'  
+ when c.iSalutation=7 then 'Rev.'  
+ when c.iSalutation=8 then 'Other'  
+ when c.iSalutation=9 then 'Eng.'  
+ end as sal ,
+ q.TaxableAmountRE,
+q.RATEPRE,
+q.ROWNetAmountRegular,
+q.TaxValueRegular,
+q.TaxableAmountRegular,
+q.SpecialInstructions
+  
+from  
+  
+vuCrm_Quote_General_Details q  
+LEFT JOIN vCrm_Contacts c on c.iMasterId=q.iContactId  
+LEFT JOIN vaCore_Account a on a.iMasterId=q.iAccount  
+LEFT JOIN  mCore_Units u on u.iMasterId=q.UOM  
+LEFT JOIN mCore_Currency mc on mc.iCurrencyId=q.iCurrency  
+left join mCore_SalesMan ss on ss.iMasterId=q.Salesman  
+LEFT JOIN mCore_PaymentTerms mpt on mpt.iMasterId=q.PaymentTerms  
+left join vCore_MainGroupHeading m on m.iMasterId=q.MainGroupHeadingP  
+left join vCore_SubGroupHeading sg on sg.iMasterId=q.SubGroupHeadingP  
+left join vCore_Product vm WITH(NOLOCK) on vm.iMasterId=q.iProductId  
+left join vCore_ProductBrand pb WITH(NOLOCK) on pb.iMasterId=vm.ProductBrand  
+left join vCore_SiteLocation sl on sl.iMasterId=q.SiteLocation  
+left join vCore_TermsandConditions tc on tc.iMasterId=q.TermsandConditions  
+left join vCore_ShippingTerms st on st.iMasterId=q.ShippingTerms  
+left join vCore_TermsAsperCurrency tpc WITH(NOLOCK) on tpc.sCode=mc.sCode  
+left join vCrm_Users vcu on vcu.iMasterId=q.AccountManager  
+where q.iTransId>0--3082--3087   
+order by q.iSequence desc  
+  

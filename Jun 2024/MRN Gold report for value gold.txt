@@ -1,0 +1,24 @@
+select distinct a.sName [$MType_MRN_Name$], a.iMasterId [$DTransId$],
+                TotalGrossWeight,
+				b.sName [Location],
+				c.sName [Item],
+				a.DOCDate [$Date$Doc Date],
+				d.sName [Opportunity Name],
+				case d.ApplicationType when '1' then 'Direct Buying From Customer' when '2' then 'Release Pledge' when '3' then 'Home Service' end [Application Type],
+				h.sName [Campaign Name],
+				i.sName [TeleCaller Name],
+				a.TotalFineWeight,
+				GrossAmount1,
+				a.TotalNetAmount,1 [No of Transactions],e.sName [Customer Name]
+				from vuCore_MRN_ProductInfo_Details a with(nolock)
+				left join vCore_Location b with(nolock) on a.iLocation=b.iMasterId  
+				left join vCore_Product c with(nolock) on a.Item=c.iMasterId  
+				left join vCrm_Opportunities d with(nolock) on a.Application=d.iTransId  
+				left join vCore_Account e with(nolock) on d.iAccount=e.iMasterId  
+				left join vCrm_SalesOrder f with(nolock) on a.AfterMeltng=f.iTransId  
+				left join vCrm_Opportunities g with(nolock) on f.iOpportunityId=g.iTransId  
+				left join vCrm_Campaigns h with(nolock) on g.iCampaign=h.iMasterId  
+				left join vCore_Telecaller i with(nolock) on a.Telecaller=i.iMasterId 
+				where a.iMasterId>0
+				and a.iCreatedDate between @STARTDATETIME and @ENDDATETIME 
+				and(( 0 in (@Item) and isnull(a.Item,0)  = isnull(a.Item,0) ) or (0 not in (@Item) and isnull(a.Item,0)   in ( @Item )))

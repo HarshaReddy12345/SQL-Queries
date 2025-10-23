@@ -1,0 +1,2 @@
+BACKUP DATABASE Focus80K0
+TO DISK = 'D:\Backups\Testing.bak';

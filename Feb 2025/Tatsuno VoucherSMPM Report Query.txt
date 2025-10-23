@@ -1,0 +1,50 @@
+CREATE VIEW nCore_VoucherReport as
+select 
+       b.sName Creator,d.sName Region,a.ActivityStartTime [$Datetime$Activity Start Time],a.VoucherNumber,a.sName [DTS Activity ID],'' [JR ActivityCode],'' Billable,e.sName [Job Request Number],f.sName [Retail Outlet Name],a.Remarks Deiatls,e.InternalContractNumber [Internal Contract Number],a.TotalAmount [Total Amount], b.sName [Employee Name],'' [Breakdown SR Number],'' [Customer],'' [Customer Feedback No],'' [Contract Name],g.sName [Approved By],a.iApprovalDate [$Datetime$Approval Date],h.sName [Approval Status],a.iAssignedTo,a.RetailoutletName,a.JobRequestNo    
+from vuCore_DailyExecutedTasks_PettyCashGrid_Details a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId  
+left join vCore_State c with(nolock) on b.iStateId=c.iMasterId  
+left join vCore_Region d with(nolock) on c.Region=d.iMasterId  
+left join vCrm_Calls e with(nolock) on a.JobRequestNo=e.iTransId  
+left join vCore_Retailoutlet f with(nolock) on a.RetailoutletName=f.iMasterId  
+left join vCrm_Users g with(nolock) on a.iApprovedBy=g.iMasterId  
+left join vCrm_QuoteApprovalStatus h with(nolock) on a.iApprovalStatus=h.iTransId   
+where a.iMasterId>0 and  a.iApprovalStatus = 114 
+====================================================================
+CREATE VIEW nCore_PMReport as
+select 
+      b.sName [Creator],'' Region,a.ActivityStartTime [$Datetime$Activity Start Time],'' VoucherNumber,a.sName [DTS Activity ID],
+	  dbo.fCrm_GetNumberListValue('1,WARR,2,AMCB,3,NWAR,4,AMCPW,5,AMCP,6,NUPI,7,INCN,8,FM',a.ActivityCode)[JR ActivityCode],
+	  dbo.fCrm_GetNumberListValue('1,Yes,2,No,3,Partial',c.Billable) Billable,
+	  c.sName [Job Request New],d.sName [Retail Outlet Name],a.Remarks [Details],a.InternalContractNumberClient,a.DTSJRAmounth [JobWise DTS Amount],b.sName [Employee Name],
+	  e.sName [Breakdown SR Number],f.sCode [Customer],g.sName [Customer Feedback No],h.sName [Contract Name],
+	  i.sName [Approved By],a.iApprovalDate [$Datetime$Approved Date],j.sName [Approval Status],a.iAssignedTo,a.ROName,a.JobRequest  
+from vuCore_DailyExecutedTasks_JobRequestDetails_Details a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId  
+left join vCrm_Calls c with(nolock) on a.JobRequest=c.iTransId  
+left join vCore_Retailoutlet d with(nolock) on a.ROName=d.iMasterId  
+left join vCrm_CustAssets e with(nolock) on c.iCustAssetId=e.iTransId  
+left join vCore_Account f with(nolock) on a.OilCompanyName=f.iMasterId  
+left join vCore_StaffFeedback g with(nolock) on a.EngineerFeedbackNumber=g.iMasterId  
+left join vCrm_Contract h on a.ContractNumberCRM=h.iTransId  
+left join vCrm_Users i with(nolock) on a.iApprovedBy=i.iMasterId  
+left join vCrm_QuoteApprovalStatus j on i.iApprovalStatus=j.iTransId   
+where a.iMasterId>0 and a.iApprovalStatus = 114 and a.ActivityCode = 5 
+========================================================================
+CREATE VIEW nCore_SMReport as
+select 
+      b.sName Creator,'' Region,a.ActivityStartTime [$Datetime$Activity Start Time],'' VoucherNumber,a.sName [DTS Activity ID],
+      dbo.fCrm_GetNumberListValue('1,WARR,2,AMCB,3,NWAR,4,AMCPW,5,AMCP,6,NUPI,7,INCN,8,FM',a.ActivityCode)[JR ActivityCode],
+	  dbo.fCrm_GetNumberListValue('1,Yes,2,No,3,Partial',c.Billable)Billable,
+	  c.sName [Job Request New],d.sName [Retail Outlet Name],a.Remarks [Details],a.InternalContractNumberClient,a.DTSJRAmounth [JobWise DTS Amount],b.sName [Employee Name],e.sName [Breakdown SR Number],f.sCode [Customer],g.sName [Customer Feedback No],h.sName [Contract Name],i.sName [Approved By],a.iApprovalDate [$Datetime$Approved Date],j.sName [Approval Status],a.iAssignedTo,a.ROName,a.JobRequest  
+from vuCore_DailyExecutedTasks_JobRequestDetails_Details a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId  
+left join vCrm_Calls c with(nolock) on a.JobRequest=c.iTransId  
+left join vCore_Retailoutlet d with(nolock) on a.ROName=d.iMasterId  
+left join vCrm_CustAssets e with(nolock) on c.iCustAssetId=e.iTransId  
+left join vCore_Account f with(nolock) on a.OilCompanyName=f.iMasterId  
+left join vCore_StaffFeedback g with(nolock) on a.EngineerFeedbackNumber=g.iMasterId  
+left join vCrm_Contract h with(nolock) on a.ContractNumberCRM=h.iTransId  
+left join vCrm_Users i with(nolock) on a.iApprovedBy=i.iMasterId  
+left join vCrm_QuoteApprovalStatus j with(nolock) on i.iApprovalStatus=j.iTransId   
+where a.iMasterId>0 and ( a.ActivityCode = 1 or h.Billable = 2)

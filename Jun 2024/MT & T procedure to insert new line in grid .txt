@@ -1,0 +1,12 @@
+ALTER PROC udp_RentalDcGrid(@iTransId bigint,@iUserId int=0)
+as
+begin
+select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+DECLARE @iRowIndex int
+select @iRowIndex=MAX(iRowIndex) from vuCore_DeliveryNote_BOMDetails_Details WITH(NOLOCK) where iMasterId=@iTransId
+INSERT muCore_DeliveryNote_BOMDetails_Details(iRowIndex,iMasterId,BOMFinishedProduct,VPQty,VPRate,VPGross,VPTaxableValue,VPCGSTAmount,VPSGSTAmount,VPIGSTAmount)
+
+select (@iRowIndex+1),iMasterId,Product,Quantity,Rate,Gross,TaxableValue,CGST,SGST,IGST from vuCore_DeliveryNote_Product_Info_Details WITH(NOLOCK)
+where iMasterId=@iTransId
+
+end

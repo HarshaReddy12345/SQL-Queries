@@ -1,0 +1,81 @@
+ alter view [dbo].[vRpt_BOMSummaryprint]  
+as 
+
+
+select opp.iMasterId iTransId,opp.sName QuoteNo,q.iMasterId bomid, q.sName bomno,dbo.fCore_IntToDate(uopp.Date) qdate,  
+dbo.fCore_IntToDate(qu.Date) BOMdate,uopp.EnquiryRef,  
+qu.FGName, qu.FGDescription, p.sCode pcode, p.sName pname,acc.iMasterId accid,acc.sName cname,acc.CustomerNamePrint Customer, acc.sCode custcode,  
+qu.Quantity, bomsum.seq,bomsum.remarks,bomsum.Amt,  
+c.address1,c.address2,c.address4,c.pno,Addressline2,  
+convert(date,dbo.fCore_IntToDateTime(q.iCreatedDate),105)createddate, createdby.sUserName createdby,  
+case when isnull(q.iModifiedDate,0)=0 then '' else convert(varchar,dbo.fCore_IntToDateTime(q.iModifiedDate),105) end modifieddate,cast('' as varchar(100)) Qualitydno,
+0 Header,0 Footer
+from vRpt_Company c,  
+mCore_EnquiryManufacturing opp inner join muCore_EnquiryManufacturing uopp on uopp.iMasterId=opp.iMasterId  
+inner join muCore_BOM qu on opp.iMasterId=qu.EnquiryNo  
+inner join mCore_BOM q on q.iMasterId=qu.iMasterId and q.iStatus=0  
+inner join mCore_Product p on p.iMasterId=qu.FGName  
+inner join vRpt_BOMSummary bomsum on bomsum.iMasterId=q.iMasterId  
+inner join vdCore_Account acc on acc.iMasterId=qu.Customer  
+left join mSec_Users createdby on createdby.iUserId=q.iCreatedBy  
+where qu.Status=34   -- and opp.iMasterId=132 
+union all  
+select iTransId,QuoteNo,a.bomid,bomno,qdate,BOMdate,EnquiryRef,FGName,FGDescription,pcode,pname,accid,cname,Customer,custcode,Quantity,seq,remarks,
+case when seq like '%4' and [Selling Price] >0 then [MarkUpNet]/[Selling Price]*100 else  amt end amt,
+address1,address2,address4,pno,Addressline2,createddate,createdby,modifieddate,Qualitydno,
+[Selling Price],[MarkUpNet]
+from(
+select opp.iMasterId iTransId,opp.sName QuoteNo,opp.iMasterId bomid, opp.sName+'-TTl' bomno,dbo.fCore_IntToDate(uopp.Date) qdate,  
+getdate() BOMdate,uopp.EnquiryRef,  
+'' FGName, 'Total'FGDescription, '' pcode, '' pname,acc.iMasterId accid,acc.sName cname,acc.CustomerNamePrint Customer, acc.sCode custcode,  
+0 Quantity, bomsum.seq,bomsum.remarks,  
+--case when bomsum.seq like '%4' then  ((Header/Footer)*100)  else sum(bomsum.Amt) end amt, 
+sum(bomsum.Amt) amt,
+c.address1,c.address2,c.address4,c.pno,Addressline2,  
+'' createddate,'' createdby,  
+'' modifieddate,cast('' as varchar(100)) Qualitydno  
+from vRpt_Company c,  
+mCore_EnquiryManufacturing opp inner join muCore_EnquiryManufacturing uopp on uopp.iMasterId=opp.iMasterId  
+inner join muCore_BOM qu on opp.iMasterId=qu.EnquiryNo  
+inner join mCore_BOM q on q.iMasterId=qu.iMasterId and q.iStatus=0  
+inner join mCore_Product p on p.iMasterId=qu.FGName  
+inner join vRpt_BOMSummary bomsum on bomsum.iMasterId=q.iMasterId  
+inner join vdCore_Account acc on acc.iMasterId=qu.Customer  
+
+left join mSec_Users createdby on createdby.iUserId=q.iCreatedBy  
+where qu.Status=34 --and opp.iMasterId=94  
+group by  
+ opp.iMasterId ,opp.sName  , opp.sName ,dbo.fCore_IntToDate(uopp.Date) ,  
+dbo.fCore_IntToDate(qu.Date) ,uopp.EnquiryRef,acc.iMasterId  
+ ,acc.sName ,acc.CustomerNamePrint , acc.sCode ,  
+ bomsum.seq,bomsum.remarks,c.address1,c.address2,c.address4,c.pno,Addressline2  
+ --order by bomsum.seq  
+
+)a
+left join
+ (select Header,bomid,sum(MarkUpNet) MarkUpNet from(
+ select 
+ case bomsum.seq when  'A2' then 'A4' when 'B2' then 'B4' when 'C2' then 'C4' when 'D2' then 'D4' when 'E2' then 'E4' end [Header],opp.iMasterId bomid,sum(bomsum.Amt) [MarkUpNet]
+from vRpt_Company c,  
+mCore_EnquiryManufacturing opp inner join muCore_EnquiryManufacturing uopp on uopp.iMasterId=opp.iMasterId  
+inner join muCore_BOM qu on opp.iMasterId=qu.EnquiryNo  
+inner join mCore_BOM q on q.iMasterId=qu.iMasterId and q.iStatus=0  
+inner join vRpt_BOMSummary bomsum on bomsum.iMasterId=q.iMasterId  
+where qu.Status=34 and bomsum.seq like '%2'--and opp.iMasterId=94  
+group by  
+ opp.iMasterId,q.iMasterId,seq)b 
+ group by Header,bomid)bb on a.bomid=bb.bomid and bb.[Header]=a.seq
+
+left join
+ (select Header,bomid,sum([Selling Price]) [Selling Price] from(
+ select 
+ case bomsum.seq when  'A3' then 'A4' when 'B3' then 'B4' when 'C3' then 'C4' when 'D3' then 'D4' when 'E3' then 'E4' end [Header],opp.iMasterId bomid,sum(bomsum.Amt) [Selling Price]
+from vRpt_Company c,  
+mCore_EnquiryManufacturing opp inner join muCore_EnquiryManufacturing uopp on uopp.iMasterId=opp.iMasterId  
+inner join muCore_BOM qu on opp.iMasterId=qu.EnquiryNo  
+inner join mCore_BOM q on q.iMasterId=qu.iMasterId and q.iStatus=0  
+inner join vRpt_BOMSummary bomsum on bomsum.iMasterId=q.iMasterId  
+where qu.Status=34 and bomsum.seq like '%3'--and opp.iMasterId=94  
+group by  
+ opp.iMasterId,q.iMasterId,seq)c
+ group by Header,bomid)cc on a.bomid=cc.bomid and cc.[Header]=a.seq

@@ -1,0 +1,24 @@
+CREATE or ALTER procedure [dbo].[UpdateOwnerToUnassignedInForsaOpportunity] (@iTransId bigint,@UserId int,@sStatusMsg varchar(200) output)
+as
+begin
+select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0);
+declare @LeadId int,@AssignedTo int
+if(@iTransId>0)
+Begin
+select @AssignedTo=iAssignedTo from vCore_FORSAOpportunity with(nolock) where iMasterId=@iTransId
+if((select * from [dbo].[fCrm_getHirearchyUnder](@UserId,2564) where iMasterIdd=@AssignedTo)>0)
+Begin
+update vCore_FORSAOpportunity set iAssignedTo=4 where iMasterId=@iTransId
+--update tCrm_CampaignLeads set iAssignedTo=4 where iLeadId=@LeadId
+exec dbo.udp_AS_logPickAndRelease @iTransId,4,4
+set @sStatusMsg='The Forsa Opportunity is Released Successfully'
+return 1
+End
+else
+Begin
+set @sStatusMsg='You are not authorized to release the Forsa Opportunity'
+return -1
+End
+End
+End
+

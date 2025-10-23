@@ -1,0 +1,79 @@
+CREATE OR ALTER VIEW nCore_TargeAndInvoice as
+
+select b.sName [Sales Person],e.sName [Financial Year],c.sName [Month],d.sName [Quater], 'Sales Targets' [RelatedTo],a.TotalTarget,0.00 TotalValue,a.Users,a.Financialyear,a.Quarter,a.Months from vuCore_Targets_TargetsInformation_Details a with(nolock)
+left join vCrm_Users b with(nolock) on a.Users=b.iMasterId
+left join vCore_Monthly c with(nolock) on a.Months=c.iMasterId
+left join vCore_Quarterly d with(nolock) on a.[Quarter]=d.iMasterId
+left join vCore_Financialyear e with(nolock) on a.Financialyear=e.iMasterId
+where a.iMasterId>0 and a.RelatedTo=2
+
+union all
+
+select b.sName,e.sName,c.sName,d.sName,'Sales Targets',0.00,a.TotalGrossAmount,a.iAssignedTo,a.Financialyear,a.QuarterNo,a.Month from vCore_Invoice a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+left join vCore_Monthly c with(nolock) on a.[Month]=c.iMasterId
+left join vCore_Quarterly d with(nolock) on a.QuarterNo=d.iMasterId
+left join vCore_Financialyear e with(nolock) on a.Financialyear=e.iMasterId
+where a.iMasterId>0
+
+ go
+ 
+ CREATE OR ALTER VIEW nCore_TargeAndReceipt as
+
+select b.sName [Sales Person],e.sName [Financial Year],c.sName [Month],d.sName [Quater], 'Money Collection' [RelatedTo],a.TotalTarget,0.00 TotalValue,a.Users,a.Financialyear,a.Quarter,a.Months from vuCore_Targets_TargetsInformation_Details a with(nolock)
+left join vCrm_Users b with(nolock) on a.Users=b.iMasterId
+left join vCore_Monthly c with(nolock) on a.Months=c.iMasterId
+left join vCore_Quarterly d with(nolock) on a.[Quarter]=d.iMasterId
+left join vCore_Financialyear e with(nolock) on a.Financialyear=e.iMasterId
+where a.iMasterId>0 and a.RelatedTo=3
+
+union all
+
+select b.sName,e.sName,c.sName,d.sName,'Money Collection',0.00,a.CollectedAmountWithoutTax,a.iAssignedTo,a.Financialyear,a.QuarterNo,a.Month from vCore_Receipt a with(nolock)
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+left join vCore_Monthly c with(nolock) on a.[Month]=c.iMasterId
+left join vCore_Quarterly d with(nolock) on a.QuarterNo=d.iMasterId
+left join vCore_Financialyear e with(nolock) on a.Financialyear=e.iMasterId
+where a.iMasterId>0
+
+go
+
+CREATE OR ALTER VIEW nCore_TargetAndLeads as
+
+select b.sName [Sales Person],e.sName [Financial Year],c.sName [Month],d.sName [Quater], 'New Account Creation' [RelatedTo],a.TotalTarget,0.00 TotalValue,a.Users,a.Financialyear,a.Quarter,a.Months from vuCore_Targets_TargetsInformation_Details a with(nolock)
+left join vCrm_Users b with(nolock) on a.Users=b.iMasterId
+left join vCore_Monthly c with(nolock) on a.Months=c.iMasterId
+left join vCore_Quarterly d with(nolock) on a.[Quarter]=d.iMasterId
+left join vCore_Financialyear e with(nolock) on a.Financialyear=e.iMasterId
+where a.iMasterId>0 and a.RelatedTo=1
+
+union all
+
+select b.sName,e.sName,c.sName,d.sName,'New Account Creation',0.00,COUNT(a.iTransId) [LeadCount],a.iAssignedTo,a.Financialyear,a.QuarterNo,a.Month from vCrm_Opportunities a with(nolock)
+join vaCrm_Leads f with(nolock) on a.iLeadId=f.iTransId
+left join vCrm_Users b with(nolock) on a.iAssignedTo=b.iMasterId
+left join vCore_Monthly c with(nolock) on a.[Month]=c.iMasterId
+left join vCore_Quarterly d with(nolock) on a.QuarterNo=d.iMasterId
+left join vCore_Financialyear e with(nolock) on a.Financialyear=e.iMasterId
+where a.iTransId>0
+group by b.sName,e.sName,c.sName,d.sName,a.iAssignedTo,a.Financialyear,a.QuarterNo,a.Month
+
+
+go
+
+CREATE OR ALTER VIEW nCore_OverAlltarget as
+
+select * from nCore_TargeAndInvoice with(nolock)
+union all
+select * from nCore_TargeAndReceipt with(nolock)
+union all 
+select * from nCore_TargetAndLeads with(nolock)
+
+
+select a.*,b.fLocalNetAmountNew [Total Sales],b.fOverallDiscount [Total Discounted],c.fLocalNetAmountNew [Total  Returned],(b.fLocalNetAmountNew-b.fOverallDiscount-c.fLocalNetAmountNew) [Net Total Sales],(a.TotalTarget-a.TotalValue) [Total Difference] from nCore_OverAlltarget a with(nolock)
+left join vCrm_SalesOrder b with(nolock) on a.Users=b.iAssignedTo and a.Financialyear=b.Financialyear and a.Quarter=b.QuarterNo and a.Months=b.Month
+left join vCore_SaleReturne c with(nolock) on b.iTransId=c.SalesOrderNo
+where  (( 0 in (@User) and isnull(Users,0)  = isnull(Users,0) ) or (0 not in (@User) and isnull(Users,0)   in ( @User )))
+and (( 0 in (@FinancialYear) and isnull(a.Financialyear,0)  = isnull(a.Financialyear,0) ) or (0 not in (@FinancialYear) and isnull(a.Financialyear,0)   in ( @FinancialYear )))
+and (( 0 in (@Quater) and isnull(a.Quarter,0)  = isnull(a.Quarter,0) ) or (0 not in (@Quater) and isnull(a.Quarter,0)   in ( @Quater )))
+and (( 0 in (@Month) and isnull(a.Months,0)  = isnull(a.Months,0) ) or (0 not in (@Month) and isnull(a.Months,0)   in ( @Month )))

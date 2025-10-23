@@ -1,0 +1,54 @@
+select *,
+CAST(ISNULL(Improved-LAG(Improved) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]),0) as decimal(18,2)) [Total Count of Improved Comparison],
+CAST(ISNULL(((Improved-LAG(Improved) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date])/Improved)/100),0) as decimal(18,2)) [Total Count of Imroved Comparison in Percentage],
+CAST(ISNULL([Declined]-LAG([Declined]) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]),0) as decimal(18,2)) [Total Count of Declined Comparison],
+CAST(ISNULL((([Declined]-LAG([Declined]) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date])/Improved)/100),0) as decimal(18,2)) [Total Count of Declined Comparison in Percentage],
+CAST(ISNULL([No Change]-LAG([No Change]) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]),0) as decimal(18,2)) [Total Count of UnChanged Comparison],
+CAST(ISNULL((([No Change]-LAG([No Change]) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date])/Improved)/100),0) as decimal(18,2)) [Total Count of UnChanged Comparison in Percentage],
+CASE WHEN [Total Count]<=3 then 1 else 0 end [Total Count of Keywords Positon in 1-3],
+CASE WHEN [Total Count]>3  and [Total Count]<=5 then 1 else 0 end [Total Count of Keywords Positon in 4-5],
+CASE WHEN [Total Count]>5 and [Total Count]<=10 then 1 else 0 end [Total Count of Keywords Positon in 6-10],
+CASE WHEN [Total Count]>10 then 1 else 0 end [Total Count of Keywords Positon Above 10]
+
+from 
+(
+SELECT *, SUM(cnt) OVER () AS [Total Count], 
+ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) = 1 THEN 0 ELSE Improved - LAG(Improved) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) END, 0) AS [Difference For Improved],
+ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) = 1 THEN 0 ELSE Declined - LAG(Declined) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) END, 0) AS [Difference For Declined],
+ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) = 1 THEN 0 ELSE [No Change] - LAG([No Change]) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) END, 0) AS [Difference For No Change],
+
+CAST(ISNULL(CASE WHEN LAG(Improved) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) IS NULL OR LAG(Improved) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) = 0 
+ THEN 0 ELSE (Improved - LAG(Improved) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date])) * 100.0 / Improved END, 0) AS DECIMAL(18,2)) [Improved Comparision],
+
+CAST(ISNULL(CASE WHEN LAG(Declined) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) IS NULL OR LAG(Declined) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) = 0 THEN 0 ELSE (Declined - LAG(Declined) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date])) * 100.0 / Declined END, 0) AS DECIMAL(18,2)) [Declined Comparision],
+
+CAST(ISNULL(CASE WHEN LAG([No Change]) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) IS NULL OR LAG([No Change]) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date]) = 0  THEN 0 ELSE ([No Change] - LAG([No Change]) OVER (PARTITION BY [Record Name] ORDER BY [$Date$Date])) * 100.0 / [No Change] END, 0) AS DECIMAL(18,2)) [No Change Comparision]
+
+
+FROM (    
+    SELECT TOP 100 PERCENT    
+        iMasterId,sName AS [Record Name],Position,Clicks,Impressions,[Date] AS [$Date$Date],COUNT(iMasterId) AS cnt, 
+
+   ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY sName ORDER BY [Date]) = 1 THEN 0 ELSE Clicks - LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Date]) 
+        END, 0) AS [Difference For Clicks],   
+        
+        CAST(ISNULL(CASE WHEN LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Date]) IS NULL OR LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Date]) = 0 
+            THEN 0 ELSE (Clicks - LAG(Clicks) OVER (PARTITION BY sName ORDER BY [Date])) * 100.0 / Clicks  END, 0) AS DECIMAL(18,2)) AS [Clicks Percentage],    
+        ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY sName ORDER BY [Date]) = 1 THEN 0 ELSE Position - LAG(Position) OVER (PARTITION BY sName ORDER BY [Date]) END, 0) AS [Difference For Position],
+
+        CAST(ISNULL(CASE WHEN LAG(Position) OVER (PARTITION BY sName ORDER BY [Date]) IS NULL OR LAG(Position) OVER (PARTITION BY sName ORDER BY [Date]) = 0 
+            THEN 0 ELSE (Position - LAG(Position) OVER (PARTITION BY sName ORDER BY [Date])) * 100.0 / Position 
+        END, 0) AS DECIMAL(18,2)) AS [Position Percentage],
+        
+        ISNULL(CASE WHEN ROW_NUMBER() OVER (PARTITION BY sName ORDER BY [Date]) = 1 THEN 0 ELSE Impressions - LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Date]) END, 0) AS [Difference For Impressions],   
+        
+        CAST(ISNULL(CASE WHEN LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Date]) IS NULL OR LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Date]) = 0 THEN 0 ELSE (Impressions - LAG(Impressions) OVER (PARTITION BY sName ORDER BY [Date])) * 100.0 / Impressions END, 0) AS DECIMAL(18,2)) AS [Impressions Percentage],
+
+		ISNULL(CASE WHEN (Position-LAG(Position) OVER (PARTITION BY sName ORDER BY [Date]))<0 then 1 end,0) [Improved],
+		ISNULL(CASE WHEN (Position-LAG(Position) OVER (PARTITION BY sName ORDER BY [Date]))>0 then 1 end,0) [Declined],
+        ISNULL(CASE WHEN (Position-LAG(Position) OVER (PARTITION BY sName ORDER BY [Date]))=0 then 1 end,0) [No Change]       
+    FROM vuCore_SEOKeyWords_KeyWords_Details WITH (NOLOCK)    
+    WHERE iMasterId > 0 AND sCode = 'KW/9508'   
+    GROUP BY iMasterId, sName, Position, Clicks, Impressions, [Date]
+) a
+)b

@@ -1,0 +1,56 @@
+CREATE  PROC [dbo].[udp_DesignAgegingUpdate]
+as
+begin
+update muCore_Design set Aging=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate(InquiryDate),GETDATE()),' ','Days') 
+where iMasterId>0
+end
+go
+CREATE  PROC [dbo].[udp_PricingAgegingUpdate]
+as
+begin
+update vCrm_Quote set Aging=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate([Date]),GETDATE()),' ','Days') 
+where iTransId>0
+end
+go
+CREATE  PROC [dbo].[udp_FollowUpAgegingUpdate]
+as
+begin
+update vCore_FollowUp set Aging=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate([Date]),GETDATE()),' ','Days') 
+where iMasterId>0
+end
+go
+CREATE  PROC [dbo].[udp_ATOAgegingUpdate]
+as
+begin
+update vCrm_SalesOrder set Aging=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate([Date]),GETDATE()),' ','Days') 
+where iTransId>0
+end
+go
+CREATE  PROC [dbo].[udp_InvoiceAgegingUpdate]
+as
+begin
+update vCore_Invoice set Aging=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate([Date]),GETDATE()),' ','Days') 
+where iMasterId>0
+end
+go
+CREATE  PROC [dbo].[udp_PaymentAgegingUpdate]
+as
+begin
+update vCore_Receipt set Aging=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate([Date]),GETDATE()),' ','Days') 
+where iMasterId>0
+end
+go
+CREATE  PROC [dbo].[udp_ShopDrawingAgegingUpdate]
+as
+begin
+update vCore_ShopDrawings set Aging=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate([Date]),GETDATE()),' ','Days') 
+where iMasterId>0
+end
+go
+CREATE  PROC [dbo].[udp_HandoverAgegingUpdate]
+as
+begin
+update vCore_Handover set Aging=CONCAT(DATEDIFF(dd,dbo.fCore_IntToDate([Date]),GETDATE()),' ','Days') 
+where iMasterId>0
+end
+go

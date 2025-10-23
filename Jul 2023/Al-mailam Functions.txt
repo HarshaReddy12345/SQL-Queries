@@ -1,0 +1,40 @@
+
+ ---SalesInvoice
+
+CREATE function [dbo].[fCore_Var4015](@s xml)  
+ returns decimal(18,2)  
+ as  
+ begin  
+  declare @iProductType int=0;  
+  declare @fRet decimal(18,2)=0.00;  
+  SELECT @fRet = SUM(ISNULL(a.value('(TotalAmount)[1]', 'decimal(18,2)'),0.00))  FROM @s.nodes('/Fields/BodyData/AllRows/BodyRow') AS flds(a) where a.value('(ItemCategory)[1]', 'int')=3 
+  return @fRet;  
+ end
+
+
+==================================================================================
+ ---ESTIMATION
+===============================================================================
+CREATE function [dbo].[fCore_Var3018](@s xml)  
+ returns decimal(18,2)  
+ as  
+ begin  
+  declare @iProductType int=0;  
+  declare @fRet decimal(18,2)=0.00;  
+  SELECT @fRet = SUM(ISNULL(a.value('(TotalAmount)[1]', 'decimal(18,2)'),0.00))  FROM @s.nodes('/Fields/BodyData/AllRows/BodyRow') AS flds(a) where a.value('(ProductCategory)[1]', 'int')=3 
+  return @fRet;  
+ end
+
+===================================================================================================
+ ---job card confirmations
+=============================================================================================
+CREATE function [dbo].[fCore_Var3000](@s xml)  
+ returns decimal(18,2)  
+ as  
+ begin  
+  declare @iProductType int=0;  
+  declare @fRet decimal(18,2)=0.00;  
+  SELECT @fRet = SUM(ISNULL(a.value('(TotalAmount)[1]', 'decimal(18,2)'),0.00))  FROM @s.nodes('/Fields/BodyData/AllRows/BodyRow') AS flds(a) where a.value('(ItemCategory)[1]', 'int')=3 
+  return @fRet;  
+ end
+

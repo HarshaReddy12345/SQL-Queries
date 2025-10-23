@@ -1,0 +1,209 @@
+select a.iTransId,a.sName [Quote No],ContractFor,[Address],b.sName ContactName,b.sLastName ContactLastName,HybonBranch,BranchAddress,SalesPersonName,SalesPersonNo,SalesPersonEmailId,OfferNumber,ProjectName,ProjectDeliveryAddress,c.sName [State],d.sName [City],BuildingSegment,EnquiryNoProposalNo,e.sName [Organisation],a.ClientType [ClientType],a.MobileNo,a.L2ContactNo,a.L2RelationshipwithCustomer,a.GSTNo,a.PanNo,a.CustomerID,b.sEmail,a.fSubTotal,a.Taxes,a.iOtherMiscExpensesTransportation,a.iLicenseCharges,a.fLocalNetAmountNew,a.AdvancePayment,a.BeforeProduction,a.Completion,a.Delivery
+from vCrm_Quote a with(nolock) 
+left join vCrm_Contacts b with(nolock) on a.ContactName=b.iMasterId
+left join vCore_State c with(nolock) on a.iState=c.iMasterId
+left join vCore_City d with(nolock) on a.iCity=d.iMasterId
+left join vCore_Account e with(nolock) on a.AccountName=e.iMasterId
+where iTransId=90
+
+=================================================================
+SELECT  Value,[Type],iTransId
+FROM (
+    SELECT 
+        iTransId,
+        CAST(ElevatorFunction AS NVARCHAR(MAX)) AS [Elevator Function],
+        CAST(b.sName AS NVARCHAR(MAX)) AS [Elevator ProductType],
+        CAST(c.sName AS NVARCHAR(MAX)) AS [Model TypeCode],
+        CAST(d.sName AS NVARCHAR(MAX)) AS [Passenger],
+        CAST(e.sName AS NVARCHAR(MAX)) AS [Speed MPS],
+        CAST(f.sName AS NVARCHAR(MAX)) AS [Number Of Stops],
+        CAST(g.sName AS NVARCHAR(MAX)) AS [Number of Openings For Car],
+        CAST(h.sName AS NVARCHAR(MAX)) AS [Floor Designation FrontSide],
+        CAST(i.sName AS NVARCHAR(MAX)) AS [Floor Designation OtherSide]
+    FROM vuCrm_Quote_TechnicalSpecification_Details a WITH (NOLOCK)
+    LEFT JOIN vCore_SpecificationMaster b WITH (NOLOCK) ON a.ElevatorProductType = b.iMasterId
+    LEFT JOIN vCore_SpecificationMaster c WITH (NOLOCK) ON a.ModelTypeCode = c.iMasterId
+    LEFT JOIN vCore_SpecificationMaster d WITH (NOLOCK) ON a.Passenger = d.iMasterId
+    LEFT JOIN vCore_SpecificationMaster e WITH (NOLOCK) ON a.SpeedMPS = e.iMasterId
+    LEFT JOIN vCore_SpecificationMaster f WITH (NOLOCK) ON a.NumberOfStops = f.iMasterId
+    LEFT JOIN vCore_SpecificationMaster g WITH (NOLOCK) ON a.NumberOfStops = g.iMasterId
+    LEFT JOIN vCore_SpecificationMaster h WITH (NOLOCK) ON a.FloorDesignationFrontSide = h.iMasterId
+    LEFT JOIN vCore_SpecificationMaster i WITH (NOLOCK) ON a.FloorDesignationOtherSide = i.iMasterId
+    WHERE iTransId = 90
+) t
+UNPIVOT (
+    Value FOR [Type] IN ([Elevator Function],[Elevator ProductType],[Model TypeCode],[Passenger],[Speed MPS],[Number Of Stops],[Number of Openings For Car],[Floor Designation FrontSide],[Floor Designation OtherSide])
+) tt
+=====================================================================================
+select iTransId,Val,Type from 
+(
+select a.iTransId,b.sName [Power Supply],c.sName [Machine Type],d.sName [Drive Type],d.sName [Open loop/Close Loop] from vuCrm_Quote_MachineControllerDetails_Details a with(nolock)
+left join vCore_SpecificationMaster b with(nolock) on a.PowerSupply=b.iMasterId
+left join vCore_SpecificationMaster c with(nolock) on a.MachineType=c.iMasterId
+left join vCore_SpecificationMaster d with(nolock) on a.DriveType=d.iMasterId
+left join vCore_SpecificationMaster e with(nolock) on a.OpenloopCloseLoop=e.iMasterId
+where iTransId=90
+)t
+unpivot
+(
+Val for Type in ([Power Supply],[Machine Type],[Drive Type],[Open loop/Close Loop])
+)tt
+==============================================================================================
+SELECT iTransId, Val, Type
+FROM (
+    SELECT 
+        iTransId,
+        CAST(TypeofShaftWall as nvarchar(max)) AS [Type of Shaft Wall],
+        CAST(b.sName AS nvarchar(max)) AS [CWT Position],
+        CAST(Liftshaftsizeisasperstandard AS nvarchar(max)) AS [Lift shaft Size is as per Standard],
+        CAST(a.LiftshaftWidthmm AS nvarchar(max)) AS [Lift Shaft Width (mm)],
+        CAST(a.LiftshaftDepthmm AS nvarchar(max)) AS [Lift Shaft Depth (mm)],
+        CAST(TravelHeightmm AS nvarchar(max)) AS [Travel Height (mtr)],
+        CAST(OverheadHeightmm AS nvarchar(max)) AS [Overhead Height (mm)],
+        CAST(PitDepthmm AS nvarchar(max)) AS [Pit Depth (mm)]
+    FROM vuCrm_Quote_ShaftDetails_Details a WITH (NOLOCK)
+    LEFT JOIN vCore_SpecificationMaster b WITH (NOLOCK) ON a.CWTPosition = b.iMasterId
+    WHERE iTransId = 90
+) t
+UNPIVOT (
+    Val FOR Type IN (
+        [Type of Shaft Wall],
+        [CWT Position],
+        [Lift shaft Size is as per Standard],
+        [Lift Shaft Width (mm)],
+        [Lift Shaft Depth (mm)],
+        [Travel Height (mtr)],
+        [Overhead Height (mm)],
+        [Pit Depth (mm)]
+    )
+) tt;
+==================================================================================================================
+SELECT iTransId, Val, Type 
+FROM (
+    SELECT 
+        a.iTransId,
+        CAST(b.sName AS NVARCHAR(255)) AS [Cabin Width(Mm)], 
+        CAST(c.sName AS NVARCHAR(255)) AS [Cabin Depth(Mm)], 
+        CAST(d.sName AS NVARCHAR(255)) AS [Cabin Height(mm)], 
+        CAST(e.sName AS NVARCHAR(255)) AS [Cabin Design Model], 
+        CAST(f.sName AS NVARCHAR(255)) AS [RH Side Panel Finish], 
+        CAST(g.sName AS NVARCHAR(255)) AS [LH Side Panel Finish], 
+        CAST(h.sName AS NVARCHAR(255)) AS [Rear Side Panel Finish], 
+        CAST(i.sName AS NVARCHAR(255)) AS [Cabin Jamb Post Header Finish], 
+        CAST(j.sName AS NVARCHAR(255)) AS [False Ceiling Type], 
+        CAST(k.sName AS NVARCHAR(255)) AS [Flooring Type], 
+        CAST(a.LightingSelection AS NVARCHAR(255)) AS [Lighting Selection], 
+        CAST(l.sName AS NVARCHAR(255)) AS [Handrail], 
+        CAST(a.HandrailLocation AS NVARCHAR(255)) AS [Handrail Location] 
+    FROM vuCrm_Quote_CabinDetails_Details a WITH (NOLOCK)
+    LEFT JOIN vCore_CabinWidthMm b WITH (NOLOCK) ON a.CabinWidth = b.iMasterId
+    LEFT JOIN vCore_CabinDepthMm c WITH (NOLOCK) ON a.CabinDepthMm = c.iMasterId
+    LEFT JOIN vCore_SpecificationMaster d WITH (NOLOCK) ON a.CabinHeightmm = d.iMasterId
+    LEFT JOIN vCore_SpecificationMaster e WITH (NOLOCK) ON a.CabinDesignModel = e.iMasterId
+    LEFT JOIN vCore_SpecificationMaster f WITH (NOLOCK) ON a.RHSidePanelFinish = f.iMasterId
+    LEFT JOIN vCore_SpecificationMaster g WITH (NOLOCK) ON a.LHSidePanelFinish = g.iMasterId
+    LEFT JOIN vCore_SpecificationMaster h WITH (NOLOCK) ON a.RearsidePanelFinish = h.iMasterId
+    LEFT JOIN vCore_SpecificationMaster i WITH (NOLOCK) ON a.CabinJambPostHeaderFinish = i.iMasterId
+    LEFT JOIN vCore_SpecificationMaster j WITH (NOLOCK) ON a.FalseCeilingType = j.iMasterId
+    LEFT JOIN vCore_SpecificationMaster k WITH (NOLOCK) ON a.FlooringType = k.iMasterId
+    LEFT JOIN vCore_SpecificationMaster l WITH (NOLOCK) ON a.Handrail = l.iMasterId
+    WHERE a.iTransId = 90
+) t
+UNPIVOT (
+    Val FOR Type IN (
+        [Cabin Width(Mm)], [Cabin Depth(Mm)], [Cabin Height(mm)], 
+        [Cabin Design Model], [RH Side Panel Finish], [LH Side Panel Finish], 
+        [Rear Side Panel Finish], [Cabin Jamb Post Header Finish], 
+        [False Ceiling Type], [Flooring Type], [Lighting Selection], 
+        [Handrail], [Handrail Location]
+    )
+) tt
+===========================================================================================
+SELECT iTransId, Val, Type
+FROM (
+    SELECT iTransId,
+           CAST(a.Finish AS nvarchar(max)) AS Finish,
+           CAST(a.Colour AS nvarchar(max)) AS Colour,
+           CAST(a.TypeofOpening AS nvarchar(max)) AS [Type of Opening],
+           STRING_AGG(CAST(c.sName AS nvarchar(max)), ',') AS [Door Width Front Side (mm)],
+           STRING_AGG(CAST(e.sName AS nvarchar(max)), ',') AS [Door Height Front Side (mm)],
+           STRING_AGG(CAST(g.sName AS nvarchar(max)), ',') AS [Type of door On Front Side] 
+    FROM vuCrm_Quote_CarDoorDetails_Details a with(nolock)
+    LEFT JOIN mCore_SpecificationMaster_MultiValues b with(nolock) on a.iDoorWidthFrontSidemm = b.iMultiId
+    LEFT JOIN vCore_SpecificationMaster c with(nolock) on b.iMasterId = c.iMasterId
+    LEFT JOIN mCore_SpecificationMaster_MultiValues d with(nolock) on a.iDoorHeightFrontSidemm = d.iMultiId
+    LEFT JOIN vCore_SpecificationMaster e with(nolock) on d.iMasterId = e.iMasterId
+    LEFT JOIN mCore_SpecificationMaster_MultiValues f with(nolock) on a.TypeofdoorOnFrontSide = f.iMultiId
+    LEFT JOIN vCore_SpecificationMaster g with(nolock) on f.iMasterId = g.iMasterId
+    WHERE a.iTransId = 90
+    GROUP BY a.iTransId, a.Finish, a.Colour, a.TypeofOpening
+) AS t
+UNPIVOT (
+    Val FOR Type IN (
+        [Type of door On Front Side],
+        Finish,
+        Colour,
+        [Type of Opening],
+        [Door Width Front Side (mm)],
+        [Door Height Front Side (mm)]
+    )
+) AS tt
+===============================================================================
+select iTransId,Val,Type from
+(
+select iTransId,
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',AutomaticRescueDevice) [Automatic Rescue Device],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',VoiceAnnouncementSystem) [Voice Announcement System],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',EmergencyLightAlarm) [Emergency Light Alarm],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',CarenergysavingAutoFanlightOff) [Carenergy saving Auto Fan lightOff],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',AutoFloorleveling) [Auto Floor leveling],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',DoubleCallCancellation) [Double Call Cancellation],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',VVVFDrivecontrolEmergencyFiremanoperation) [VVVF Drive control Emergency Fireman operation],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',OverSpeedGovernor) [Over Speed Governor],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',AttendantServiceMode) [Attendant Service Mode],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',DirectLanding) [Direct Landing],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',AutoPhaseProtection) [Auto Phase Protection],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',AutoParkingfunction) [Auto Parking function],
+	   dbo.fCrm_GetNumberListValue('1,Yes,2,No',Dooropentimesetting) [Door open time setting]
+from vuCrm_Quote_StandardFeatures_Details with(nolock)
+where iTransId=90
+)t
+unpivot
+(
+Val for Type in ([Automatic Rescue Device],[Voice Announcement System],[Emergency Light Alarm],[Carenergy saving Auto Fan lightOff],[Auto Floor leveling],[Double Call Cancellation],[VVVF Drive control Emergency Fireman operation],[Over Speed Governor],[Attendant Service Mode],[Direct Landing],[Auto Phase Protection],[Auto Parking function],[Door open time setting])
+)tt
+================================================================================================================
+select iTransId,Type,Val from
+(
+select iTransId,
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',OverloadProtectionDevice) [Over load Protection Device],
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',iIntercom) [Intercom], 
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',VoiceAnnouncementSystemwithcustomizedmusic) [Voice Announcement System with customized music], 
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',OverloadProtectionDevice) [Full load call bypass], 
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',OverloadProtectionDevice) [CCTV Provision], 
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',OverloadProtectionDevice) [Access Control System], 
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',OverloadProtectionDevice) [Always Connected], 
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',OverloadProtectionDevice) [Remonsys], 
+       dbo.fCrm_GetNumberListValue('1,Yes,2,No',OverloadProtectionDevice) [Customer Inspection]
+	   from vuCrm_Quote_OptionalFeatures_Details with(nolock)
+where iTransId=90
+)t
+unpivot
+(
+Val for Type in([Over load Protection Device],[Intercom],[Voice Announcement System with customized music],[Full load call bypass],[CCTV Provision],[Access Control System],[Always Connected],[Remonsys],[Customer Inspection])
+)tt
+===================================================================================================
+SELECT iTransId, Val, Type
+FROM (
+    SELECT 
+        iTransId,
+        CAST(dbo.fCrm_GetNumberListValue('1,Yes,2,No', AfterWarrantyMaintenancePeriodRequired) AS NVARCHAR(MAX)) AS [After Warranty Maintenance Period Required],
+        CAST(ExtraMaintenancePeriodType AS NVARCHAR(MAX)) AS [Extra Maintenance Period Type],
+        CAST(ExtraMaintenancePeriodDurationInYears AS NVARCHAR(MAX)) AS [Extra Maintenance Period Duration In Years]
+    FROM vuCrm_Quote_MaintenancePeriod_Details WITH (NOLOCK)
+    WHERE iTransId = 90
+) t
+UNPIVOT (
+    Val FOR Type IN ([After Warranty Maintenance Period Required], [Extra Maintenance Period Type], [Extra Maintenance Period Duration In Years])
+) tt;
+=============================================================================================

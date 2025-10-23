@@ -1,0 +1,24 @@
+
+
+
+create  function  [dbo].[udf_ProdBalQtyWH](@iDate int,@iProd int) returns float
+AS
+begin
+return(
+	SELECT sum( fQuantityInBase )	 
+		FROM tCore_Header_0 a WITH (READUNCOMMITTED)
+		JOIN tCore_Data_0 b WITH (READUNCOMMITTED)
+		  ON a.iHeaderId = b.iHeaderId
+		JOIN tCore_Indta_0 c WITH (READUNCOMMITTED)
+		  ON b.iBodyId = c.iBodyId
+		WHERE bUpdateStocks = 1
+		AND bSuspended = 0
+		AND iAuthStatus < 2
+		AND bSuspendUpdateStocks = 0
+		and a.idate <= @iDate
+		and c.iProduct = @iProd
+)
+			
+end
+
+

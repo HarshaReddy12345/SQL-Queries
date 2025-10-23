@@ -1,0 +1,157 @@
+CREATE VIEW nCore_Invoice as
+
+Select mCore_Invoice.iMasterId,  mCore_Invoice.iCreatedBy as iCreatedBy  , iCreatedBy.sUserName as iCreatedByName ,  mCore_Invoice.iModifiedBy as iModifiedBy  , iModifiedBy.sUserName as iModifiedByName , Case when mCore_Invoice.iCreatedDate is null or mCore_Invoice.iCreatedDate=0 then null else dbo.fCore_IntToDateTime(mCore_Invoice.iCreatedDate) end iCreatedDate  , Case when mCore_Invoice.iModifiedDate is null or mCore_Invoice.iModifiedDate=0 then null else dbo.fCore_IntToDateTime(mCore_Invoice.iModifiedDate) end iModifiedDate  ,  mCore_Invoice.iLocationId as iLocationId  ,  mCore_Invoice.bEditedFrom as bEditedFrom  ,  mCore_Invoice.iClosingDate as iClosingDate  ,  mCore_Invoice.bAllowOtherCompaniesToViewRecord as bAllowOtherCompaniesToViewRecord  , Case when mCore_Invoice.iSyncReceivedDate is null or mCore_Invoice.iSyncReceivedDate=0 then null else dbo.fCore_IntToDateTime(mCore_Invoice.iSyncReceivedDate) end iSyncReceivedDate  ,  mCore_Invoice.iEditingLocation as iEditingLocation  ,  mCore_Invoice.sName as sName  ,  mCore_Invoice.sCode as sCode  ,  mCore_Invoice.bGroup as bGroup  ,  mCore_Invoice.iStatus as iStatus  ,  mCore_Invoice.bDoNotRestrict as bDoNotRestrict  , Case when muCore_Invoice.DocumentDate is null or muCore_Invoice.DocumentDate=0 then null else  dbo.IntToDate(muCore_Invoice.DocumentDate) end DocumentDate  ,  muCore_Invoice.NoofHours as NoofHours  ,  muCore_Invoice.Engine2NoofHours as Engine2NoofHours  , 
+muCore_Invoice.Month as Month  ,  muCore_Invoice.Year as Year  ,  muCore_Invoice.TotalBillAmount as TotalBillAmount  , 
+muCore_Invoice.Invoicereceivedamount as Invoicereceivedamount  ,  muCore_Invoice.CivilID as CivilID  , 
+muCore_Invoice.VINNumber as VINNumber  ,  muCore_Invoice.Engine1 as Engine1  ,  muCore_Invoice.Engine2 as Engine2  , 
+muCore_Invoice.EngineSrNo1 as EngineSrNo1  ,  muCore_Invoice.EngineSrNo2 as EngineSrNo2  , 
+muCore_Invoice.Photos1 as Photos1  ,  muCore_Invoice.Photos1Name as Photos1Name  ,
+muCore_Invoice.Photos2 as Photos2  ,  muCore_Invoice.Photos2Name as Photos2Name  ,
+muCore_Invoice.Descriptions as Descriptions  ,  muCore_Invoice.ManualJobCardNo as ManualJobCardNo  , 
+muCore_Invoice.PriceDiscount as PriceDiscount  ,  muCore_Invoice.ServiceDiscount as ServiceDiscount  ,
+muCore_Invoice.AfterPartsDiscount as AfterPartsDiscount  ,  muCore_Invoice.AfterServiceDiscount as AfterServiceDiscount  , 
+muCore_Invoice.NetDiscount as NetDiscount  ,  muCore_Invoice.CustomerID as CustomerID  , 
+Case when muCore_Invoice.iApprovalDate is null or muCore_Invoice.iApprovalDate=0 then null else dbo.fCore_IntToDateTime(muCore_Invoice.iApprovalDate) end iApprovalDate  ,  muCore_Invoice.bRead as bRead  , Case when muCore_Invoice.iAssignedDate is null or muCore_Invoice.iAssignedDate=0 then null else dbo.fCore_IntToDateTime(muCore_Invoice.iAssignedDate) end iAssignedDate  ,  muCore_Invoice.TotalServiceAmount as TotalServiceAmount  ,  muCore_Invoice.TotalTechnicianAmount as TotalTechnicianAmount  ,  muCore_Invoice.TotalMaterialAmount as TotalMaterialAmount  ,  muCore_Invoice.TotalValue as TotalValue  ,  muCore_Invoice.TotalDiscountPercentage as TotalDiscountPercentage  ,  muCore_Invoice.TotalDiscountAmount as TotalDiscountAmount  ,muCore_Invoice.CashCustomerMaster as CashCustomerMaster  , CashCustomerMaster.sName as CashCustomerMasterName ,  muCore_Invoice.DepartmentMaster as DepartmentMaster  , DepartmentMaster.sName as DepartmentMasterName ,  muCore_Invoice.Warehouse as Warehouse  , Warehouse.sName as WarehouseName ,  muCore_Invoice.iLocation as iLocation  , iLocation.sName as iLocationName ,  muCore_Invoice.iApprovalStatus as iApprovalStatus  , iApprovalStatus.sName as iApprovalStatusName ,  muCore_Invoice.iApprovedBy as iApprovedBy  , iApprovedBy.sName as iApprovedByName ,  muCore_Invoice.iAssignedTo as iAssignedTo  , iAssignedTo.sName as iAssignedToName ,  muCore_Invoice.iNextToApprove as iNextToApprove  , iNextToApprove.sName as iNextToApproveName ,  muCore_Invoice.JobCardNo as JobCardNo  , JobCardNo.sName as JobCardNoName ,  muCore_Invoice.EstimationNo as EstimationNo  , EstimationNo.sName as EstimationNoName ,  muCore_Invoice.JobCardIssueNo as JobCardIssueNo  , JobCardIssueNo.sName as JobCardIssueNoName ,  muCore_Invoice.ProformaInvoiceNo as ProformaInvoiceNo  , ProformaInvoiceNo.sName as ProformaInvoiceNoName ,  muCore_Invoice.Vehicle as Vehicle  , Vehicle.sName as VehicleName ,  muCore_Invoice.SalesmanMaster as SalesmanMaster  , SalesmanMaster.sName as SalesmanMasterName ,  
+muCore_Invoice.VehicleBrand as VehicleBrand  , VehicleBrand.sName as VehicleBrandName ,mCore_InvoiceTreeDetails.iParentId  ,
+mCore_InvoiceTreeDetails.iSequence ,mCore_InvoiceTreeDetails.iLevel ,mCore_InvoiceTreeDetails.iTreeId ,
+mCore_Invoice.iAuthStatus iAuthStatus  ,p.sCode as ProductCode,ProductDescription,Quantity1 as Quantity,
+Rate1 as Rate,Gross1 as Gross,u.sName as UOM,jcd.sName as JobType
+
+from mCore_Invoice WITH(NOLOCK ReadUnCommitted)  LEFT JOIN mSec_Users as iCreatedBy WITH(NOLOCK ReadUnCommitted) on mCore_Invoice.iCreatedBy =iCreatedBy.iUserId  LEFT JOIN mSec_Users as iModifiedBy WITH(NOLOCK ReadUnCommitted) on mCore_Invoice.iModifiedBy =iModifiedBy.iUserId  LEFT JOIN muCore_Invoice WITH(NOLOCK ReadUnCommitted) on mCore_Invoice.iMasterId=muCore_Invoice.iMasterId LEFT JOIN mCore_Account as CashCustomerMaster WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.CashCustomerMaster =CashCustomerMaster.iMasterId  LEFT JOIN mCore_Department as DepartmentMaster WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.DepartmentMaster =DepartmentMaster.iMasterId  
+LEFT JOIN mCore_Location as Warehouse WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.Warehouse =Warehouse.iMasterId  
+LEFT JOIN mCore_Location as iLocation WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.iLocation =iLocation.iMasterId  
+LEFT JOIN vCrm_QuoteApprovalStatus as iApprovalStatus WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.iApprovalStatus =iApprovalStatus.iTransId  LEFT JOIN vCrm_Users as iApprovedBy WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.iApprovedBy =iApprovedBy.iMasterId  LEFT JOIN vCrm_Users as iAssignedTo WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.iAssignedTo =iAssignedTo.iMasterId  LEFT JOIN vCrm_Users as iNextToApprove WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.iNextToApprove =iNextToApprove.iMasterId  LEFT JOIN mCore_JobCard as JobCardNo WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.JobCardNo =JobCardNo.iMasterId  LEFT JOIN mCore_Estimation as EstimationNo WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.EstimationNo =EstimationNo.iMasterId  LEFT JOIN mCore_JobCardIssues as JobCardIssueNo WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.JobCardIssueNo =JobCardIssueNo.iMasterId  LEFT JOIN mCore_PerformaInvoice as ProformaInvoiceNo WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.ProformaInvoiceNo =ProformaInvoiceNo.iMasterId  LEFT JOIN mCore_Vehicle as Vehicle WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.Vehicle =Vehicle.iMasterId  LEFT JOIN mCore_SalesmanMaster as SalesmanMaster WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.SalesmanMaster =SalesmanMaster.iMasterId  LEFT JOIN mCore_VehicleBrand as VehicleBrand WITH(NOLOCK ReadUnCommitted) on muCore_Invoice.VehicleBrand =VehicleBrand.iMasterId  inner JOIN mCore_InvoiceTreeDetails WITH(NOLOCK ReadUnCommitted) on mCore_Invoice.iMasterId=mCore_InvoiceTreeDetails.iMasterId  
+
+left join muCore_Invoice_ServiceGrid_Details ipd WITH(NOLOCK ReadUnCommitted) on ipd.iMasterId=mCore_Invoice.iMasterId
+left join mCore_Product p WITH(NOLOCK ReadUnCommitted) on p.iMasterId=ProductCode 
+left join mCore_Units u WITH(NOLOCK ReadUnCommitted) on u.iMasterId=ipd.UOM
+left join vmCore_JobType jcd WITH(NOLOCK ReadUnCommitted) on jcd.iMasterId=PartsJobType
+Where mCore_Invoice.iStatus <5
+and mCore_Invoice.iMasterId>0
+
+go
+
+  Create View nCore_InvoiceDetails as
+Select mCore_Invoice.iMasterId,p.sCode as ProductCode,p.sName as Description,ipd.Quantity as Quantity,  
+ipd.Rate as Rate,ipd.Gross as Gross,u.sName as UOM,Discount,DiscountAmount,NetAmount   
+  
+from mCore_Invoice  with(nolock)  
+left join muCore_Invoice_ProductGrid_Details ipd with(nolock) on ipd.iMasterId=mCore_Invoice.iMasterId  
+left join mCore_Product p with(nolock) on p.iMasterId=ipd.ItemCode   
+left join mCore_Units u with(nolock) on u.iMasterId=ipd.UnitType  
+  
+Where mCore_Invoice.iStatus <5  
+and mCore_Invoice.iMasterId>0   
+  
+  go
+  
+    
+CREATE View nCore_JobCardIssueDetails as  
+Select mCore_JobCardIssues.iMasterId,p.sCode as ProductCode,p.sName as Description,ipd.Quantity as Quantity,  
+ipd.Rate as Rate,ipd.Gross as Gross,u.sName as UOM,Discount,DiscountAmount,NetAmount   
+  
+from mCore_JobCardIssues  WITH(NOLOCK ReadUnCommitted)    
+left join muCore_JobCardIssues_Product_Details ipd WITH(NOLOCK ReadUnCommitted)    on ipd.iMasterId=mCore_JobCardIssues.iMasterId  
+left join mCore_Product p WITH(NOLOCK ReadUnCommitted)    on p.iMasterId=ipd.ItemCode   
+left join mCore_Units  u WITH(NOLOCK ReadUnCommitted)   on u.iMasterId=ipd.UnitType  
+  
+Where mCore_JobCardIssues.iStatus <5  
+and mCore_JobCardIssues.iMasterId>0 
+
+go
+
+CREATE View [dbo].[nCore_JobCardIssue] as  
+Select top 100 percent mCore_JobCardIssues.iMasterId,  mCore_JobCardIssues.sName as sName  ,    
+mCore_JobCardIssues.sCode as sCode  ,  mCore_JobCardIssues.bGroup as bGroup  ,    
+mCore_JobCardIssues.iStatus as iStatus  ,  mCore_JobCardIssues.bDoNotRestrict as bDoNotRestrict  ,    
+mCore_JobCardIssues.iCreatedBy as iCreatedBy  , iCreatedBy.sUserName as iCreatedByName ,    
+mCore_JobCardIssues.iModifiedBy as iModifiedBy  , iModifiedBy.sUserName as iModifiedByName ,   
+Case when mCore_JobCardIssues.iCreatedDate is null or mCore_JobCardIssues.iCreatedDate=0 then null   
+else dbo.fCore_IntToDateTime(mCore_JobCardIssues.iCreatedDate) end iCreatedDate  ,  
+Case when mCore_JobCardIssues.iModifiedDate is null or mCore_JobCardIssues.iModifiedDate=0 then null   
+else dbo.fCore_IntToDateTime(mCore_JobCardIssues.iModifiedDate) end iModifiedDate  ,    
+mCore_JobCardIssues.iLocationId as iLocationId  ,  mCore_JobCardIssues.bEditedFrom as bEditedFrom  ,   
+mCore_JobCardIssues.iClosingDate as iClosingDate  ,    
+mCore_JobCardIssues.bAllowOtherCompaniesToViewRecord as bAllowOtherCompaniesToViewRecord  ,   
+Case when mCore_JobCardIssues.iSyncReceivedDate is null or mCore_JobCardIssues.iSyncReceivedDate=0 then null   
+else dbo.fCore_IntToDateTime(mCore_JobCardIssues.iSyncReceivedDate) end iSyncReceivedDate  ,    
+mCore_JobCardIssues.iEditingLocation as iEditingLocation  , Case when muCore_JobCardIssues.iApprovalDate is null   
+or muCore_JobCardIssues.iApprovalDate=0 then null   
+else dbo.fCore_IntToDateTime(muCore_JobCardIssues.iApprovalDate) end iApprovalDate  ,    
+muCore_JobCardIssues.bRead as bRead  , Case when muCore_JobCardIssues.iAssignedDate is null or   
+muCore_JobCardIssues.iAssignedDate=0 then null   
+else dbo.fCore_IntToDateTime(muCore_JobCardIssues.iAssignedDate) end iAssignedDate  ,   
+Case when muCore_JobCardIssues.DocumentDate is null or muCore_JobCardIssues.DocumentDate=0 then null   
+else  dbo.IntToDate(muCore_JobCardIssues.DocumentDate) end DocumentDate  ,   
+muCore_JobCardIssues.VehicleYear as VehicleYear  ,  muCore_JobCardIssues.HoursRun as HoursRun  ,   
+muCore_JobCardIssues.KilometersRun as KilometersRun  ,  muCore_JobCardIssues.NoofCylinder as NoofCylinder  ,  
+muCore_JobCardIssues.VINNumber as VINNumber  ,  muCore_JobCardIssues.Engine1 as Engine1  ,   
+muCore_JobCardIssues.Engine2 as Engine2  ,  muCore_JobCardIssues.EngineSrNo1 as EngineSrNo1  ,   
+muCore_JobCardIssues.EngineSrNo2 as EngineSrNo2  ,  muCore_JobCardIssues.Photos1 as Photos1  ,   
+muCore_JobCardIssues.Photos2 as Photos2  ,  muCore_JobCardIssues.CivilID as CivilID  ,  
+muCore_JobCardIssues.Month as Month  ,  muCore_JobCardIssues.Year as Year  ,   
+muCore_JobCardIssues.ManualJobCardNo as ManualJobCardNo  ,  muCore_JobCardIssues.Descriptions as Descriptions  ,    
+muCore_JobCardIssues.Status as Status  ,   
+Case muCore_JobCardIssues.Status when 1 then 'New' when 2 then 'Customer confirmation'   
+when 3 then 'Technician Assigned' when 4 then 'On-Hold' when 5 then 'Completed' when 6 then 'Un Assigned'   
+when 7 then 'Cancelled' else '' end StatusName ,  muCore_JobCardIssues.TotalServiceAmount as TotalServiceAmount  ,    
+muCore_JobCardIssues.TotalTechnicianAmount as TotalTechnicianAmount  ,    
+muCore_JobCardIssues.TotalMaterialAmount as TotalMaterialAmount  ,  muCore_JobCardIssues.TotalValue as TotalValue  ,   
+muCore_JobCardIssues.LeftRemarks as LeftRemarks  ,  muCore_JobCardIssues.RightRemarks as RightRemarks  ,   
+muCore_JobCardIssues.Front as Front  ,  muCore_JobCardIssues.BackRemarks as BackRemarks  ,    
+muCore_JobCardIssues.TopRemarks as TopRemarks  ,  muCore_JobCardIssues.BottomSideRemarks as BottomSideRemarks  ,   
+muCore_JobCardIssues.NoofHours as NoofHours  ,  muCore_JobCardIssues.Engine2NoofHours as Engine2NoofHours  ,  
+muCore_JobCardIssues.CashCustomerMaster as CashCustomerMaster  , CashCustomerMaster.sName as CashCustomerMasterName ,   
+muCore_JobCardIssues.DepartmentMaster as DepartmentMaster  , DepartmentMaster.sName as DepartmentMasterName ,   
+muCore_JobCardIssues.iLocation as iLocation  , iLocation.sName as iLocationName ,   
+muCore_JobCardIssues.iApprovalStatus as iApprovalStatus  , iApprovalStatus.sName as iApprovalStatusName ,    
+muCore_JobCardIssues.iApprovedBy as iApprovedBy  , iApprovedBy.sName as iApprovedByName ,    
+muCore_JobCardIssues.iAssignedTo as iAssignedTo  , iAssignedTo.sName as iAssignedToName ,    
+muCore_JobCardIssues.iNextToApprove as iNextToApprove  , iNextToApprove.sName as iNextToApproveName ,    
+muCore_JobCardIssues.JobCardNo as JobCardNo  , JobCardNo.sName as JobCardNoName ,   
+muCore_JobCardIssues.EstimationNo as EstimationNo  , EstimationNo.sName as EstimationNoName ,    
+muCore_JobCardIssues.Materialrequest as Materialrequest  , Materialrequest.sName as MaterialrequestName ,   
+muCore_JobCardIssues.Vehicle as Vehicle  , Vehicle.sName as VehicleName ,   
+muCore_JobCardIssues.SalesmanMaster as SalesmanMaster  , SalesmanMaster.sName as SalesmanMasterName ,   
+muCore_JobCardIssues.VehicleType as VehicleType  , VehicleType.sName as VehicleTypeName ,    
+muCore_JobCardIssues.VehicleBrand as VehicleBrand  , VehicleBrand.sName as VehicleBrandName ,  
+mCore_JobCardIssuesTreeDetails.iParentId  ,mCore_JobCardIssuesTreeDetails.iSequence ,  
+mCore_JobCardIssuesTreeDetails.iLevel ,mCore_JobCardIssuesTreeDetails.iTreeId ,mCore_JobCardIssues.iAuthStatus iAuthStatus  ,  
+p.sCode as ProductCode,ProductDescription Description,jpd.Quantity1 as Quantity,  
+jpd.Rate1 as Rate,jpd.Gross1 as Gross,jcd.sName as JobType ,iRowIndex+1 as SlNo  
+from mCore_JobCardIssues WITH(NOLOCK ReadUnCommitted)    
+LEFT JOIN mSec_Users as iCreatedBy WITH(NOLOCK ReadUnCommitted) on mCore_JobCardIssues.iCreatedBy =iCreatedBy.iUserId    
+LEFT JOIN mSec_Users as iModifiedBy WITH(NOLOCK ReadUnCommitted) on mCore_JobCardIssues.iModifiedBy =iModifiedBy.iUserId    
+LEFT JOIN muCore_JobCardIssues WITH(NOLOCK ReadUnCommitted) on mCore_JobCardIssues.iMasterId=muCore_JobCardIssues.iMasterId   
+left join muCore_JobCardIssues_ProductInformation_Details jpd with(nolock) on jpd.iMasterId=mCore_JobCardIssues.iMasterId   
+inner join mCore_Product p with(nolock) on p.iMasterId=jpd.ProductCode  
+  
+LEFT JOIN mCore_Account as CashCustomerMaster WITH(NOLOCK ReadUnCommitted)   
+on muCore_JobCardIssues.CashCustomerMaster =CashCustomerMaster.iMasterId    
+LEFT JOIN mCore_Department as DepartmentMaster WITH(NOLOCK ReadUnCommitted) on   
+muCore_JobCardIssues.DepartmentMaster =DepartmentMaster.iMasterId    
+LEFT JOIN mCore_Location as iLocation WITH(NOLOCK ReadUnCommitted) on muCore_JobCardIssues.iLocation =iLocation.iMasterId    
+LEFT JOIN vCrm_QuoteApprovalStatus as iApprovalStatus WITH(NOLOCK ReadUnCommitted)   
+on muCore_JobCardIssues.iApprovalStatus =iApprovalStatus.iTransId    
+LEFT JOIN vCrm_Users as iApprovedBy WITH(NOLOCK ReadUnCommitted) on muCore_JobCardIssues.iApprovedBy =iApprovedBy.iMasterId    
+LEFT JOIN vCrm_Users as iAssignedTo WITH(NOLOCK ReadUnCommitted) on muCore_JobCardIssues.iAssignedTo =iAssignedTo.iMasterId    
+LEFT JOIN vCrm_Users as iNextToApprove WITH(NOLOCK ReadUnCommitted) on   
+muCore_JobCardIssues.iNextToApprove =iNextToApprove.iMasterId    
+LEFT JOIN mCore_JobCard as JobCardNo WITH(NOLOCK ReadUnCommitted) on muCore_JobCardIssues.JobCardNo =JobCardNo.iMasterId    
+LEFT JOIN mCore_Estimation as EstimationNo WITH(NOLOCK ReadUnCommitted) on   
+muCore_JobCardIssues.EstimationNo =EstimationNo.iMasterId    
+LEFT JOIN mCore_MaterialRequest as Materialrequest WITH(NOLOCK ReadUnCommitted) on   
+muCore_JobCardIssues.Materialrequest =Materialrequest.iMasterId    
+LEFT JOIN mCore_Vehicle as Vehicle WITH(NOLOCK ReadUnCommitted) on muCore_JobCardIssues.Vehicle =Vehicle.iMasterId    
+LEFT JOIN mCore_SalesmanMaster as SalesmanMaster WITH(NOLOCK ReadUnCommitted) on   
+muCore_JobCardIssues.SalesmanMaster =SalesmanMaster.iMasterId    
+LEFT JOIN mCore_VehicleType as VehicleType WITH(NOLOCK ReadUnCommitted)   
+on muCore_JobCardIssues.VehicleType =VehicleType.iMasterId    
+LEFT JOIN mCore_VehicleBrand as VehicleBrand WITH(NOLOCK ReadUnCommitted) on   
+muCore_JobCardIssues.VehicleBrand =VehicleBrand.iMasterId    
+inner JOIN mCore_JobCardIssuesTreeDetails WITH(NOLOCK ReadUnCommitted)   
+on mCore_JobCardIssues.iMasterId=mCore_JobCardIssuesTreeDetails.iMasterId    
+left join vmCore_JobType jcd with(nolock) on jcd.iMasterId=PartsJobType  
+Where mCore_JobCardIssues.iStatus <5  
+and mCore_JobCardIssues.iMasterId>0
+order by iRowIndex,PartsJobType  

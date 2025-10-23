@@ -1,0 +1,55 @@
+select a.iTransId,
+  em.sName [SalesExecutiveName],
+  a.sName,
+  vi.sName [Influencer],
+  dd.sName [Designer],
+  ac.sName [CustomerName],
+  ac.sPhone,
+  ac.sBillingPinCode,
+  a.Email,
+  a.[Address],
+  ar.sName [Area],
+  ci.sName [City],a.CityNew,a.PinCode,a.Statenew,
+  ss.sName [state],
+  a.sDescription [Feedback],
+  vl.sName[branch],
+  a.GSTIN,
+  ac.sShippingAddress [shipping Address],
+  cc.sName [Project],
+  a.ProjectShippingAddress,
+  dbo.fCore_IntToDate(a.QuoteDate) quotedate,
+  a.Mobile,
+  tt.sName [Tailor],
+  us.sMobile [MobileNo_branch],
+  us.sAddress [Address_branch],
+  vl.sName [Location_branch],vl.sAddress [Loc Address],
+  FORMAT(dbo.fCore_IntToDate(a.iExpiryDate),'dd/MM/yyyy') [Expiry Date],
+  CONCAT('C:\apache-tomcat-9.0.12_J8\webapps\streamline\WEB-INF\user-resource\Documents\0E0\',iModuleTypeId,'_',iDocumentId,'_',sFileName) sImageUrl,usr.sName [Auth Name]
+
+from
+  vCrm_Quote a
+  left join vCore_EmployeeMaster em on a.ExecutiveNameNew = em.iMasterId
+  left join vCore_Influencer vi on a.Influencer = vi.iMasterId
+  left join vCore_Designer dd on a.Designer = dd.iMasterId
+  left join vCore_Account ac on a.CustomerName = ac.iMasterId
+  left join vCore_Location vl on a.iLocationId = vl.iMasterId
+  left join vCrm_Contacts cc on a.Project=cc.iMasterId
+  left join vCore_Tailor tt on a.Tailor=tt.iMasterId
+  left join vCore_Area ar on a.Area=ar.iMasterId
+  left join vCore_City ci on a.City=ci.iMasterId
+  left join vCore_State ss on  a.State=ss.iMasterId
+  left join vCrm_Users us on a.iAssignedTo=us.iMasterId
+  left join vCrm_Approvals ap on a.iTransId=ap.iTransId
+    left join vCrm_Users usr on ap.iModifiedBy=usr.iMasterId
+  LEFT JOIN (SELECT
+  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,
+  iModuleTypeId,
+  iDocumentId,
+  sFileName,
+  iRelatedTo,
+  iIndex
+FROM vCrm_Documents WITH (NOLOCK)
+WHERE iModuleTypeId = 2312
+AND iFieldId = 306393) Docs
+  ON Docs.iRelatedTo = vl.iMasterId
+  where a.iTransId>0 and a.iTransId=11631

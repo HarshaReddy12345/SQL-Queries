@@ -1,0 +1,31 @@
+ALTER procedure [dbo].[UpdateOwnerInOpportunity] (@iTransId bigint,@UserId int,@sStatusMsg varchar(200) output)  
+as  
+begin  
+    select @iTransId = dbo.fCrm_IntToAPITransId(@iTransId,0);  
+ declare @LeadId int  
+    if(@iTransId>0)  
+    Begin  
+	--select @UserId=iAssignedTo from vCore_FORSAOpportunity where iMasterId=@iTransId
+	  set @LeadId=ISNULL((select Leads from vCore_FORSAOpportunity with(nolock) where iMasterId=@iTransId),0)  
+      if exists(select * from vCore_FORSAOpportunity with(nolock) where iMasterId=@iTransId and iApprovalStatus=115) 
+	  Begin  
+   update muCore_FORSAOpportunity set iAssignedTo=@UserId where iMasterId=@iTransId  
+   --update tCrm_CampaignLeads set iAssignedTo=@UserId where iLeadId=@LeadId  
+   exec dbo.udp_AS_logPickAndRelease @iTransId,@UserId,3  
+   set @sStatusMsg='The FORSA Opportunity is Successfully Picked'  
+   return 1  
+     
+  End  
+  else  
+  Begin  
+   set @sStatusMsg='FORSA Opportunity Failed because the Lead is already assigned to Someone'  
+   return -1  
+  end  
+	 End  
+End
+
+update vCore_FORSAOpportunity set iAssignedTo=8 where sName='FO-00005'
+
+--select * from vCore_FORSAOpportunity
+
+

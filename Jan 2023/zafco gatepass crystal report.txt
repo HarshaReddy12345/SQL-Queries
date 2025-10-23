@@ -1,0 +1,41 @@
+select tCrm_Calls.iTransId,
+	vCore_Account.sName[Account],
+	mCrm_Contacts .sName[ContactName],
+	tuCrm_Calls.Mobile,
+	vCore_Account.TRNNo,
+	vCore_VehicleMake.sName [Vehicle Make],
+	vCore_VehicleModel.sName [VehicleModel],
+	vCore_YearMake.sName [VehicleYearModel],
+	tuCrm_Calls.ChassisNo,
+	tuCrm_Calls.Odometer [Mileagein],
+	tuCrm_Calls.MileageOut,
+	tCrm_CustAssets.sName[PlateName],
+	format(dbo.fCore_IntToDate(tuCrm_Calls.JCDate),'dd/MM/yyyy') [Date],
+	tCrm_Calls.sName [JobCard No],
+	vCrm_ResourceMaster.sName [ServiceAdvisor],
+	vCrm_Entitymaster.sName [Entity],
+	tCrm_Calls.sDescription,
+	tuCrm_Calls.GrossTotal [Total (Incl. VAT)]
+from 
+     tCrm_Calls
+	inner join tuCrm_Calls WITH(NOLOCK) on tCrm_Calls.iTransId=tuCrm_Calls.iTransId
+left join mCore_Account  WITH(NOLOCK) on tCrm_Calls.iAccountId=mCore_Account.iMasterId
+left join muCore_Account  WITH(NOLOCK) on muCore_Account.iMasterId=mCore_Account.iMasterId
+left join vCore_Account  WITH(NOLOCK) on vCore_Account.iMasterId=tCrm_Calls.iAccountId
+left join mCrm_Contacts  WITH(NOLOCK) on mCrm_Contacts.iMasterId=tCrm_Calls.iContactId
+left join muCrm_Contacts ucon WITH(NOLOCK) on ucon.iMasterId=mCrm_Contacts.iMasterId
+left join vCore_VehicleMake WITH(NOLOCK)
+on tuCrm_Calls.VehicleMake=vCore_VehicleMake.iMasterId
+left join vCore_VehicleModel WITH(NOLOCK)
+on tuCrm_Calls.VehicleModel=vCore_VehicleModel.iMasterId
+left join vCore_YearMake WITH(NOLOCK)
+on tuCrm_Calls.VehicleYearModel=vCore_YearMake.iMasterId
+left join tCrm_CustAssets WITH(NOLOCK)
+on tCrm_Calls.iCustAssetId=tCrm_CustAssets.iTransId
+left join vCrm_ResourceMaster WITH(NOLOCK)
+on tuCrm_Calls.ServiceAdvisor=vCrm_ResourceMaster.iMasterId
+left join vCrm_Entitymaster  WITH(NOLOCK)
+on tuCrm_Calls.Entity=vCrm_Entitymaster.iMasterId
+where tuCrm_Calls.iTransId>0 and tCrm_Calls.iTransId={?iTransId}
+
+--select Mobile from tuCrm_Calls where sName='Link Connect Trading L.l.c'

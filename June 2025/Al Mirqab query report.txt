@@ -1,0 +1,120 @@
+ALTER VIEW nCore_PMSUnits as
+-- Step 1: Pre-aggregate Lease Contracts
+WITH LeaseContract AS (
+    SELECT 
+        b.iUnitId,
+        MAX(iLeaseStartDate) AS StartDate,
+        MAX(iLeaseEndDate) AS EndDate,
+        MAX(fRentPerMonth) AS fRentPerMonth,
+        MAX(a.fAmountJH) AS fAmountJH,
+        MAX(a.fRentPerPeriod) AS fRentPerPeriod,
+        MAX(b.Subtotal) AS Subtotal,
+        MAX(c.sName) AS [Account],
+        MAX(a.sName) AS [Contract No],
+        Property,
+        BuildingMasters
+    FROM tuCrm_PMSContract_MultiUnitDetails b WITH (NOLOCK)
+    JOIN vCrm_PMSContract a WITH (NOLOCK) ON a.iTransId = b.iTransId
+    JOIN vCore_Account c WITH (NOLOCK) ON a.iCustomerId = c.iMasterId
+    GROUP BY b.iUnitId, Property, BuildingMasters
+),
+Status162 AS (
+    SELECT iUnitId, MAX(iActualDate) AS ModDate
+    FROM tCrm_UnitStatusHistory WITH (NOLOCK)
+    WHERE iUnitStatus = 162
+    GROUP BY iUnitId
+),
+
+-- Step 3: Status 165 Dates
+Status165 AS (
+    SELECT iUnitId, MAX(iActualDate) AS ModDate
+    FROM tCrm_UnitStatusHistory WITH (NOLOCK)
+    WHERE iUnitStatus = 165
+    GROUP BY iUnitId
+),
+
+-- Step 4: Combine Units with latest date per unit
+UnitsWithRank AS (
+    SELECT 
+        a.iMasterId,
+        a.sName AS AsOnTheDoor,
+        ISNULL(a.NoofBedroomsNew, 0) AS NoofBedrooms,
+        a.fPrice,
+        a.iUnitStatus,
+        a.iCreatedDate,
+        b.sCode AS PropertyCode,
+        b.sName AS PropertyName,
+        c.sCode AS PropertyOwner,
+        d.sCode AS BuildingCode,
+        e.sName AS UnitType,
+        f.sName AS UnitStatus,
+        lc.fRentPerMonth,
+        lc.fAmountJH,
+        lc.fRentPerPeriod,
+        lc.Subtotal,
+        lc.[Account],
+        lc.[Contract No],
+        lc.StartDate,
+        st.ModDate AS Status162Date,
+        rn.ModDate AS Status165Date,
+
+        ROW_NUMBER() OVER (
+            PARTITION BY a.iMasterId
+            ORDER BY 
+                CASE 
+                    WHEN a.iUnitStatus = 162 AND st.ModDate IS NOT NULL THEN st.ModDate
+                    WHEN a.iUnitStatus = 165 AND rn.ModDate IS NOT NULL THEN rn.ModDate
+                    WHEN a.iUnitStatus = 163 AND lc.StartDate IS NOT NULL THEN lc.StartDate
+                    ELSE a.iCreatedDate
+                END DESC
+        ) AS rn,a.iModifiedDate,lc.iUnitId,b.iMasterId [PropertyId],d.iMasterId [BuildingId],a.iMasterId [UnitsId]
+    FROM vCrm_PMSUnits a WITH (NOLOCK)
+    JOIN vCrm_Property b WITH (NOLOCK) ON a.iPropertyId = b.iMasterId
+    JOIN vCore_Organization c WITH (NOLOCK) ON b.PropertyOwner = c.iMasterId
+    JOIN vCore_Buildingmaster d WITH (NOLOCK) ON a.BuildingMasters = d.iMasterId
+    JOIN vCore_UnitType e WITH (NOLOCK) ON a.UnitType2 = e.iMasterId
+    JOIN vCrm_PropertyStatus f WITH (NOLOCK) ON a.iUnitStatus = f.iTransId
+    LEFT JOIN LeaseContract lc ON a.iMasterId = lc.iUnitId
+        AND a.iPropertyId = lc.Property AND a.BuildingMasters = lc.BuildingMasters
+    LEFT JOIN Status162 st ON a.iMasterId = st.iUnitId
+    LEFT JOIN Status165 rn ON a.iMasterId = rn.iUnitId
+    WHERE a.iMasterId > 0
+)
+
+-- Final Selection: Top 1 per unit
+SELECT 
+    PropertyOwner,
+    PropertyCode,
+    PropertyName,
+    BuildingCode,
+    AsOnTheDoor,
+    NoofBedrooms,
+    UnitType,
+    UnitStatus,
+
+    -- Calculated Date
+    CASE 
+    WHEN iUnitStatus = 162 AND Status162Date > 0 THEN CONVERT(VARCHAR(10), dbo.fCore_IntToDateTime(Status162Date), 105)
+    WHEN iUnitStatus = 165 AND Status165Date > 0 THEN CONVERT(VARCHAR(10), dbo.fCore_IntToDateTime(Status165Date), 105)
+    WHEN iUnitStatus IN (162,165) THEN CONVERT(VARCHAR(10), dbo.fCore_IntToDateTime(iCreatedDate), 105)
+    WHEN iUnitStatus = 163 AND StartDate IS NOT NULL THEN CONVERT(VARCHAR(10), dbo.fCore_IntToDate(StartDate), 105)
+    ELSE NULL
+END AS [Date],
+
+
+
+    -- Rent Logic
+    CASE 
+        WHEN iUnitStatus = 162 THEN fPrice
+        WHEN iUnitStatus = 163 THEN fRentPerMonth
+        ELSE 0.00 
+    END AS Rent,
+
+    fAmountJH AS [Total Amount],
+    fRentPerPeriod AS [Total Proposed Discount Rent],
+    Subtotal AS [Sub Total],
+    [Account],
+    [Contract No],iModifiedDate,iUnitId,[PropertyId],[BuildingId],[UnitsId]
+FROM UnitsWithRank
+WHERE rn = 1;
+

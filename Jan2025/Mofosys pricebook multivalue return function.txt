@@ -1,0 +1,52 @@
+CREATE FUNCTION dbo.fCore_Var17(@s xml)    
+returns nvarchar(max)    
+as    
+begin    
+Declare @Fun1 decimal(18,2),@Fun2 decimal(18,2),@Fun3 decimal(18,2),@Fun4 decimal(18,2),@Fun5 decimal(18,2),@Fun6 decimal(18,2),@Fun7 decimal(18,2),@Fun8 decimal(18,2),@Fun9 decimal(18,2),@Response nvarchar(max),@CustomerPriceGroup int,@Product int,@Customer int,@iDate int,@AccountCode varchar(max),@ProductCode varchar(Max)         
+        
+select @Product=@s.value('(/Fields/BodyData/BodyRow/iProductId)[1]','int')        
+select @CustomerPriceGroup=@s.value('(/Fields/Header/iCustomerGroupHeader)[1]','int')        
+select @Customer=@s.value('(/Fields/Header/iAccount)[1]','int')        
+select @iDate=dbo.fCore_DateToInt(GETDATE())    
+select @AccountCode=sCode from mCore_Account with(nolock) where iMasterId=@Customer          
+select @ProductCode=sCode from mCore_Product  with(nolock) where iMasterId=@Product         
+        
+declare @ProdId int,@AccId int ,@Prodgroup int,@CustPriceGroup int , @value decimal(18,2)        
+        
+select top 1 @ProdId=a.iMasterId from Focus8020..vCore_Product a with(nolock)         
+join Focus8020..mCore_SellingPriceBookDetails b on a.iMasterId=b.iProductId         
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId where  a.sCode=@ProductCode      
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc       
+        
+select top 1 @AccId=iMasterId from Focus8020..vCore_Account  with(nolock) where sCode=@AccountCode         
+        
+select top 1 @Prodgroup=pp.iMasterId from Focus8020..vmCore_Product p  with(nolock)         
+join Focus8020..mcore_product pp  with(nolock) on pp.iMasterId=p.iParentId         
+join Focus8020..mCore_SellingPriceBookDetails b on p.iMasterId=b.iProductId         
+join Focus8020..mCore_SellingPriceBookHeader c on b.iPriceBookId=c.iPriceBookId         
+where  p.iMasterId=@ProdId        
+order by case when b.iEndDate = 0 then dbo.DateToInt(GETDATE()) else b.iEndDate end desc       
+        
+select top 1 @CustPriceGroup=mcpg.iMasterId from Focus8020..mCore_Account ma  with(nolock)         
+join Focus8020..muCore_Account_CustomerDetails mau  with(nolock) on mau.iMasterId = ma.iMasterId         
+left outer join Focus8020..mCore_SellingPriceBookVendor mcpg  with(nolock) on mcpg.iMasterId = mau.CustomerPriceGroup         
+where ma.iMasterId=@AccId    
+    
+select @Fun1=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,0,'-Rate')    
+select @Fun2=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,4,'-Discount')    
+select @Fun3=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,5,'-Discount')      
+select @Fun4=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,6,'-Discount')    
+select @Fun5=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,7,'-Discount')    
+--select @Fun6=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,8,'-Discount')      
+--select @Fun7=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,9,'-Discount')    
+--select @Fun8=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,10,'-Discount')    
+--select @Fun9=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,11,'-Discount') 
+--select @Fun9=Focus8020.dbo.fCore_GetProductRate(@ProdId,@AccId,@CustPriceGroup,@iDate,0,0,0,0,12,'-Discount')    
+
+    
+select @Response='{"T7B1C7":"'+CAST(@Fun1 as varchar(50))+'","T7B1C23":"'+Cast(@Fun2  as varchar(50))+'","T7B1C45":"'+cast(@Fun3  as varchar(50))+'","T7B1C46":"'+cast(@Fun4  as varchar(50))+'","T7B1C67":"'+cast(@Fun5  as varchar(50))+'"}'    
+--"T7B1C67":"'+cast(@Fun6  as varchar(50))+'",
+--"T7B1C74":"'+cast(@Fun7  as varchar(50))+'","T7B1C51":"'+CAST(@Fun8  as varchar(50))+'","T7B1C69":"'+cast(@Fun9  as varchar(50))+'"    
+--"T7B1C67":"'+cast(@Fun6  as varchar(50))+'"  one field value     
+return @Response    
+end

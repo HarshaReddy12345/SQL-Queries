@@ -1,0 +1,104 @@
+select b.iTransId,'VIKAS PARKS PRIVATE LIMITED' [Company Name],v.sName[Project],a.sName[AccountName],
+getDate()[Report CreatedDate],
+format(getdate(),'dd/MM/yyyy')[rcd],
+b.sName[BookingNo],b.fBaseSellingPrice 'BaseSellingPrice',
+b.fDiscount 'Discount',b.fSellingPrice 'Selling Price',
+((b.fSellingPrice)+(b.TotalAdditionalcharges)) 'Cost BreakUp',
+b.Totalcostwithtax [Total Cost With Tax],
+b.Totalcostwithouttax [Total Cost Without Tax],
+b.fAmount [Inst. Amount],
+dbo.fCore_IntToDate(b.iDueDate) [DueDate],
+sInstallmentName [Installment Name],
+iNoofDays [No. of Days],
+b.fPercentage [Percentage],
+b.iStageId [Stage Id],
+b.ChequeReceiptAmount[Received],
+b.BalanceAmount [Due],
+b.iType [Type],
+u.sName [Unit],
+f.sName [Floor],
+bl.sName [Block],
+v.sName [Property],
+b.AllotmentAmount [Negotiated Unit Value per Sq Yd],
+b.NegotiatedUnitValueperSqMtr [Negotiated Unit Value per Sq Mtr],
+b.PlotSize [Unit Area],
+b.fBaseSellingPrice [Amount],
+bg.sName [Charges],
+c.sName[Charge],
+bg.fAmount,
+dbo.fCore_IntToDate(bg.iDueDate) [ChargeDueDate],
+bg.Total,
+bg.PlotArea
+from vCrm_Receivables r WITH(NOLOCK)
+left join vuCrm_BookingPaymentSchedule_General_Details b WITH(NOLOCK) on r.CustomerAccount=b.B1CustomerAccount
+LEFT join vuCrm_Bookings_General_Details bg WITH(NOLOCK) on bg.iTransId=b.iTransId
+left join vCrm_Ventures v WITH(NOLOCK) on bg.iVentureId=v.iMasterId
+left join vCore_Account a WITH(NOLOCK) on bg.B1CustomerAccount=a.iMasterId
+left join vCrm_PMSUnits u WITH(NOLOCK) on bg.iUnitId=u.iMasterId
+left join vCrm_Floors f WITH(NOLOCK) on bg.iFloorId=f.iMasterId
+left join vCrm_Blocks bl WITH(NOLOCK) on bg.iBlockId=bl.iMasterId 
+left join vCrm_Charges c WITH(NOLOCK) on bg.iChargeId=c.iMasterId
+where b. iTransId>0 and b.iTransId=35
+======================================================================================
+
+select top 100 percent RecId,Paymenttype,Date,Particulars,aa,[Doc Type],[iDocType],sum(Debit)[Debit],sum(Credit)[Credit],InterestAmount
+from
+(
+select 
+	a.iMasterId [RecId],Paymenttype,
+      case when ISNULL(a.iCreatedDate,0)>0 then format(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy') else '' end [Date],
+	  case  when ISNULL(a.InstallmentNo,'')='' then b.sName else InstallmentNo end [Particulars],	
+	  'INV' [Doc Type],
+	  AmountDue [Debit],
+	  0.00 [Credit] ,
+	  0.00 [InterestAmount],
+	  case  
+		when InstallmentNo='Agreement Amount' then 2 
+		when InstallmentNo='Booking Amount' then 1 
+		when InstallmentNo like 'Installment%' then 3
+		else 4 end [aa],
+		1 iDocType
+	  from 
+     vCrm_Receivables a with(nolock)
+left join
+     vCrm_Charges b with(nolock) on a.Charges=b.iMasterId
+where 
+    a.iMasterId>0 and a.BookingNo =
+(select top 1 sName from vCrm_Bookings with(nolock) where iTransId={?iTransId})
+ 
+Union all
+select 
+	a.ReceivableNo [RecId],'' [Paymenttype],
+      case when ISNULL(a.PaymentDate,0)>0 then format(dbo.fCore_IntToDate(a.PaymentDate),'dd/MM/yyyy') else '' end [Date],
+	  case when ISNULL(PaymentTowards,'')='' then b.sName else PaymentTowards end [Particulars],
+	  'Receipt' [Doc Type],
+	  0.00 [Debit],
+	  Amount [Credit],
+	  Interestamount,
+	  case  
+		when PaymentTowards='Agreement Amount' then 2 
+		when PaymentTowards='Booking Amount' then 1 
+		when PaymentTowards like 'Installment%' then 3
+		else 4 end [aa],
+		2 iDocType
+	  from vCore_CustomerReceipt a  with(nolock)
+	  left join vCrm_Charges b with(nolock) on a.TowardsAdditionalCharges=b.iMasterId
+	  where a.iMasterId>0 and BookingNo={?iTransId}
+	  
+)a
+
+group by RecId,Paymenttype,Date,Particulars,[Doc Type],InterestAmount ,aa,iDocType
+order by RecId Asc,aa ASC,iDocType ASC
+
+=======================================================================
+
+select 
+bg.sName [Charges],
+c.sName[Charge],
+bg.fAmount,
+dbo.fCore_IntToDate(bg.iDueDate) [ChargeDueDate],
+bg.Total,
+bg.PlotArea
+from vuCrm_Bookings_General_Details bg 
+left join vCrm_Charges c WITH(NOLOCK) on bg.iChargeId=c.iMasterId
+where bg.iTransId>0 and bg.iTransId=35

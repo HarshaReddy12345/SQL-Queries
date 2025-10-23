@@ -1,0 +1,22 @@
+CREATE or ALTER VIEW nCore_PO as
+
+select a.iMasterId,a.sCode [PO Code],FORMAT(dbo.fCore_IntToDate(a.[Date]),'dd/MM/yyyy') [PO Date],b.sName [Trainer],c.sName [End Client],a.TrainingLocation,d.sName [Training Topic],a.TotalnoofTrainingDays,FORMAT(dbo.fCore_IntToDate(a.TrainingStartDate),'dd/MM/yyyy') [Training Start Date],
+FORMAT(dbo.fCore_IntToDate(a.TrainingEndDate),'dd/MM/yyyy') [Training End Date],a.TrainerContactDetails,a.City [TrainerCity],a.[State] [Trainer State],
+a.PinCode,CONCAT(a.Expenses,' ',dbo.fCrm_GetNumberListValue('1,Hours,2,Days,3,Month,4,Weeks',a.ChargeBasis)) [Charge Basis],a.TrainingCharges,
+a.TotalTrainingChargeswithTDSandGST,a.BillingRateperMonth [Total Training Charges without TDS and GST],a.TDSPercentage,
+[Amount in Words]=dbo.[fnMoneyToEnglish](TotalTrainingChargeswithTDSandGST,'Rupees Only',''),
+[Amount in Words1]=dbo.[fnMoneyToEnglish](BillingRateperMonth,'Rupees Only',''),
+a.BankAccountName,a.BankName,a.IFSCNumber,a.AccountNumber,a.Branch,a.PaymentTerms,
+CONCAT('http://localhost:8181/ResourceFromCRM/getres?cc=016V0&docid=',iDocsId) sImageUrl,
+dbo.fCrm_GetNumberListValue('1,CEO,2,Marketing Team,3,Finance Team,4,Operation Team,5,CTO',a.Designation) [Designation]
+from vCore_PurchaseOrder a WITH(NOLOCK)
+left join vCore_Account b WITH(NOLOCK) on a.Trainer=b.iMasterId
+left join vCore_Account c WITH(NOLOCK) on a.EndClient=c.iMasterId
+left join vCore_Product d WITH(NOLOCK) on a.TrainingTopic=d.iMasterId
+LEFT JOIN (SELECT
+  dbo.fCrm_getAPITransId(vCrm_Documents.iMasterId, 2563, 0) iDocsId,iModuleTypeId,iDocumentId,sFileName,iRelatedTo,iIndex
+FROM vCrm_Documents WITH (NOLOCK)
+WHERE iModuleTypeId = 2466 AND iFieldId = 300784) Docs ON Docs.iRelatedTo = a.iMasterId
+where a.iMasterId>0
+
+--http://localhost:8080/ResourceFromCRM/getres?cc=016V0&docid=180355093474836503

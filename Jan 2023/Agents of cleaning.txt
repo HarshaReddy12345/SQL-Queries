@@ -1,0 +1,139 @@
+	select 
+		AA.sName [Agent] ,usr.sName [Reports To],Availablity,AA.Cleaner,AA.Code,AA.EndTime [$Datetime$EndTime],
+	    AA.StartDateTime [$Datetime$StartDateTime]
+		,AA.Status,AA.TicketNo from
+	(
+	SELECT
+      vCore_StaffCleanerMaster.iMasterId,
+      vCore_StaffCleanerMaster.sName,
+	  vCore_StaffCleanerMaster.Users,
+      'Available' [Availablity],
+	  vCore_StaffCleanerMaster.sName [Cleaner],
+	  vCore_StaffCleanerMaster.sCode [Code],
+	  R.sName [Status],
+	  0 [StartDateTime],
+	  0 [EndTime],
+	  C.sName [TicketNo]
+    FROM vCore_StaffCleanerMaster WITH (NOLOCK)
+	LEFT JOIN vCrm_Calls C WITH(NOLOCK)
+	on vCore_StaffCleanerMaster.iMasterId=C.CleanerAssignment
+	LEFT JOIN vCrm_RequestStatus R WITH(NOLOCK)
+	ON C.iStatusId=R.iTransId
+    WHERE vCore_StaffCleanerMaster.iMasterId> 0
+    AND vCore_StaffCleanerMaster.iMasterId NOT IN (
+       SELECT
+          vCore_StaffCleanerMaster.iMasterId
+        FROM vCore_StaffCleanerMaster WITH (NOLOCK)
+        INNER JOIN mCore_StaffCleanerMaster_MultiValues WITH (NOLOCK)
+          ON vCore_StaffCleanerMaster.iMasterId = mCore_StaffCleanerMaster_MultiValues.iMasterId
+        INNER JOIN vCrm_Calls WITH (NOLOCK)
+          ON vCrm_Calls.CleanerAssignment = mCore_StaffCleanerMaster_MultiValues.iMultiId
+        WHERE vCrm_Calls.iTransId > 0
+        AND ((dbo.fCrm_DateFromBigInt(vCrm_Calls.StartDateTime) BETWEEN @STARTDATE AND @ENDDATE)
+        OR ((dbo.fCrm_DateFromBigInt(vCrm_Calls.StartDateTime) BETWEEN @STARTDATE AND @ENDDATE)
+        OR (@STARTDATE BETWEEN dbo.fCrm_DateFromBigInt(StartDateTime) AND dbo.fCrm_DateFromBigInt(EndTime))
+        OR (@ENDDATE BETWEEN dbo.fCrm_DateFromBigInt(StartDateTime) AND dbo.fCrm_DateFromBigInt(EndTime))))
+
+        union all
+
+        SELECT
+          vCore_StaffCleanerMaster.iMasterId
+        FROM vCore_StaffCleanerMaster WITH (NOLOCK)
+        INNER JOIN mCore_StaffCleanerMaster_MultiValues WITH (NOLOCK)
+          ON vCore_StaffCleanerMaster.iMasterId = mCore_StaffCleanerMaster_MultiValues.iMasterId
+        INNER JOIN vCrm_Contract WITH (NOLOCK)
+          ON vCrm_Contract.CleanerAssignment = mCore_StaffCleanerMaster_MultiValues.iMultiId
+        WHERE vCrm_Contract.iTransId > 0
+        AND ((dbo.fCrm_DateFromBigInt(vCrm_Contract.StartDateTime) BETWEEN @STARTDATE AND @ENDDATE)
+        OR (dbo.fCrm_DateFromBigInt(vCrm_Contract.EndTime) BETWEEN @STARTDATE AND @ENDDATE)
+        OR (@STARTDATE BETWEEN dbo.fCrm_DateFromBigInt(vCrm_Contract.StartDateTime) AND dbo.fCrm_DateFromBigInt(vCrm_Contract.EndTime))
+        OR (@ENDDATE BETWEEN dbo.fCrm_DateFromBigInt(vCrm_Contract.StartDateTime) AND dbo.fCrm_DateFromBigInt(vCrm_Contract.EndTime)))
+        union all
+        SELECT
+          vCore_StaffCleanerMaster.iMasterId
+        FROM vCore_StaffCleanerMaster WITH (NOLOCK)
+        WHERE vCore_StaffCleanerMaster.iMasterId > 0
+        AND ((dbo.fCrm_DateFromBigInt(StartDate) BETWEEN @STARTDATE AND @ENDDATE)
+        OR (dbo.fCrm_DateFromBigInt(EndDate) BETWEEN @STARTDATE AND @ENDDATE)
+        OR (@STARTDATE BETWEEN dbo.fCrm_DateFromBigInt(StartDate) AND dbo.fCrm_DateFromBigInt(EndDate))
+        OR (@ENDDATE BETWEEN dbo.fCrm_DateFromBigInt(StartDate) AND dbo.fCrm_DateFromBigInt(EndDate)))
+    )
+    UNION ALL
+    SELECT
+      vCore_StaffCleanerMaster.iMasterId,
+      vCore_StaffCleanerMaster.sName,
+	  vCore_StaffCleanerMaster.Users,
+      'Occupied' [Availablity],
+	  vCore_StaffCleanerMaster.sName [Cleaner],
+	  vCore_StaffCleanerMaster.sCode [Code],
+	  R.sName [Status],
+      vCrm_Calls.StartDateTime [StartDateTime],
+	  vCrm_Calls.EndTime [EndTime],
+	  vCrm_Calls.sName[TicketNo]
+    FROM vCore_StaffCleanerMaster WITH (NOLOCK)
+    INNER JOIN mCore_StaffCleanerMaster_MultiValues WITH (NOLOCK)
+      ON vCore_StaffCleanerMaster.iMasterId = mCore_StaffCleanerMaster_MultiValues.iMasterId
+    INNER JOIN vCrm_Calls WITH (NOLOCK)
+      ON vCrm_Calls.CleanerAssignment = mCore_StaffCleanerMaster_MultiValues.iMultiId
+	  LEFT JOIN vCrm_Calls C WITH(NOLOCK)
+	on vCore_StaffCleanerMaster.iMasterId=C.CleanerAssignment
+	LEFT JOIN vCrm_RequestStatus R WITH(NOLOCK)
+	ON C.iStatusId=R.iTransId
+    WHERE vCrm_Calls.iTransId > 0
+    AND ((dbo.fCrm_DateFromBigInt(vCrm_Calls.StartDateTime) BETWEEN @STARTDATE AND @ENDDATE)
+    OR (dbo.fCrm_DateFromBigInt(vCrm_Calls.EndTime) BETWEEN @STARTDATE AND @ENDDATE)
+    OR (@STARTDATE BETWEEN dbo.fCrm_DateFromBigInt(vCrm_Calls.StartDateTime) AND dbo.fCrm_DateFromBigInt(vCrm_Calls.EndTime))
+    OR (@ENDDATE BETWEEN dbo.fCrm_DateFromBigInt(vCrm_Calls.StartDateTime) AND dbo.fCrm_DateFromBigInt(vCrm_Calls.EndTime)))
+    union all
+    SELECT
+      vCore_StaffCleanerMaster.iMasterId,
+      vCore_StaffCleanerMaster.sName,
+	  vCore_StaffCleanerMaster.Users,
+      'Occupied' [Availablity],
+	  vCore_StaffCleanerMaster.sName [Cleaner],
+	  vCore_StaffCleanerMaster.sCode [Code],
+	  R.sName [Status],
+	  C.StartDateTime [StartDateTime],
+	  C.EndTime [EndTime],
+	  C.sName[TicketNo]
+    FROM vCore_StaffCleanerMaster WITH (NOLOCK)
+   left JOIN mCore_StaffCleanerMaster_MultiValues WITH (NOLOCK)
+      ON vCore_StaffCleanerMaster.iMasterId = mCore_StaffCleanerMaster_MultiValues.iMasterId
+    INNER JOIN vCrm_Contract WITH (NOLOCK)
+      ON vCrm_Contract.CleanerAssignment = mCore_StaffCleanerMaster_MultiValues.iMultiId
+	  LEFT JOIN vCrm_Calls C WITH(NOLOCK)
+	on vCore_StaffCleanerMaster.iMasterId=C.CleanerAssignment
+	LEFT JOIN vCrm_RequestStatus R WITH(NOLOCK)
+	ON C.iStatusId=R.iTransId
+    WHERE vCrm_Contract.iTransId > 0
+    AND ((dbo.fCrm_DateFromBigInt(vCrm_Contract.StartDateTime) BETWEEN @STARTDATE AND @ENDDATE)
+    OR (dbo.fCrm_DateFromBigInt(vCrm_Contract.EndTime) BETWEEN @STARTDATE AND @ENDDATE)
+    OR (@STARTDATE BETWEEN dbo.fCrm_DateFromBigInt(vCrm_Contract.StartDateTime) AND dbo.fCrm_DateFromBigInt(vCrm_Contract.EndTime))
+    OR (@ENDDATE BETWEEN dbo.fCrm_DateFromBigInt(vCrm_Contract.StartDateTime) AND dbo.fCrm_DateFromBigInt(vCrm_Contract.EndTime)))
+    union all
+    SELECT
+      vCore_StaffCleanerMaster.iMasterId,
+      vCore_StaffCleanerMaster.sName,
+	  vCore_StaffCleanerMaster.Users,
+      'On-Leave' [Availablity],
+	  vCore_StaffCleanerMaster.sName [Cleaner],
+	  vCore_StaffCleanerMaster.sCode [Code],
+	  R.sName [Status],
+	  0 [StartDateTime],
+	  0 [EndTime],
+	  C.sName[TicketNo]
+    FROM vCore_StaffCleanerMaster WITH (NOLOCK)
+	LEFT JOIN vCrm_Calls C WITH(NOLOCK)
+	on vCore_StaffCleanerMaster.iMasterId=C.CleanerAssignment
+	LEFT JOIN vCrm_RequestStatus R WITH(NOLOCK)
+	ON C.iStatusId=R.iTransId
+    WHERE vCore_StaffCleanerMaster.iMasterId > 0
+    AND ((dbo.fCrm_DateFromBigInt(vCore_StaffCleanerMaster.StartDate) BETWEEN @STARTDATE AND @ENDDATE)
+    OR (dbo.fCrm_DateFromBigInt(vCore_StaffCleanerMaster.EndDate) BETWEEN @STARTDATE AND @ENDDATE)
+    OR (@STARTDATE BETWEEN dbo.fCrm_DateFromBigInt(vCore_StaffCleanerMaster.StartDate) AND dbo.fCrm_DateFromBigInt(vCore_StaffCleanerMaster.EndDate))
+    OR (@ENDDATE BETWEEN dbo.fCrm_DateFromBigInt(vCore_StaffCleanerMaster.StartDate) AND dbo.fCrm_DateFromBigInt(vCore_StaffCleanerMaster.EndDate)))
+	) AA
+	inner join vCrm_Users usr with(nolock) on usr.iMasterId=AA.Users
+	where AA.iMasterId>0
+	and (( 0 in (@ReportsTo) and isnull(usr.iMasterId,0)  = isnull(usr.iMasterId,0) ) or (0 not in (@ReportsTo) and isnull(usr.iMasterId,0)   in ( @ReportsTo )))
+	and (( 0 in (@Agent) and isnull(AA.iMasterId,0)  = isnull(AA.iMasterId,0) ) or (0 not in (@Agent) and isnull(AA.iMasterId,0)   in ( @Agent )))

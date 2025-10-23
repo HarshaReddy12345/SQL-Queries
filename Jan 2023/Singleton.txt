@@ -1,0 +1,32 @@
+select COUNT(iTransId)[No of Bookings],
+       v.sName[Project],
+	   a.sName [Account],
+       u.sName[User],
+	   pu.sName[Plot No],
+	   p.sName[Property],
+	   l.sName[Location],
+	   case b.FacingpalmSprings when 1 then 'East Facing Plot: Rs.750/Sq.Yd '
+	   when 2 then 'Park View/Adjacent (East): Rs.1000/Sq.Yd'
+	   when 3 then 'Park view/Adjacent Plot (West): Rs.750/Sq.Yd'
+	   when 4 then 'North East Corner Plot: Rs.1500/Sq.Yd'
+	   when 5 then 'East/North Corner Plot: Rs.1250/Sq. Yd'
+	   when 6 then 'West corner plot: Rs.1000/Sq.yd'
+	   when 7 then 'North '
+	   else '' end [FacingpalmSprings],
+	   b.menitiesPricesqperyardwithGST [Amenities Price sq per yard with GST],b.CorpusFundPerSqYard,
+	   b.MaintenanceChargesfor1YearinAdvance,b.PlotCutoffChargeSqYd,
+	   b.PlotSize,NegotiatedUnitValueperSqMtr,
+	   b.AllotmentAmount[NegotiatedUnitValueperSq Yd],b.fPrice[CutOff Selling Price],
+	   b.fBaseSellingPrice[BaseSellingPrice],b.fDiscount [DiscountAmount],b.fSellingPrice [SellingPrice]
+	   from vCrm_Bookings b
+left join vCrm_Ventures v on b.iVentureId=v.iMasterId
+left join vCore_Account a on b.B1CustomerAccount=a.iMasterId
+left join vCrm_Users u on u.iMasterId=b.iAssignedTo
+left join vCrm_PMSUnits pu on pu.iMasterId=b.iUnitId 
+left join vCrm_Property p on p.iMasterId=b.iPropertyId
+left join vCore_Location l on b.Place=l.iMasterId
+where b.iTransId>0
+group by v.sName,a.sName,u.sName,pu.sName,p.sName,l.sName,b.FacingpalmSprings,
+b.menitiesPricesqperyardwithGST,b.CorpusFundPerSqYard,b.MaintenanceChargesfor1YearinAdvance,
+b.PlotCutoffChargeSqYd,b.PlotSize,b.NegotiatedUnitValueperSqMtr,b.AllotmentAmount,b.fPrice,
+b.fBaseSellingPrice,b.fDiscount,b.fSellingPrice

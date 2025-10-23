@@ -1,0 +1,56 @@
+
+EXEC sp_configure 'Ole Automation Procedures';
+GO
+sp_configure 'show advanced options', 1;
+GO
+RECONFIGURE;
+GO
+sp_configure 'Ole Automation Procedures', 1;
+GO
+RECONFIGURE;
+GO
+
+create function SendGetRequest(@url varchar(8000)) returns varchar(8000) 
+as 
+BEGIN 
+	DECLARE @win int DECLARE @hr int DECLARE @text varchar(8000)
+	EXEC @hr = sp_OACreate 'WinHttp.WinHttpRequest.5.1', @win OUT IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Open', NULL, 'GET',@url,'false' IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAMethod @win,'Send' IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OAGetProperty @win,'ResponseText',@text OUTPUT IF @hr <> 0 
+	EXEC sp_OAGetErrorInfo @win 
+	EXEC @hr = sp_OADestroy @win IF @hr <> 0
+	EXEC sp_OAGetErrorInfo @win 
+	RETURN @text 
+END
+
+
+
+--Get CurrentStock
+ ALTER function dbo.fCore_Var1(@s xml)
+returns decimal(18,2)
+as
+begin
+	declare @fret decimal(18,2)
+	declare @sUrl varchar(max)='http://183.82.149.5/Focus8api/GetExecSqlScalar?sCompCode=050&SqlCommand=';
+
+	declare @sDate varchar(20) = convert(varchar(20),dbo.fCore_DateToInt(getdate()))
+	declare @iProdId int,@sCode varchar(300),@StockPoint int,@StockCode varchar(300);
+	select @iProdId = @s.value('(Fields/BodyData/BodyRow/iProductId)[1]','int');
+	select @StockPoint = @s.value('(Fields/BodyData/BodyRow/Warehouse)[1]','int');
+	select @sCode= sCode from vCore_Product with(nolock) where iMasterId=@iProdId;
+	select @StockCode= sCode from vCore_Warehouse with(nolock) where iMasterId=@StockPoint;
+
+	set @sUrl = @sUrl+'declare @fret decimal(18,2),@iMasterid int=0,@Wh int=0 
+	select top 1 @iMasterid=iMasterId from vCore_Product with(nolock) where sCode='''+@sCode+'''
+	select top 1 @Wh=iMasterId from vCore_Warehouse with(nolock) where sCode='''+@StockCode+'''
+	select @fret=dbo.[udf_ProdBalQtyWH]('+@sDate+',@iMasterid,@Wh) select @fret';
+	select @fret=convert(decimal(18,2),value) from OPENJSON(dbo.SendGetRequest(@sUrl)) 
+	with (url varchar(500) '$.url',data2 nvarchar(max) '$.data' as JSON, result int '$.result')
+	cross apply openjson(data2) with (Obj1 nvarchar(max) '$' as json)
+	cross apply openjson(Obj1) 
+	return @fret
+end

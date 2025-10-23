@@ -1,0 +1,84 @@
+ALTER PROCEDURE [dbo].[UpdateOwnerInLead2]
+    @iTransId NVARCHAR(MAX),
+    @UserId INT,
+    @sStatusMsg VARCHAR(200) OUTPUT
+AS
+BEGIN
+    -- Initialize status message
+    SET @sStatusMsg = ''
+    
+    -- Create a temporary table to hold CSV values
+    CREATE TABLE #TempTable(Value NVARCHAR(MAX))
+    
+    -- Insert CSV values into the temporary table
+    DECLARE @CSV NVARCHAR(MAX)
+    SET @CSV = CAST(@iTransId AS NVARCHAR(MAX))
+    INSERT INTO #TempTable (Value)
+    SELECT Value FROM dbo.SplitString(@CSV, ',')
+    
+    -- Declare variables
+    DECLARE @Value NVARCHAR(MAX), @LeadId INT
+    DECLARE @TotalCount INT = 0, @SuccessCount INT = 0
+    
+    -- Cursor to iterate through the temporary table
+    DECLARE cur CURSOR FOR 
+    SELECT Value FROM #TempTable
+    
+    OPEN cur
+    FETCH NEXT FROM cur INTO @Value
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        -- Increment the total count
+        SET @TotalCount = @TotalCount + 1
+        
+        -- Convert to API TransId
+        SELECT @Value = dbo.fCrm_IntToAPITransId(@Value, 0)
+        
+        IF (@Value > 0)
+        BEGIN
+            SET @LeadId = (SELECT iLeadId FROM tCrm_CampaignLeads WITH (NOLOCK) WHERE iMemberId = @Value)
+            
+            IF EXISTS (SELECT * FROM vaCrm_Leads WITH (NOLOCK) WHERE iMasterId = @LeadId AND iAssignedTo = 4)
+            BEGIN
+                -- Update lead assignments
+                UPDATE tCrm_Leads SET iAssignedTo = @UserId WHERE iTransId = @LeadId
+                UPDATE tCrm_CampaignLeads SET iAssignedTo = @UserId WHERE iLeadId = @LeadId
+                EXEC dbo.udp_AS_logPickAndRelease @LeadId, @UserId, 3
+                
+                -- Increment success count
+                SET @SuccessCount = @SuccessCount + 1
+            END
+        END
+        
+        FETCH NEXT FROM cur INTO @Value
+    END
+    
+    CLOSE cur
+    DEALLOCATE cur
+    
+    -- Drop the temporary table
+    DROP TABLE #TempTable
+    
+    -- Set the status message
+    SET @sStatusMsg = CONCAT(@SuccessCount, ' out of ', @TotalCount, ' leads were successfully picked.')
+END
+
+
+================================================================================================================================
+
+CREATE FUNCTION dbo.SplitString (@string NVARCHAR(MAX), @delimiter CHAR(1))         
+RETURNS @output TABLE(Value NVARCHAR(MAX))         
+BEGIN         
+    DECLARE @start INT, @end INT         
+    SET @start = 1         
+    WHILE CHARINDEX(@delimiter, @string, @start) > 0         
+    BEGIN         
+        SET @end = CHARINDEX(@delimiter, @string, @start)         
+        INSERT INTO @output (Value)         
+        VALUES(SUBSTRING(@string, @start, @end - @start))         
+        SET @start = @end + 1         
+    END         
+    INSERT INTO @output (Value)         
+    VALUES(SUBSTRING(@string, @start, LEN(@string) - @start + 1))         
+    RETURN         
+END   

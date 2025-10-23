@@ -1,0 +1,37 @@
+SELECT top 100 percent
+    PRQ.[PRQ.No],
+    PRQ.[ICL Awb Number],
+    PRQ.[Vendor Awb Number],
+    PRQ.ExceptionDescription,
+    PRQ.[PRQ Code],
+    PRQ.Email,
+    PRQ.EmailNofification
+FROM (
+    SELECT
+        a.sName AS [PRQ.No],
+        a.TrackingNo AS [ICL Awb Number],
+        a.FWDNumbers AS [Vendor Awb Number],
+        a.ExceptionDescription,
+        a.sCode AS [PRQ Code],
+        a.Email,
+        CASE b.iStatus
+            WHEN 0 THEN 'Fail'
+            WHEN 1 THEN 'Success'
+            WHEN 2 THEN 'In-Transit'
+            WHEN 3 THEN 'Blocked'
+            WHEN 4 THEN 'Invalid Email'
+            WHEN 5 THEN 'Password Empty'
+            WHEN 6 THEN 'Exception'
+        END AS EmailNofification,
+        ROW_NUMBER() OVER (PARTITION BY a.sName ORDER BY b.iCreatedDate ASC) AS rn
+    FROM
+        vCore_PRQ a WITH (NOLOCK)
+    left JOIN
+        vCrm_WorkflowLog b WITH (NOLOCK) ON a.iMasterId = b.iMasterId
+    WHERE
+        a.iMasterId > 0 and a.iCreatedDate between @STARTDATETIME and @ENDDATETIME
+) AS PRQ
+WHERE
+    PRQ.rn = 1
+ORDER BY
+    PRQ.[PRQ.No]

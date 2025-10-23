@@ -1,0 +1,59 @@
+alter FUNCTION [dbo].[fnCrm_GetUserTargetData] 
+(
+    @iStartMonth INT,
+    @iEndMonth INT,
+    @iStartYear INT,
+    @iEndYear INT,
+    @iTimePeriodType TINYINT -- 0=Year, 1=Month
+)
+RETURNS TABLE
+AS
+RETURN
+(
+    WITH MonthlyTargetSum AS
+    (
+        SELECT 
+            usr.sName AS [User],
+            usr.iMasterId AS [iUserId],
+            tar.iYear,
+            ttv.fVal0, ttv.fVal1, ttv.fVal2, ttv.fVal3, ttv.fVal4, ttv.fVal5, 
+            ttv.fVal6, ttv.fVal7, ttv.fVal8, ttv.fVal9, ttv.fVal10, ttv.fVal11
+        FROM cCrm_TargetType tt WITH(NOLOCK)
+        INNER JOIN cCrm_TargetValues ttv WITH(NOLOCK) ON tt.iTargetType = ttv.iTargetTypeId
+        INNER JOIN cCrm_Targets tar WITH(NOLOCK) ON tar.iTargetId = tt.iTargetId
+        INNER JOIN vCrm_Users usr WITH(NOLOCK) ON tt.iUserId = usr.iMasterId
+        WHERE tar.iYear BETWEEN @iStartYear AND @iEndYear
+        AND tt.iType = 1
+    )
+
+    SELECT 
+        mts.[User],
+        mts.iUserId,
+        mts.iYear,
+        -- Determine the total target sum based on the given time period type (year, quarter, half-year, month)
+        CASE 
+            WHEN @iTimePeriodType = 0 THEN -- Yearly total sum
+                (ISNULL(mts.fVal0, 0) + ISNULL(mts.fVal1, 0) + ISNULL(mts.fVal2, 0) + ISNULL(mts.fVal3, 0) + ISNULL(mts.fVal4, 0) +
+                 ISNULL(mts.fVal5, 0) + ISNULL(mts.fVal6, 0) + ISNULL(mts.fVal7, 0) + ISNULL(mts.fVal8, 0) + ISNULL(mts.fVal9, 0) +
+                 ISNULL(mts.fVal10, 0) + ISNULL(mts.fVal11, 0))
+                
+      
+
+          
+            WHEN @iTimePeriodType = 1 THEN -- Monthly total sum for each month in the range
+                (CASE WHEN @iStartMonth <= 1 AND @iEndMonth >= 1 THEN ISNULL(mts.fVal0, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 2 AND @iEndMonth >= 2 THEN ISNULL(mts.fVal1, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 3 AND @iEndMonth >= 3 THEN ISNULL(mts.fVal2, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 4 AND @iEndMonth >= 4 THEN ISNULL(mts.fVal3, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 5 AND @iEndMonth >= 5 THEN ISNULL(mts.fVal4, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 6 AND @iEndMonth >= 6 THEN ISNULL(mts.fVal5, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 7 AND @iEndMonth >= 7 THEN ISNULL(mts.fVal6, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 8 AND @iEndMonth >= 8 THEN ISNULL(mts.fVal7, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 9 AND @iEndMonth >= 9 THEN ISNULL(mts.fVal8, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 10 AND @iEndMonth >= 10 THEN ISNULL(mts.fVal9, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 11 AND @iEndMonth >= 11 THEN ISNULL(mts.fVal10, 0) ELSE 0 END) + 
+                (CASE WHEN @iStartMonth <= 12 AND @iEndMonth >= 12 THEN ISNULL(mts.fVal11, 0) ELSE 0 END)
+        END AS [Total Target In Range]
+    FROM MonthlyTargetSum mts
+);
+GO

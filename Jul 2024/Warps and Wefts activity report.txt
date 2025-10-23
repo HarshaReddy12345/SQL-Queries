@@ -1,0 +1,140 @@
+  
+ALTER view [dbo].[vExt_ActivitiesQueryReport]  
+as  
+select distinct a.iMasterId,case a.iTypeId when 512 then 'Tasks' when 768 then 'Appointments' when 1024 then 'Plans' when 1280 then 'TeleCalls' when 1536 then 'Activities' when 2562 then 'Emails' else '' end 'Activity', format(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy HH:mm:ss') as 'CreatedDateTime',a.iCreatedDate,format(dbo.fCore_IntToDateTime(a.iStartDatetime),'dd/MM/yyyy HH:mm:ss') as 'StartDatetime',format(dbo.fCore_IntToDateTime(a.iEndDatetime),'dd/MM/yyyy HH:mm:ss') as 'EndDatetime',a.iStatus,b.sName 'Status',a.iRelatedTo,f.iLocation,c.sName 'Location',s.ProjectName,d.sName 'Project Name',d.ProjectLocation,e.sName 'Project Location',g.sName 'Salesman',a.iRelatedToType,f.sName 'Account Name',f.ContactPerson 'Contact Name',a.sSubject 'Subject',a.sDescription 'Description', a.iAssignedTo , a.iPurposeId , x.sName 'Purpose',case s.WorkLocation when -1 then 'Null' when 1 then 'WW Office' when 2 then 'WW Warehouse' when 3 then 'Outside of Office' end WorkLocation,case app.iAppointmentType when 1
+
+ then 'Appointment' when 2 then 'Event' when 3 then 'Meeting' end AppointmentType,app.iAppointmentType,ic.sName [Brand],STUFF(
+           (SELECT ', ' + c.sName
+            FROM mCore_Brand_MultiValues b
+            JOIN vCore_Brand c ON b.iMasterId = c.iMasterId
+            WHERE b.iMultiId = app.Brandlist
+            FOR XML PATH(''), TYPE
+           ).value('.', 'NVARCHAR(MAX)')
+       , 1, 2, '') AS Brandlist,itc.sName [Item Colletion 1],itc1.sName [Item COllection 2],k.sName [Source]
+ from vCrm_AllActivities a with(nolock)  
+inner join vCrm_Activities s on s.iTransId=a.iMasterId  
+inner join vCrm_Appointments app on app.iTransId=a.iMasterId  
+left join vCrm_TaskStatus b on b.iTransId=a.iStatus  
+left join vCore_Project d on s.ProjectName=d.iMasterId  
+left join vCore_Country e on e.iMasterId=d.ProjectLocation  
+left join vCore_Account f on f.iMasterId=a.iRelatedTo  
+left join vCore_Location c on f.iLocation=c.iMasterId  
+left join vCrm_PurposeOfVisit x on x.iTransId=a.iPurposeId  
+left join vCrm_Appointments z on z.iTransId=a.iRelatedTo and z.iTypeId=a.iRelatedToType  
+left join vCore_Brand ic with(nolock) on app.BrandName=ic.iMasterId
+left join vCore_Brand bt with(nolock) on app.Brandlist=bt.iMasterId
+left join vCore_ItemCollection itc with(nolock) on app.ItemCollection=itc.iMasterId
+left join vCore_ItemCollection itc1 with(nolock) on app.ItemCollection2=itc1.iMasterId
+left join vCrm_Users g on g.iMasterId=a.iAssignedTo 
+left join vCore_Source k on z.Source=k.iMasterId
+where a.iTypeId=1536 
+
+union all  
+select distinct a.iMasterId,case a.iTypeId when 512 then 'Tasks' when 768 then 'Appointments' when 1024 then 'Plans' when 1280 then 'TeleCalls' when 1536 then 'Activities' when 2562 then 'Emails' else '' end 'Activity', format(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy HH:mm:ss') as 'CreatedDateTime',a.iCreatedDate,format(dbo.fCore_IntToDateTime(a.iStartDatetime),'dd/MM/yyyy HH:mm:ss') as 'StartDatetime',format(dbo.fCore_IntToDateTime(a.iEndDatetime),'dd/MM/yyyy HH:mm:ss') as 'EndDatetime',a.iStatus,b.sName 'Status',a.iRelatedTo,f.iLocation,c.sName 'Location',s.ProjectName,d.sName 'Project Name',d.ProjectLocation,e.sName 'Project Location',g.sName 'Salesman',a.iRelatedToType,f.sName 'Account Name',f.ContactPerson 'Contact Name',a.sSubject 'Subject',a.sDescription 'Description', a.iAssignedTo , a.iPurposeId , x.sName 'Purpose',case s.WorkLocation when -1 then 'Null' when 1 then 'WW Office' when 2 then 'WW Warehouse' when 3 then 'Outside of Office' end WorkLocation,case s.iAppointmentType when 1 then 'Appointment' when 2 then 'Event' when 3 then 'Meeting' end AppointmentType  ,s.iAppointmentType,
+ic.sName [Brand],STUFF(
+           (SELECT ', ' + c.sName
+            FROM mCore_Brand_MultiValues b
+            JOIN vCore_Brand c ON b.iMasterId = c.iMasterId
+            WHERE b.iMultiId = s.Brandlist
+            FOR XML PATH(''), TYPE
+           ).value('.', 'NVARCHAR(MAX)')
+       , 1, 2, '') AS Brandlist,itc.sName [Item Colletion 1],itc1.sName [Item COllection 2],k.sName [Source]
+from vCrm_AllActivities a with(nolock)  
+inner join vCrm_Appointments s on s.iTransId=a.iMasterId  
+left join vCrm_TaskStatus b on b.iTransId=a.iStatus  
+left join vCore_Project d on s.ProjectName=d.iMasterId  
+left join vCore_Country e on e.iMasterId=d.ProjectLocation  
+left join vCore_Account f on f.iMasterId=a.iRelatedTo  
+left join vCore_Location c on f.iLocation=c.iMasterId  
+left join vCrm_PurposeOfVisit x on x.iTransId=a.iPurposeId 
+left join vCore_Brand ic with(nolock) on s.BrandName=ic.iMasterId
+left join vCore_Brand bt with(nolock) on s.Brandlist=bt.iMasterId
+left join vCore_ItemCollection itc with(nolock) on s.ItemCollection=itc.iMasterId
+left join vCore_ItemCollection itc1 with(nolock) on s.ItemCollection2=itc1.iMasterId
+left join vCore_Source k on s.Source=k.iMasterId
+--left join vCrm_Appointments z on z.iTransId=a.iRelatedTo and z.iTypeId=a.iRelatedToType  
+left join vCrm_Users g on g.iMasterId=a.iAssignedTo where a.iTypeId=768  
+union all  
+select distinct a.iMasterId,case a.iTypeId when 512 then 'Tasks' when 768 then 'Appointments' when 1024 then 'Plans' when 1280 then 'TeleCalls' when 1536 then 'Activities' when 2562 then 'Emails' else '' end 'Activity', format(dbo.fCore_IntToDateTime(a.
+iCreatedDate),'dd/MM/yyyy HH:mm:ss') as 'CreatedDateTime',a.iCreatedDate,format(dbo.fCore_IntToDateTime(a.iStartDatetime),'dd/MM/yyyy HH:mm:ss') as 'StartDatetime',format(dbo.fCore_IntToDateTime(a.iEndDatetime),'dd/MM/yyyy HH:mm:ss') as 'EndDatetime',a.iStatus,b.sName 'Status',a.iRelatedTo,f.iLocation,c.sName 'Location',s.ProjectName,d.sName 'Project Name',d.ProjectLocation,e.sName 'Project Location',g.sName 'Salesman',a.iRelatedToType,f.sName 'Account Name',f.ContactPerson 'Contact Name',a.sSubject 'Subject',a.sDescription 'Description', a.iAssignedTo , a.iPurposeId , x.sName 'Purpose',case s.WorkLocation when -1 then 'Null' when 1 then 'WW Office' when 2 then 'WW Warehouse' when 3 then 'Outside of Office' end WorkLocation,case app.iAppointmentType when 1 then 'Appointment' when 2 then 'Event' when 3 then 'Meeting' end AppointmentType  ,app.iAppointmentType  ,ic.sName [Brand],STUFF(
+           (SELECT ', ' + c.sName
+            FROM mCore_Brand_MultiValues b
+            JOIN vCore_Brand c ON b.iMasterId = c.iMasterId
+            WHERE b.iMultiId = app.Brandlist
+            FOR XML PATH(''), TYPE
+           ).value('.', 'NVARCHAR(MAX)')
+       , 1, 2, '') AS Brandlist,itc.sName [Item Colletion1],itc1.sName [Item COllection 2],k.sName [Source]
+ from vCrm_AllActivities a with(nolock)  
+left join vCrm_Plans s on s.iTransId=a.iMasterId  
+inner join vCrm_Appointments app on app.iTransId=a.iMasterId  
+left join vCrm_TaskStatus b on b.iTransId=a.iStatus  
+left join vCore_Project d on s.ProjectName=d.iMasterId  
+left join vCore_Country e on e.iMasterId=d.ProjectLocation  
+left join vCore_Account f on f.iMasterId=a.iRelatedTo  
+left join vCore_Location c on f.iLocation=c.iMasterId  
+left join vCrm_PurposeOfVisit x on x.iTransId=a.iPurposeId  
+left join vCore_Brand ic with(nolock) on app.BrandName=ic.iMasterId
+left join vCore_Brand bt with(nolock) on app.Brandlist=bt.iMasterId
+left join vCore_ItemCollection itc with(nolock) on app.ItemCollection=itc.iMasterId
+left join vCore_ItemCollection itc1 with(nolock) on app.ItemCollection2=itc1.iMasterId
+--left join vCrm_Appointments z on z.iTransId=a.iRelatedTo and z.iTypeId=a.iRelatedToType  
+left join vCrm_Users g on g.iMasterId=a.iAssignedTo 
+left join vCore_Source k on app.Source=k.iMasterId
+where a.iTypeId=1024 
+
+union all  
+select distinct a.iMasterId,case a.iTypeId when 512 then 'Tasks' when 768 then 'Appointments' when 1024 then 'Plans' when 1280 then 'TeleCalls' when 1536 then 'Activities' when 2562 then 'Emails' else '' end 'Activity', format(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy HH:mm:ss') as 'CreatedDateTime',a.iCreatedDate,format(dbo.fCore_IntToDate(a.iStartDatetime),'dd/MM/yyyy HH:mm:ss') as 'StartDatetime',format(dbo.fCore_IntToDate(a.iEndDatetime),'dd/MM/yyyy HH:mm:ss') as 'EndDatetime',a.iStatus,b.sName 'Status',a.iRelatedTo,f.iLocation,c.sName 'Location',s.ProjectName,d.sName 'Project Name',d.ProjectLocation,e.sName 'Project Location',g.sName 'Salesman',a.iRelatedToType,f.sName 'Account Name',f.ContactPerson 'Contact Name',a.sSubject 'Subject',a.sDescription 'Description', a.iAssignedTo , a.iPurposeId , x.sName 'Purpose',case s.WorkLocation when -1 then 'Null' when 1 then 'WW Office' when 2 then 'WW Warehouse' when 3 then 'Outside of Office' end WorkLocation,case app.iAppointmentType when 1 then 'A
+
+
+
+ppointment' when 2 then 'Event' when 3 then 'Meeting' end AppointmentType  ,app.iAppointmentType,ic.sName [Brand],STUFF(
+           (SELECT ', ' + c.sName
+            FROM mCore_Brand_MultiValues b
+            JOIN vCore_Brand c ON b.iMasterId = c.iMasterId
+            WHERE b.iMultiId = app.Brandlist
+            FOR XML PATH(''), TYPE
+           ).value('.', 'NVARCHAR(MAX)')
+       , 1, 2, '') AS Brandlist,itc.sName [Item Colletion 1],itc1.sName [Item COllection 2] ,k.sName [Source] 
+ from vCrm_AllActivities a with(nolock)  
+left join vCrm_Tasks s on s.iTransId=a.iMasterId  
+inner join vCrm_Appointments app on app.iTransId=a.iMasterId  
+left join vCrm_TaskStatus b on b.iTransId=a.iStatus  
+left join vCore_Project d on s.ProjectName=d.iMasterId  
+left join vCore_Country e on e.iMasterId=d.ProjectLocation  
+left join vCore_Account f on f.iMasterId=a.iRelatedTo  
+left join vCore_Location c on f.iLocation=c.iMasterId  
+left join vCrm_PurposeOfVisit x on x.iTransId=a.iPurposeId  
+left join vCore_Brand ic with(nolock) on app.BrandName=ic.iMasterId
+left join vCore_Brand bt with(nolock) on app.Brandlist=bt.iMasterId
+left join vCore_ItemCollection itc with(nolock) on app.ItemCollection=itc.iMasterId
+left join vCore_ItemCollection itc1 with(nolock) on app.ItemCollection2=itc1.iMasterId
+--left join vCrm_Appointments z on z.iTransId=a.iRelatedTo and z.iTypeId=a.iRelatedToType  
+left join vCrm_Users g on g.iMasterId=a.iAssignedTo
+left join vCore_Source k on app.Source=k.iMasterId
+where a.iTypeId=512  
+union all  
+select distinct a.iMasterId,case a.iTypeId when 512 then 'Tasks' when 768 then 'Appointments' when 1024 then 'Plans' when 1280 then 'TeleCalls' when 1536 then 'Activities' when 2562 then 'Emails' else '' end 'Activity', format(dbo.fCore_IntToDateTime(a.iCreatedDate),'dd/MM/yyyy HH:mm:ss') as 'CreatedDateTime',a.iCreatedDate,format(dbo.fCore_IntToDateTime(a.iStartDatetime),'dd/MM/yyyy HH:mm:ss') as 'StartDatetime',format(dbo.fCore_IntToDateTime(a.iEndDatetime),'dd/MM/yyyy HH:mm:ss') as 'EndDatetime',a.iStatus,b.sName 'Status',a.iRelatedTo,f.iLocation,c.sName 'Location',s.ProjectName,d.sName 'Project Name',d.ProjectLocation,e.sName 'Project Location',g.sName 'Salesman',a.iRelatedToType,f.sName 'Account Name',f.ContactPerson 'Contact Name',a.sSubject 'Subject',a.sDescription 'Description', a.iAssignedTo , a.iPurposeId , x.sName 'Purpose',case s.WorkLocation when -1 then 'Null' when 1 then 'WW Office' when 2 then 'WW Warehouse' when 3 then 'Outside of Office' end WorkLocation,'Tele-Calls' [Type]  ,app.iAppointmentType,ic.sName [Brand],STUFF(
+           (SELECT ', ' + c.sName
+            FROM mCore_Brand_MultiValues b
+            JOIN vCore_Brand c ON b.iMasterId = c.iMasterId
+            WHERE b.iMultiId = app.Brandlist
+            FOR XML PATH(''), TYPE
+           ).value('.', 'NVARCHAR(MAX)')
+       , 1, 2, '') AS Brandlist,itc.sName [Item Colletion 1],itc1.sName [Item COllection 2] ,k.sName [Source]  
+from vCrm_AllActivities a with(nolock)  
+left  join vCrm_TeleCalls  s on s.iTransId=a.iMasterId  
+inner join vCrm_Appointments app on app.iTransId=a.iMasterId  
+left join vCrm_TaskStatus b on b.iTransId=a.iStatus  
+left join vCore_Project d on s.ProjectName=d.iMasterId  
+left join vCore_Country e on e.iMasterId=d.ProjectLocation  
+left join vCore_Account f on f.iMasterId=a.iRelatedTo  
+left join vCore_Location c on f.iLocation=c.iMasterId  
+left join vCrm_PurposeOfVisit x on x.iTransId=s.iPurposeId  
+left join vCore_Brand ic with(nolock) on app.BrandName=ic.iMasterId
+left join vCore_Brand bt with(nolock) on app.Brandlist=bt.iMasterId
+left join vCore_ItemCollection itc with(nolock) on app.ItemCollection=itc.iMasterId
+left join vCore_ItemCollection itc1 with(nolock) on app.ItemCollection2=itc1.iMasterId
+--left join vCrm_Appointments z on z.iTransId=a.iRelatedTo and z.iTypeId=a.iRelatedToType  
+left join vCrm_Users g on g.iMasterId=a.iAssignedTo
+left join vCore_Source k on app.Source=k.iMasterId
+where a.iTypeId=1280 

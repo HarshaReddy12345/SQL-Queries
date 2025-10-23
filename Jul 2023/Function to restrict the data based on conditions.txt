@@ -1,0 +1,23 @@
+create function dbo.fCore_Var9002(@s xml)
+returns varchar(max)
+as
+begin
+    
+    declare @iSalesOrder int,@iModel int,@sRet varchar(max);
+    
+    set @iSalesOrder = @s.value('(Fields/Header/SalesOrder)[1]','int');
+    set @iModel = @s.value('(Fields/Header/ModelGroup)[1]','int');
+
+    select @sRet = coalesce(@sRet+',','')+CONCAT(b.sName,'|',b.iMasterId)
+     from muCore_SalesOrders_Products_Details a with(nolock) 
+    inner join vCore_Product b with(nolock) on a.Product=b.iMasterId
+    where a.iMasterId=@iSalesOrder and a.iMachineType=@iModel
+
+    return @sRet;
+end
+
+
+
+
+
+

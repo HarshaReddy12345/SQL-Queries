@@ -1,0 +1,31 @@
+CREATE or ALTER PROC udp_RestrictSalesOrder(@iTransId bigint,@iUserId int=0)
+ as
+begin
+  select @iTransId=dbo.fCrm_IntToAPITransId(@iTransId,0)
+  Declare @iStatus int,@ChasisNo int,@ErrMsg varchar(max),@OrderName varchar(max),@DuplicateText varchar(max),@iModDate bigint
+
+		select @iStatus=b.[Status],@ChasisNo=c.iMasterId,@iModDate=a.iModifiedDate from vuCrm_SalesOrder_General_Details a with(nolock) 
+		left join vCore_Product b on a.iProductId=b.iMasterId 
+		left join vCore_ChassisNo c on a.ChassisNo=c.iMasterId
+		where a.iTransId=@iTransId
+		if(ISNULL(@iModDate,0)=0)
+		begin
+  if exists
+  (
+  select 1 from vuCrm_SalesOrder_General_Details a with(nolock) 
+	left join vCore_Product b on a.iProductId=b.iMasterId 
+	left join vCore_ChassisNo c on a.ChassisNo=c.iMasterId
+	where iTransId<>4614 and a.ChassisNo=7275 and b.[Status]=2
+  )
+  begin
+	set @OrderName=(select top 1 a.sName from vuCrm_SalesOrder_General_Details a with(nolock) 
+	left join vCore_Product b on a.iProductId=b.iMasterId 
+	left join vCore_ChassisNo c on a.ChassisNo=c.iMasterId
+	where a.iTransId<>@iTransId and (a.ChassisNo=@ChasisNo and a.ChassisNo!='') and (b.[Status]=2 and b.[Status]!=0) order by a.iCreatedDate desc)
+  set @DuplicateText='SalesOrder Already Exists on'
+	set @ErrMsg=CONCAT(@DuplicateText,' : ') 
+	RAISERROR('%s:- %s',16,1,@ErrMsg,@OrderName) 
+	end
+end
+END
+

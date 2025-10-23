@@ -1,0 +1,213 @@
+ALTER VIEW nCore_WalkInReport 
+as
+select FORMAT(dbo.fCore_IntToDateTime(ISNULL(a.iCreatedDate,0)), 'dd-MMM-yyyy') AS [Date],  
+  FORMAT(dbo.fCore_IntToDateTime(ISNULL(a.iCreatedDate,0)), 'MMM-dd') AS [Month],  
+  b.Position ,
+  c.sName AS [Branch],  
+  d.sName AS [Customer],
+  e.sName AS [Doctor Name],  
+  ISNULL(f.sName, '') AS [Lead Source],  
+  ISNULL(CASE TypeofWalkIns WHEN 1 THEN 'Direct Walk-in' WHEN 2 THEN 'HCA' WHEN 3 THEN 'Hear.com' END, '') AS [Type of Walk-Ins],  'Consultation' [Stage],a.iCreatedDate [$Datetime$Created On],'' [AudiologistAssigned],'' [Unaidable],0.00 PTALeft,
+PTARight,'' [CategoryofHL],'' [TypeofHL],'' [UnilateralHLBilateralHL],'' [Audiologist Remarks],'' [LossTypeLeft],'' [LossTypeRight],0.00 TotalAmount,''[Audiologist 1],''[Audiologist 2],''[Trial Given 1],''[Trial Given 2],0.00 MRPofDevice1,  
+  0.00 MRPofDevice2,
+    0.00 Discountof1stDevice,0.00 fGrandTotal,0.00 [Adjusted Amount],'' [FollowUp Number],'' [Follow up Remarks],'' [Designation],b.iMasterId [iLocation],
+	ISNULL(a.sName, '') AS [Customer Id],  
+  ISNULL(a.Age, '') AS Age,
+  ISNULL(CASE d.Gender WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' END, '') AS [Gender],  
+  CASE WHEN d.sPhone IS NULL THEN a.Phone ELSE d.sPhone END AS [Contact.No],  
+  ISNULL(d.sEmail, '') AS Email,  
+  ISNULL(d.sBillingPinCode, '') AS [PinCode],a.iTransId,'Enquiry' [Module],dbo.fCrm_GetNumberListValue('1,ATL&BTL,2,CGHS,3,DM,4,Existing Client,5,Follow Up,6,Hear.com,7,Others,8,Partner Referal,9,Repair To Sale,10,Upgrade,11,Word Of Mouth,12,Doctor Reference',a.SourceCategory) [Type],'' [Client Remarks],
+  '' [Lead Type],'' [HA Prescribed],'' [Offered Price Range],0.00 [Receipt Balance],'' '$MType_FollowUp_Name$' ,0 '$DTransId$'
+from vCrm_Opportunities a with(nolock)
+LEFT JOIN vCore_Location b WITH (NOLOCK) ON a.iLocationId = b.iMasterId 
+LEFT JOIN vCore_Account c WITH (NOLOCK) ON b.BranchName = c.iMasterId  
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.iAccount = d.iMasterId 
+LEFT JOIN vCore_DoctorReferral e WITH (NOLOCK) ON a.DoctorReferral = e.iMasterId  
+LEFT JOIN vCrm_LeadSource f WITH (NOLOCK) ON a.iLeadSource = f.iTransId  
+LEFT JOIN vCrm_SalesStages g WITH (NOLOCK) ON a.iStage = g.iMasterId  
+where a.iTransId>0 
+
+union all
+
+select FORMAT(dbo.fCore_IntToDateTime(h.iCreatedDate), 'dd-MMM-yyyy') AS [Date],  
+  FORMAT(dbo.fCore_IntToDateTime(h.iCreatedDate), 'MMM-dd') AS [Month],  
+  b.Position ,
+  c.sName AS [Branch],  
+  d.sName AS [Customer],
+  e.sName AS [Doctor Name],  
+  ISNULL(f.sName, '') AS [Lead Source],  
+  ISNULL(CASE TypeofWalkIns WHEN 1 THEN 'Direct Walk-in' WHEN 2 THEN 'HCA' WHEN 3 THEN 'Hear.com' END, '') AS [Type of Walk-Ins],  
+  CASE WHEN h.Unaidable=0  then 'Ear Testing' else 'Closed Lost' end [Stage],h.iCreatedDate [$Datetime$Created On],ISNULL(h.AudiologistAssigned, '') AS [AudiologistAssigned],  
+  ISNULL(CASE h.Unaidable WHEN 0 THEN 'No' WHEN 1 THEN 'Yes' END, '') AS [Unaidable],
+  ISNULL(h.PTALeft, 0.00) AS PTALeft,  
+  ISNULL(h.PTARight, 0.00) AS PTARight,  
+  dbo.fCrm_GetNumberListValue('1,Normal,2,Minimal,3,Mild,4,Mild to moderate,5,Moderately Severe,6,Moderate,7,Moderate to moderately severe,8,Moderately severe,9,Moderately severe to severe,10,Severe,11,Severe to profound,12,Profound,13,Mild sloping,14,Moderate sloping,15,Mild steeply sloping,16,Moderate steeply sloping', h.CategoryofHL) AS [CategoryofHL],  
+  dbo.fCrm_GetNumberListValue('1,Normal,2,Minimal,3,Conductive,4,Mixed,5,Sensorineural,6,Profound', h.TypeofHL) AS [TypeofHL],  
+  dbo.fCrm_GetNumberListValue('1,No HL,2,Unilateral HL,3,Bilateral HL', h.UnilateralHLBilateralHL) AS [UnilateralHLBilateralHL],  
+  h.Recommendation AS [Audiologist Remarks],  
+  dbo.fCrm_GetNumberListValue('1,Normal,2,Minimal Loss,3,Mild Conductive HL,4,Mild Slopping SNHL,5,Mild to Moderate SNHL,6,Moderate SNHL,7,Moderate Conductive HL,8,Moderate Mixed HL,9,Moderate Slopping SNHL,10,Moderate to Moderately Severe SNHL,11,Moderate Steeply Slopping SNHL,12,Moderately Severe SNHL,13,Moderately Severe Conductive HL,14,Moderately Severe to Severe SNHL,15,Moderately Severe Slopping SNHL,16,Moderately Severe Steeply Slopping SNHL,17,Moderately Severe Steeply Slopping SNHL,19,Severe SNHL,20,Severe to Profound SNHL,21,Severe Mixed HL,22,Profound HL,23,Severe Conductive HL,18,Moderately Severe Mixed HL,24,Mild SNHL', h.LossTypeLeft) AS [LossTypeLeft],  
+  dbo.fCrm_GetNumberListValue('1,Normal,2,Minimal Loss,3,Mild Conductive HL,4,Mild Slopping SNHL,5,Mild to Moderate SNHL,6,Moderate SNHL,7,Moderate Conductive HL,8,Moderate Mixed HL,9,Moderate Slopping SNHL,10,Moderate to Moderately Severe SNHL,11,Moderate Steeply Slopping SNHL,12,Moderately Severe SNHL,13,Moderately Severe Conductive HL,14,Moderately Severe to Severe SNHL,15,Moderately Severe Slopping SNHL,16,Moderately Severe Steeply Slopping SNHL,17,Moderately Severe Steeply Slopping SNHL,18,Moderately Severe Mixed HL,19,Severe SNHL,20,Severe to Profound SNHL,21,Severe Mixed HL,22,Profound HL,23,Severe Conductive HL,24,Mild SNHL', h.LossTypeRight) AS [LossTypeRight],0.00,'','','','',0.00,0.00,0.00,0.00,0.00,'','','',b.iMasterId [iLocation],ISNULL(a.sName, '') AS [Customer Id],  
+  ISNULL(a.Age, '') AS Age,
+  ISNULL(CASE d.Gender WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' END, '') AS [Gender],  
+  CASE WHEN d.sPhone IS NULL THEN a.Phone ELSE d.sPhone END AS [Contact.No],  
+  ISNULL(d.sEmail, '') AS Email,  
+  ISNULL(d.sBillingPinCode, '') AS [PinCode],a.iTransId,'PTA' [Module],dbo.fCrm_GetNumberListValue('1,ATL&BTL,2,CGHS,3,DM,4,Existing Client,5,Follow Up,6,Hear.com,7,Others,8,Partner Referal,9,Repair To Sale,10,Upgrade,11,Word Of Mouth,12,Doctor Reference',a.SourceCategory) [Type],h.ClientRemarks,'','','',0.00,'' '$MType_FollowUp_Name$' ,0 '$DTransId$'
+from vCore_Tests h with(nolock)
+left join vCrm_Opportunities a with(nolock) on h.Enquiry=a.iTransId
+LEFT JOIN vCore_Location b WITH (NOLOCK) ON a.iLocationId = b.iMasterId 
+LEFT JOIN vCore_Account c WITH (NOLOCK) ON b.BranchName = c.iMasterId  
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.iAccount = d.iMasterId 
+LEFT JOIN vCore_DoctorReferral e WITH (NOLOCK) ON a.DoctorReferral = e.iMasterId  
+LEFT JOIN vCrm_LeadSource f WITH (NOLOCK) ON a.iLeadSource = f.iTransId  
+LEFT JOIN vCrm_SalesStages g WITH (NOLOCK) ON a.iStage = g.iMasterId  
+where h.iMasterId>0 
+
+union all 
+
+select FORMAT(dbo.fCore_IntToDateTime(i.iCreatedDate), 'dd-MMM-yyyy') AS [Date],  
+  FORMAT(dbo.fCore_IntToDateTime(i.iCreatedDate), 'MMM-dd') AS [Month],  
+  b.Position ,
+  c.sName AS [Branch],  
+  d.sName AS [Customer],
+  e.sName AS [Doctor Name],  
+  ISNULL(f.sName, '') AS [Lead Source],  
+  ISNULL(CASE TypeofWalkIns WHEN 1 THEN 'Direct Walk-in' WHEN 2 THEN 'HCA' WHEN 3 THEN 'Hear.com' END, '') AS [Type of Walk-Ins],  
+  'Closed Won' AS [Stage],i.iCreatedDate [$Datetime$Created On],'' [AudiologistAssigned],'' [Unaidable],0.00 PTALeft,0.00 PTARight,'' [CategoryofHL],'' [TypeofHL],'' [UnilateralHLBilateralHL],'' [Audiologist Remarks],'' [LossTypeLeft],'' [LossTypeRight], i.TotalAmount,j.sName [Audiologist 1],k.sName [Audiologist 2],'','',0.00,0.00,0.00,0.00,0.00,'','','',b.iMasterId [iLocation],
+  ISNULL(a.sName, '') AS [Customer Id],  
+  ISNULL(a.Age, '') AS Age,
+  ISNULL(CASE d.Gender WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' END, '') AS [Gender],  
+  CASE WHEN d.sPhone IS NULL THEN a.Phone ELSE d.sPhone END AS [Contact.No],  
+  ISNULL(d.sEmail, '') AS Email,  
+  ISNULL(d.sBillingPinCode, '') AS [PinCode],a.iTransId,'Invoice' [Module],dbo.fCrm_GetNumberListValue('1,ATL&BTL,2,CGHS,3,DM,4,Existing Client,5,Follow Up,6,Hear.com,7,Others,8,Partner Referal,9,Repair To Sale,10,Upgrade,11,Word Of Mouth,12,Doctor Reference',a.SourceCategory) [Type],'','','','',0.00,'' '$MType_FollowUp_Name$' ,0 '$DTransId$'
+from vCore_NewInvoice i with(nolock)
+LEFT JOIN vCrm_Opportunities a with(nolock) on a.iTransId = i.Enquiry
+LEFT JOIN vCore_Location b WITH (NOLOCK) ON a.iLocationId = b.iMasterId 
+LEFT JOIN vCore_Account c WITH (NOLOCK) ON b.BranchName = c.iMasterId  
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.iAccount = d.iMasterId 
+LEFT JOIN vCore_DoctorReferral e WITH (NOLOCK) ON a.DoctorReferral = e.iMasterId  
+LEFT JOIN vCrm_LeadSource f WITH (NOLOCK) ON a.iLeadSource = f.iTransId  
+LEFT JOIN vCrm_SalesStages g WITH (NOLOCK) ON a.iStage = g.iMasterId 
+LEFT JOIN vCore_Audiologist j WITH (NOLOCK) ON i.AUDIOLOGISTNAME = j.iMasterId  
+LEFT JOIN vCore_Audiologist k WITH (NOLOCK) ON i.IFSHAREDSALETHEN = k.iMasterId 
+where i.iMasterId>0 
+
+union all 
+
+select FORMAT(dbo.fCore_IntToDateTime(l.iCreatedDate), 'dd-MMM-yyyy') AS [Date],  
+  FORMAT(dbo.fCore_IntToDateTime(l.iCreatedDate), 'MMM-dd') AS [Month],  
+  b.Position ,
+  c.sName AS [Branch],  
+  d.sName AS [Customer],
+  e.sName AS [Doctor Name],  
+  ISNULL(f.sName, '') AS [Lead Source],  
+  ISNULL(CASE TypeofWalkIns WHEN 1 THEN 'Direct Walk-in' WHEN 2 THEN 'HCA' WHEN 3 THEN 'Hear.com' END, '') AS [Type of Walk-Ins],  
+  'Trial Issue' AS [Stage],l.iCreatedDate [$Datetime$Created On],'' [AudiologistAssigned],'' [Unaidable],0.00 PTALeft,0.00 PTARight,'' [CategoryofHL],'' [TypeofHL],'' [UnilateralHLBilateralHL],'' [Audiologist Remarks],'' [LossTypeLeft],'' [LossTypeRight],0.00 TotalAmount,''[Audiologist 1],''[Audiologist 2],
+  m.sName AS [Trial Given 1],  
+  n.sName AS [Trial Given 2],
+    l.MRPofDevice1,  
+  l.MRPofDevice2,
+    l.Discountof1stDevice,0.00,0.00 [Adjusted Amount],'','','',b.iMasterId [iLocation],
+	ISNULL(a.sName, '') AS [Customer Id],  
+  ISNULL(a.Age, '') AS Age,
+  ISNULL(CASE d.Gender WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' END, '') AS [Gender],  
+  CASE WHEN d.sPhone IS NULL THEN a.Phone ELSE d.sPhone END AS [Contact.No],  
+  ISNULL(d.sEmail, '') AS Email,  
+  ISNULL(d.sBillingPinCode, '') AS [PinCode],a.iTransId,'Trail Issue' [Module],dbo.fCrm_GetNumberListValue('1,ATL&BTL,2,CGHS,3,DM,4,Existing Client,5,Follow Up,6,Hear.com,7,Others,8,Partner Referal,9,Repair To Sale,10,Upgrade,11,Word Of Mouth,12,Doctor Reference',a.SourceCategory) [Type],'',dbo.fCrm_GetNumberListValue('1,Hot ( Can Close in 10 Days),2,Warm (Can Close in 30 Days),3,Cold (Potential in 90 Days),4,Closed',l.iLeadType) [Lead Type],dbo.fCrm_GetNumberListValue('1,Unilateral,2,Bilateral',HAPrescribed) [HA Prescribed],CONCAT(SalesPriceofferedfor1Trial,' - ',SalesPriceofferedfor2Trial) [Offered Price Range],0.00,'' '$MType_FollowUp_Name$' ,0 '$DTransId$'
+from vCore_SampleCollection l WITH (NOLOCK) 
+LEFT JOIN vCrm_Opportunities a with(nolock) ON a.iTransId = l.Enquiry
+LEFT JOIN vCore_Location b WITH (NOLOCK) ON a.iLocationId = b.iMasterId 
+LEFT JOIN vCore_Account c WITH (NOLOCK) ON b.BranchName = c.iMasterId  
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.iAccount = d.iMasterId 
+LEFT JOIN vCore_DoctorReferral e WITH (NOLOCK) ON a.DoctorReferral = e.iMasterId  
+LEFT JOIN vCrm_LeadSource f WITH (NOLOCK) ON a.iLeadSource = f.iTransId  
+LEFT JOIN vCrm_SalesStages g WITH (NOLOCK) ON a.iStage = g.iMasterId  
+LEFT JOIN vCore_Product m WITH (NOLOCK) ON l.TrailGiven1 = m.iMasterId  
+LEFT JOIN vCore_Product n WITH (NOLOCK) ON l.TrailGiven2 = n.iMasterId  
+where l.iMasterId>0 
+
+union all
+
+select FORMAT(dbo.fCore_IntToDateTime(o.iCreatedDate), 'dd-MMM-yyyy') AS [Date],  
+  FORMAT(dbo.fCore_IntToDateTime(o.iCreatedDate), 'MMM-dd') AS [Month],  
+  b.Position ,
+  c.sName AS [Branch],  
+  d.sName AS [Customer],
+  e.sName AS [Doctor Name],  
+  ISNULL(f.sName, '') AS [Lead Source],  
+  ISNULL(CASE TypeofWalkIns WHEN 1 THEN 'Direct Walk-in' WHEN 2 THEN 'HCA' WHEN 3 THEN 'Hear.com' END, '') AS [Type of Walk-Ins],  
+  CASE WHEN o.OrderStatus <>2 then 'Booked' else 'Booked and Rejected' end [Stage],o.iCreatedDate [$Datetime$Created On],'' [AudiologistAssigned],'' [Unaidable],0.00 PTALeft,0.00 PTARight,'' [CategoryofHL],'' [TypeofHL],'' [UnilateralHLBilateralHL],'' [Audiologist Remarks],'' [LossTypeLeft],'' [LossTypeRight],0.00 TotalAmount,''[Audiologist 1],''[Audiologist 2],''[Trial Given 1],''[Trial Given 2],0.00 MRPofDevice1,  
+  0.00 MRPofDevice2,
+    0.00 Discountof1stDevice,o.fGrandTotal,0.00 [Adjusted Amount],'','','',b.iMasterId [iLocation],
+	ISNULL(a.sName, '') AS [Customer Id],  
+  ISNULL(a.Age, '') AS Age,
+  ISNULL(CASE d.Gender WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' END, '') AS [Gender],  
+  CASE WHEN d.sPhone IS NULL THEN a.Phone ELSE d.sPhone END AS [Contact.No],  
+  ISNULL(d.sEmail, '') AS Email,  
+  ISNULL(d.sBillingPinCode, '') AS [PinCode],a.iTransId,'Quote' [Module],dbo.fCrm_GetNumberListValue('1,ATL&BTL,2,CGHS,3,DM,4,Existing Client,5,Follow Up,6,Hear.com,7,Others,8,Partner Referal,9,Repair To Sale,10,Upgrade,11,Word Of Mouth,12,Doctor Reference',a.SourceCategory) [Type],'','','','',0.00,'' '$MType_FollowUp_Name$' ,0 '$DTransId$'
+from vCrm_Quote o WITH (NOLOCK)  
+LEFT JOIN vCrm_Opportunities a with(nolock) ON a.iTransId = o.iOpportunityId
+LEFT JOIN vCore_Location b WITH (NOLOCK) ON a.iLocationId = b.iMasterId 
+LEFT JOIN vCore_Account c WITH (NOLOCK) ON b.BranchName = c.iMasterId  
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.iAccount = d.iMasterId 
+LEFT JOIN vCore_DoctorReferral e WITH (NOLOCK) ON a.DoctorReferral = e.iMasterId  
+LEFT JOIN vCrm_LeadSource f WITH (NOLOCK) ON a.iLeadSource = f.iTransId  
+LEFT JOIN vCrm_SalesStages g WITH (NOLOCK) ON a.iStage = g.iMasterId  
+where o.iTransId>0 
+
+union all
+
+select FORMAT(dbo.fCore_IntToDateTime(p.iCreatedDate), 'dd-MMM-yyyy') AS [Date],  
+  FORMAT(dbo.fCore_IntToDateTime(p.iCreatedDate), 'MMM-dd') AS [Month],  
+  b.Position ,
+  c.sName AS [Branch],  
+  d.sName AS [Customer],
+  e.sName AS [Doctor Name],  
+  ISNULL(f.sName, '') AS [Lead Source],  
+  ISNULL(CASE TypeofWalkIns WHEN 1 THEN 'Direct Walk-in' WHEN 2 THEN 'HCA' WHEN 3 THEN 'Hear.com' END, '') AS [Type of Walk-Ins],  
+  'Booked' AS [Stage],p.iCreatedDate [$Datetime$Created On],'' [AudiologistAssigned],'' [Unaidable],0.00 PTALeft,0.00 PTARight,'' [CategoryofHL],'' [TypeofHL],'' [UnilateralHLBilateralHL],'' [Audiologist Remarks],'' [LossTypeLeft],'' [LossTypeRight],0.00 TotalAmount,''[Audiologist 1],''[Audiologist 2],''[Trial Given 1],''[Trial Given 2],0.00 MRPofDevice1,  
+  0.00 MRPofDevice2,
+    0.00 Discountof1stDevice,0.00 fGrandTotal,p.Adjusted AS [Adjusted Amount],'','','',b.iMasterId [iLocation],
+	ISNULL(a.sName, '') AS [Customer Id],  
+  ISNULL(a.Age, '') AS Age,
+  ISNULL(CASE d.Gender WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' END, '') AS [Gender],  
+  CASE WHEN d.sPhone IS NULL THEN a.Phone ELSE d.sPhone END AS [Contact.No],  
+  ISNULL(d.sEmail, '') AS Email,  
+  ISNULL(d.sBillingPinCode, '') AS [PinCode],a.iTransId,'Receipt' [Module],dbo.fCrm_GetNumberListValue('1,ATL&BTL,2,CGHS,3,DM,4,Existing Client,5,Follow Up,6,Hear.com,7,Others,8,Partner Referal,9,Repair To Sale,10,Upgrade,11,Word Of Mouth,12,Doctor Reference',a.SourceCategory) [Type],'','','','',p.Balance,'' '$MType_FollowUp_Name$' ,0 '$DTransId$'
+from vCore_Receipt p WITH (NOLOCK) 
+LEFT JOIN vCrm_Opportunities a with(nolock) ON a.iTransId = p.Enquiry
+LEFT JOIN vCore_Location b WITH (NOLOCK) ON a.iLocationId = b.iMasterId 
+LEFT JOIN vCore_Account c WITH (NOLOCK) ON b.BranchName = c.iMasterId  
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.iAccount = d.iMasterId 
+LEFT JOIN vCore_DoctorReferral e WITH (NOLOCK) ON a.DoctorReferral = e.iMasterId  
+LEFT JOIN vCrm_LeadSource f WITH (NOLOCK) ON a.iLeadSource = f.iTransId  
+LEFT JOIN vCrm_SalesStages g WITH (NOLOCK) ON a.iStage = g.iMasterId  
+where p.iMasterId>0 
+
+union all
+
+select FORMAT(dbo.fCore_IntToDateTime(q.iCreatedDate), 'dd-MMM-yyyy') AS [Date],  
+  FORMAT(dbo.fCore_IntToDateTime(q.iCreatedDate), 'MMM-dd') AS [Month],  
+  b.Position ,
+  c.sName AS [Branch],  
+  d.sName AS [Customer],
+  e.sName AS [Doctor Name],  
+  ISNULL(f.sName, '') AS [Lead Source],  
+  ISNULL(CASE TypeofWalkIns WHEN 1 THEN 'Direct Walk-in' WHEN 2 THEN 'HCA' WHEN 3 THEN 'Hear.com' END, '') AS [Type of Walk-Ins],  
+  CASE WHEN q.Leadstages in('Closed Lost','Not Interested') then  'Closed Lost' else 'Follow Up' end [Stage],q.iCreatedDate [$Datetime$Created On],'' [AudiologistAssigned],'' [Unaidable],0.00 PTALeft,0.00 PTARight,'' [CategoryofHL],'' [TypeofHL],'' [UnilateralHLBilateralHL],'' [Audiologist Remarks],'' [LossTypeLeft],'' [LossTypeRight],0.00 TotalAmount,''[Audiologist 1],''[Audiologist 2],''[Trial Given 1],''[Trial Given 2],0.00 MRPofDevice1,  
+  0.00 MRPofDevice2,0.00 Discountof1stDevice,0.00 fGrandTotal,0.00 [Adjusted Amount],
+  q.sName [FollowUp Number],q.sCode [Follow up Remarks],dbo.fCrm_GetNumberListValue('1,Audiologist,2,CSO,3,Area Manager,4,HEAR.COM Manager,5,Tele-Caller,6,Regional Manager,7,Team Lead Tele-Calling',q.Designation) [Designation],b.iMasterId [iLocation],
+  ISNULL(a.sName, '') AS [Customer Id],  
+  ISNULL(a.Age, '') AS Age,
+  ISNULL(CASE d.Gender WHEN 1 THEN 'Male' WHEN 2 THEN 'Female' END, '') AS [Gender],  
+  CASE WHEN d.sPhone IS NULL THEN a.Phone ELSE d.sPhone END AS [Contact.No],  
+  ISNULL(d.sEmail, '') AS Email,  
+  ISNULL(d.sBillingPinCode, '') AS [PinCode],a.iTransId,'FollowUp' [Module],dbo.fCrm_GetNumberListValue('1,ATL&BTL,2,CGHS,3,DM,4,Existing Client,5,Follow Up,6,Hear.com,7,Others,8,Partner Referal,9,Repair To Sale,10,Upgrade,11,Word Of Mouth,12,Doctor Reference',a.SourceCategory) [Type],'','','','',0.00,q.sName '$MType_FollowUp_Name$' ,q.iMasterId'$DTransId$'
+from vCore_Followup q with(nolock)
+LEFT JOIN vCrm_Opportunities a with(nolock) on q.EnquiryNo=a.iTransId
+LEFT JOIN vCore_Location b WITH (NOLOCK) ON a.iLocationId = b.iMasterId 
+LEFT JOIN vCore_Account c WITH (NOLOCK) ON b.BranchName = c.iMasterId  
+LEFT JOIN vCore_Account d WITH (NOLOCK) ON a.iAccount = d.iMasterId 
+LEFT JOIN vCore_DoctorReferral e WITH (NOLOCK) ON a.DoctorReferral = e.iMasterId  
+LEFT JOIN vCrm_LeadSource f WITH (NOLOCK) ON a.iLeadSource = f.iTransId  
+LEFT JOIN vCrm_SalesStages g WITH (NOLOCK) ON a.iStage = g.iMasterId  
+where q.iMasterId>0 

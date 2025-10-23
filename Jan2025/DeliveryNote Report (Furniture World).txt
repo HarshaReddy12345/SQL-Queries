@@ -1,0 +1,68 @@
+ALTER VIEW nCore_DeliveryNoteRpt as
+select 
+b.Date [$Date$SalesOrder Date],
+c.DeliveryDate [$Date$Inv Delivery Date], 
+case c.AccountsVerified when '1' then N'Pending' when '2' then N'Approved' when '3' then N'Not Approved' end  col2, 
+case c.DNStatus when '1' then N'Pending' when '2' then N'Delivered' end  col3,
+e.sName [FW Company],
+d.FwCompany CompanyId,
+f.sName [Location],
+d.Store LocationId,
+h.sName Product,
+g.iProductId ProductId,
+i.sCode [Product Code],
+i.iMasterId ProdCodeId,
+g.sProdDescription [Product Description],
+j.sName Category,
+i.Category CatehoryId,
+k.sName [Opportunity Name],
+b.iOpportunityId OppoId,
+g.iQuantity Quantity,
+d.sName [Quote Number],
+d.iTransId QuoteId,
+b.sName [Sales Order Number],
+b.iTransId OrderId,
+c.sName [Invoice Number],
+c.iMasterId ccol14, 
+case b.SOStatus when '1' then N'In Progress' when '2' then N'Canceled' end  SOStatus,
+b.Address [Address],
+g.ExpectedDeliveryDate1 [$Date$Expected Delivery Date],
+d.City ,
+d.State ,
+d.ZipCode ,
+d.MobileNo ,
+l.sName [Pick up Location],
+m.sName [From Location],
+n.sName [To Location],
+o.[Stock Movement],
+dbo.fCrm_GetNumberListValue('1,Shipped,2,In Transit,3,Delivered,4,Rescheduled,5,Cancelled/Returned',a.DeliveryStatus) [DeliveryStatus],
+CASE WHEN LEN(a.[Date])=9 then a.Date else 0 end [$Date$Delivery Date],
+a.sName [Delivery Name],ISNULL(q.sName,'') [OutWard Number],
+dbo.fCrm_GetNumberListValue('1,Customer ,2,Store ,3,Warehouse',p.MovementTo) [MovementTo],
+r.[Material Request]
+from vuCore_DeliveryNote_Product_Info_Details a WITH(NOLOCK)
+left join vCrm_SalesOrder b WITH(NOLOCK) on a.SalesOrderNo=b.iTransId  
+left join vCore_Invoice c WITH(NOLOCK) on a.InvoiceNo=c.iMasterId  
+left join vCrm_Quote d WITH(NOLOCK) on a.QuoteNo=d.iTransId 
+left join vCore_Department e WITH(NOLOCK) on d.FwCompany=e.iMasterId  
+left join vCore_Location f WITH(NOLOCK) on d.Store=f.iMasterId 
+left join vuCrm_SalesOrder_General_Details g WITH(NOLOCK) on a.SalesOrderNo=g.iTransId 
+left join vCore_Product h WITH(NOLOCK) on g.iProductId=h.iMasterId 
+left join vCore_Product i WITH(NOLOCK) on a.Product=i.iMasterId  
+left join vCore_Categoryname j WITH(NOLOCK) on i.Category=j.iMasterId 
+left join vCrm_Opportunities k WITH(NOLOCK) on b.iOpportunityId=k.iTransId  
+left join vCore_Location l WITH(NOLOCK) on g.PickupLOC=l.iMasterId 
+left join vCore_Location m WITH(NOLOCK) on g.FromLoc=m.iMasterId  
+left join vCore_Location n WITH(NOLOCK) on g.ToLoc=n.iMasterId
+left join (select STRING_AGG(c.sName,',') [Stock Movement],a.iMasterId from vCore_Invoice a
+join mCore_Companies_MultiValues b on a.Stockmovement=b.iMultiId
+join vCore_Companies c on b.iMasterId=c.iMasterId
+where a.iMasterId>0 group by a.iMasterId) o on c.iMasterId=o.iMasterId
+left join vCore_WereHouse p with(nolock) on g.iTransId=p.iMasterId
+left join vCore_Companies q with(nolock) on p.StockMovementOutward=q.iMasterId
+left join (select STRING_AGG(c.sName,',') [Material Request],a.iMasterId from vCore_Invoice a
+join mCore_Store_MultiValues b on a.MaterialRequest=b.iMultiId
+join mCore_Store c on b.iMasterId=c.iMasterId
+where a.iMasterId>0 group by a.iMasterId) r on c.iMasterId=r.iMasterId
+where a.iMasterId>0   
+
